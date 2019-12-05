@@ -1,0 +1,11 @@
+<library path="lib/libdualarm_controllers">
+
+    <class name="dualarm_controllers/ComputedTorque_Control_CLIK"
+           type="dualarm_controllers::ComputedTorque_Control_CLIK"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            Computed Torque Controller with Closed Loop Inverse Kinematics
+        </description>
+    </class>
+
+</library>

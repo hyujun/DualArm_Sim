@@ -1,0 +1,50 @@
+digraph G {
+node [shape=box];
+"world" [label="world"];
+"base_link" [label="base_link"];
+"link_01" [label="link_01"];
+"link_02" [label="link_02"];
+"link_03" [label="link_03"];
+"link_04" [label="link_04"];
+"link_05" [label="link_05"];
+"link_06" [label="link_06"];
+"link_07" [label="link_07"];
+"link_08" [label="link_08"];
+"link_09" [label="link_09"];
+"link_10" [label="link_10"];
+"link_11" [label="link_11"];
+"link_12" [label="link_12"];
+"link_13" [label="link_13"];
+"link_14" [label="link_14"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"world" -> "base_joint" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"base_joint" -> "base_link"
+"base_link" -> "base_link_link_01" [label="xyz: 0 0 0.352 \nrpy: 0 -0 0"]
+"base_link_link_01" -> "link_01"
+"link_01" -> "link_01_link_02" [label="xyz: 0 0 0.148 \nrpy: 0 -0 0"]
+"link_01_link_02" -> "link_02"
+"link_02" -> "link_02_link_03" [label="xyz: 0 0.125 0.217 \nrpy: 0 -0 0"]
+"link_02_link_03" -> "link_03"
+"link_03" -> "link_03_link_04" [label="xyz: 0 0.1 0.083 \nrpy: 0 -0 0"]
+"link_03_link_04" -> "link_04"
+"link_04" -> "link_04_link_05" [label="xyz: 0 0.11 0 \nrpy: 0 -0 0"]
+"link_04_link_05" -> "link_05"
+"link_05" -> "link_05_link_06" [label="xyz: 0 0 -0.242 \nrpy: 0 -0 0"]
+"link_05_link_06" -> "link_06"
+"link_06" -> "link_06_link_07" [label="xyz: -0.0245 0.00175 -0.158 \nrpy: 0 -0 0"]
+"link_06_link_07" -> "link_07"
+"link_07" -> "link_07_link_08" [label="xyz: 0.0245 -0.00175 -0.235 \nrpy: 0 -0 0"]
+"link_07_link_08" -> "link_08"
+"link_02" -> "link_02_link_09" [label="xyz: 0 -0.125 0.217 \nrpy: 0 -0 0"]
+"link_02_link_09" -> "link_09"
+"link_09" -> "link_09_link_10" [label="xyz: 0 -0.09 0.083 \nrpy: 0 -0 0"]
+"link_09_link_10" -> "link_10"
+"link_10" -> "link_10_link_11" [label="xyz: 0 -0.11 0 \nrpy: 0 -0 0"]
+"link_10_link_11" -> "link_11"
+"link_11" -> "link_11_link_12" [label="xyz: 0 0 -0.242 \nrpy: 0 -0 0"]
+"link_11_link_12" -> "link_12"
+"link_12" -> "link_12_link_13" [label="xyz: -0.0245 -0.00175 -0.158 \nrpy: 0 -0 0"]
+"link_12_link_13" -> "link_13"
+"link_13" -> "link_13_link_14" [label="xyz: 0.0245 0.00175 -0.235 \nrpy: 0 -0 0"]
+"link_13_link_14" -> "link_14"
+}

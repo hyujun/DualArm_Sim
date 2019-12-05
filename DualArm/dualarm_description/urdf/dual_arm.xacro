@@ -1,0 +1,190 @@
+<?xml version="1.0"?>
+<robot
+		xmlns:xacro="http://www.ros.org/wiki/xacro" name = "dual_arm" >
+
+	<xacro:include filename="$(find dualarm_description)/urdf/link_to_joint.xacro" />
+
+	<xacro:include filename="$(find dualarm_description)/urdf/robot_parameter.xacro" />
+
+	<xacro:include filename="$(find dualarm_description)/urdf/dual_arm.gazebo" />
+
+<!-- Base parts -->
+<link name = "world"/>
+
+<joint name="base_joint" type="fixed">
+	<origin
+		xyz="0 0 0"
+		rpy="0 0 0"/>
+	<parent link="world"/>
+	<child link="${base_link_name}"/>
+</joint>
+
+<m_link_cylinder
+		name="${base_link_name}"
+		mass = "${base_link_mass}"
+		origin_rpy = "0 0 0"
+		origin_xyz="0 0 .176"
+		ixx="${base_link_ixx}" ixy="${base_link_ixy}" ixz="${base_link_ixz}" iyy="${base_link_iyy}" iyz="${base_link_iyz}" izz="${base_link_izz}"
+		colvis_rpy="0 0 0" colvis_xyz="0 0 0.176"
+		radius="0.15"
+		length="${base_link_length}"
+/>
+<!-- waist part -->
+<m_joint_100
+		name="${base_link_name}_${waist_link_01_name}"
+		type="revolute"
+		axis_xyz="0 0 1"
+		origin_rpy="0 0 0"
+		origin_xyz="0 0 0.352"
+		parent="${base_link_name}"
+		child="${waist_link_01_name}"
+		limit_e="100" limit_l="-1.5708" limit_u="1.5708" limit_v="1"
+/>
+
+<m_link_cylinder
+		name="${waist_link_01_name}"
+		mass="${waist_link_01_mass}"
+		origin_rpy="0 0 0"
+		origin_xyz="0 0 0.1110776"
+		ixx="${waist_link_01_ixx}" ixy="${waist_link_01_ixy}" ixz="${waist_link_01_ixz}" iyy="${waist_link_01_iyy}" iyz="${waist_link_01_iyz}" izz="${waist_link_01_izz}"
+		colvis_rpy="-1.57 0 0" colvis_xyz="0 0 0.1110776"
+		radius="0.06"
+		length="${waist_link_01_length}"
+/>
+
+<m_joint_100
+		name="${waist_link_01_name}_${waist_link_02_name}"
+		type="revolute"
+		axis_xyz="0 1 0"
+		origin_rpy="0 0 0"
+		origin_xyz="0 0 0.148"
+		parent="${waist_link_01_name}"
+		child="${waist_link_02_name}"
+		limit_e="100" limit_u="1.22173" limit_l="-0.2618" limit_v="1"
+/>
+
+<m_link_cylinder
+		name="${waist_link_02_name}"
+		mass="${waist_link_02_mass}"
+		origin_rpy="0 0 0"
+		origin_xyz="0 0 0.1436171"
+		ixx="${waist_link_02_ixx}" ixy="${waist_link_02_ixy}" ixz="${waist_link_02_ixz}" iyy="${waist_link_02_iyy}" iyz="${waist_link_02_iyz}" izz="${waist_link_02_izz}"
+		colvis_rpy="0 0 0" colvis_xyz="0 0 0.1436171"
+		radius="0.2"
+		length="${waist_link_02_length}"
+/>
+
+<!-- right_arm part -->
+
+<m_link_cylinder
+		name="${r_arm_link_01_name}"
+		mass="${r_arm_link_01_mass}"
+		origin_rpy="0 0 0"
+		origin_xyz="0.0002952 0.0341703 0.076461"
+		ixx="${r_arm_link_01_ixx}" ixy="${r_arm_link_01_ixy}" ixz="${r_arm_link_01_ixz}" iyy="${r_arm_link_01_iyy}" iyz="${r_arm_link_01_iyz}" izz="${r_arm_link_01_izz}"
+		colvis_rpy="-1.57 0 0" colvis_xyz="0.0002952 0.0341703 0.076461"
+		radius="0.04"
+		length="${r_arm_link_01_length}"
+/>
+
+<m_joint_100
+		name="${waist_link_02_name}_${r_arm_link_01_name}"
+		type="revolute"
+		axis_xyz="0 0 1"
+		origin_rpy="0 0 0"
+		origin_xyz="0 0.125 0.217"
+		parent="${waist_link_02_name}"
+		child="${r_arm_link_01_name}"
+		limit_e="100" limit_l="-1.5708" limit_u="0.5236" limit_v="1"
+/>
+
+<m_link_cylinder
+		name="${r_arm_link_02_name}"
+		mass="${r_arm_link_02_mass}"
+		origin_rpy="0 0 0"
+		origin_xyz="0.0112502 0.0950175 0"
+		ixx="${r_arm_link_02_ixx}" ixy="${r_arm_link_02_ixy}" ixz="${r_arm_link_02_ixz}" iyy="${r_arm_link_02_iyy}" iyz="${r_arm_link_02_iyz}" izz="${r_arm_link_02_izz}"
+		colvis_rpy="0 1.57 0" colvis_xyz="0.0112502 0.0950175 0"
+		radius="0.04"
+		length="${r_arm_link_02_length}"
+/>
+
+<m_joint_100
+		name="${r_arm_link_01_name}_${r_arm_link_02_name}"
+		type="revolute"
+		axis_xyz="0 1 0"
+		origin_rpy="0 0 0"
+		origin_xyz="0 0.1 0.083"
+		parent="${r_arm_link_01_name}"
+		child="${r_arm_link_02_name}" limit_e="100" limit_l="-1.5708" limit_u="0.7854" limit_v="1"
+/>
+
+<m_link_cylinder
+		name="${r_arm_link_03_name}"
+		mass="${r_arm_link_03_mass}"
+		origin_rpy="0 0 0"
+		origin_xyz="0.0015675 0.0003615 -0.1633768"
+		ixx="${r_arm_link_03_ixx}" ixy="${r_arm_link_03_ixy}" ixz="${r_arm_link_03_ixz}" iyy="${r_arm_link_03_iyy}" iyz="${r_arm_link_03_iyz}" izz="${r_arm_link_03_izz}"
+		colvis_rpy="3.14 0 0" colvis_xyz="0.0015675 0.0003615 -0.1633768"
+		radius="0.05"
+		length="${r_arm_link_03_length}"
+/>
+
+<m_joint_100
+		name="${r_arm_link_02_name}_${r_arm_link_03_name}"
+		type="revolute"
+		axis_xyz="-1 0 0"
+		origin_rpy="0 0 0"
+		origin_xyz="0 0.11 0"
+		parent="${r_arm_link_02_name}"
+		child="${r_arm_link_03_name}"
+		limit_e="100" limit_l="-1.5708" limit_u="0.3490" limit_v="1"
+/>
+
+<m_link_cylinder
+		name="${r_arm_link_04_name}"
+		mass="${r_arm_link_04_mass}"
+		origin_rpy="0 0 0"
+		origin_xyz="0.0219475 -0.008888 -0.1347982"
+		ixx="${r_arm_link_04_ixx}" ixy="${r_arm_link_04_ixy}" ixz="${r_arm_link_04_ixz}" iyy="${r_arm_link_04_iyy}" iyz="${r_arm_link_04_iyz}" izz="${r_arm_link_04_izz}"
+		colvis_rpy="1.57 0 0" colvis_xyz="0.0219475 -0.008888 -0.1347982"
+		radius="0.05"
+		length="${r_arm_link_04_length}"
+/>
+
+<m_joint_100 name="${r_arm_link_03_name}_${r_arm_link_04_name}" type="revolute" axis_xyz="0 0 1" origin_rpy="0 0 0" origin_xyz="0 0 -0.242" parent="${r_arm_link_03_name}" child="${r_arm_link_04_name}" limit_e="100" limit_l="-1.5708" limit_u="1.5708" limit_v="0"/>
+
+<m_link_cylinder name="${r_arm_link_05_name}" mass="${r_arm_link_05_mass}" origin_rpy="0 0 0" origin_xyz="0.0282566 -0.0026831 -0.1626786" ixx="${r_arm_link_05_ixx}" ixy="${r_arm_link_05_ixy}" ixz="${r_arm_link_05_ixz}" iyy="${r_arm_link_05_iyy}" iyz="${r_arm_link_05_iyz}" izz="${r_arm_link_05_izz}" colvis_rpy="0 0 0" colvis_xyz="0.0282566 -0.0026831 -0.1626786" radius="0.05" length="0.158"/>
+
+<m_joint_100 name="${r_arm_link_04_name}_${r_arm_link_05_name}" type="revolute" axis_xyz="0 -1 0" origin_rpy="0 0 0" origin_xyz="-0.0245 0.00175 -0.158" parent="${r_arm_link_04_name}" child="${r_arm_link_05_name}" limit_e="100" limit_l="0" limit_u="2.3562" limit_v="1"/>
+
+<m_link_cylinder name="${r_arm_link_06_name}" mass="${r_arm_link_06_mass}" origin_rpy="0 0 0" origin_xyz="0 -0.0027174 -0.0051051" ixx="${r_arm_link_06_ixx}" ixy="${r_arm_link_06_ixy}" ixz="${r_arm_link_06_ixz}" iyy="${r_arm_link_06_iyy}" iyz="${r_arm_link_06_iyz}" izz="${r_arm_link_06_izz}" colvis_rpy="0 0 0" colvis_xyz="0 -0.0027174 -0.0051051" radius="0.05" length="${r_arm_link_06_length}"/>
+
+<m_joint_100 name="${r_arm_link_05_name}_${r_arm_link_06_name}" type="revolute" axis_xyz="0 0 1" origin_rpy="0 0 0" origin_xyz="0.0245 -0.00175 -0.235" parent="${r_arm_link_05_name}" child="${r_arm_link_06_name}" limit_e="100" limit_l="-0.7854" limit_u="0.7854" limit_v="0"/>
+
+<!-- left_arm part-->
+<m_link_cylinder name="${l_arm_link_01_name}" mass="${l_arm_link_01_mass}" origin_rpy="0 0 0" origin_xyz="0.0002952 -0.0341703 0.076461" ixx="${l_arm_link_01_ixx}" ixy="${l_arm_link_01_ixy}" ixz="${l_arm_link_01_ixz}" iyy="${l_arm_link_01_iyy}" iyz="${l_arm_link_01_iyz}" izz="${l_arm_link_01_izz}" colvis_rpy="1.57 0 0" colvis_xyz="0.0002952 -0.0341703 0.076461" radius="0.04" length="${l_arm_link_01_length}"/>
+
+<m_joint_100 name="${waist_link_02_name}_${l_arm_link_01_name}" type="revolute" axis_xyz="0 0 -1" origin_rpy="0 0 0" origin_xyz="0 -0.125 0.217" parent="${waist_link_02_name}" child="${l_arm_link_01_name}" limit_e="100" limit_l="-1.5708" limit_u="0.5236" limit_v="1"/>
+
+<m_link_cylinder name="${l_arm_link_02_name}" mass="${l_arm_link_02_mass}" origin_rpy="0 0 0" origin_xyz="0.0112502 -0.0950175 0" ixx="${l_arm_link_02_ixx}" ixy="${l_arm_link_02_ixy}" ixz="${l_arm_link_02_ixz}" iyy="${l_arm_link_02_iyy}" iyz="${l_arm_link_02_iyz}" izz="${l_arm_link_02_izz}" colvis_rpy="0 -1.57 0" colvis_xyz="0.0112502 -0.0950175 0" radius="0.04" length="${l_arm_link_02_length}"/>
+
+<m_joint_100 name="${l_arm_link_01_name}_${l_arm_link_02_name}" type="revolute" axis_xyz="0 -1 0" origin_rpy="0 0 0" origin_xyz="0 -0.09 0.083" parent="${l_arm_link_01_name}" child="${l_arm_link_02_name}" limit_e="100" limit_l="-1.5708" limit_u="0.7854" limit_v="1"/>
+
+<m_link_cylinder name="${l_arm_link_03_name}" mass="${l_arm_link_03_mass}" origin_rpy="0 0 0" origin_xyz="0.0015675 -0.0003615 -0.1633768" ixx="${l_arm_link_03_ixx}" ixy="${l_arm_link_03_ixy}" ixz="${l_arm_link_03_ixz}" iyy="${l_arm_link_03_iyy}" iyz="${l_arm_link_03_iyz}" izz="${l_arm_link_03_izz}" colvis_rpy="0 0 0" colvis_xyz="0.0015675 -0.0003615 -0.1633768" radius="0.05" length="${l_arm_link_03_length}"/>
+
+<m_joint_100 name="${l_arm_link_02_name}_${l_arm_link_03_name}" type="revolute" axis_xyz="1 0 0" origin_rpy="0 0 0" origin_xyz="0 -0.11 0" parent="${l_arm_link_02_name}" child="${l_arm_link_03_name}" limit_e="100" limit_l="-1.5708" limit_u="0.3490" limit_v="1"/>
+
+<m_link_cylinder name="${l_arm_link_04_name}" mass="${l_arm_link_04_mass}" origin_rpy="0 0 0" origin_xyz="0.0219475 0.008888 -0.1347982" ixx="${l_arm_link_04_ixx}" ixy="${l_arm_link_04_ixy}" ixz="${l_arm_link_04_ixz}" iyy="${l_arm_link_04_iyy}" iyz="${l_arm_link_04_iyz}" izz="${l_arm_link_04_izz}" colvis_rpy="-1.57 0 0" colvis_xyz="0.0219475 0.008888 -0.1347982" radius="0.05" length="${l_arm_link_04_length}"/>
+
+<m_joint_100 name="${l_arm_link_03_name}_${l_arm_link_04_name}" type="revolute" axis_xyz="0 0 -1" origin_rpy="0 0 0" origin_xyz="0 0 -0.242" parent="${l_arm_link_03_name}" child="${l_arm_link_04_name}" limit_e="100" limit_l="-1.5708" limit_u="1.5708" limit_v="1"/>
+
+<m_link_cylinder name="${l_arm_link_05_name}" mass="${l_arm_link_05_mass}" origin_rpy="0 0 0" origin_xyz="0.0282566 0.0026831 -0.1626786" ixx="${l_arm_link_05_ixx}" ixy="${l_arm_link_05_ixy}" ixz="${l_arm_link_05_ixz}" iyy="${l_arm_link_05_iyy}" iyz="${l_arm_link_05_iyz}" izz="${l_arm_link_05_izz}" colvis_rpy="0 0 0" colvis_xyz="0.0282566 0.0026831 -0.1626786" radius="0.05" length="0.158"/>
+
+<m_joint_100 name="${l_arm_link_04_name}_${l_arm_link_05_name}" type="revolute" axis_xyz="0 -1 0" origin_rpy="0 0 0" origin_xyz="-0.0245 -0.00175 -0.158" parent="${l_arm_link_04_name}" child="${l_arm_link_05_name}" limit_e="100" limit_l="0" limit_u="2.3562" limit_v="1"/>
+
+<m_link_cylinder name="${l_arm_link_06_name}" mass="${l_arm_link_06_mass}" origin_rpy="0 0 0" origin_xyz="0 0.0027174 -0.0051051" ixx="${l_arm_link_06_ixx}" ixy="${l_arm_link_06_ixy}" ixz="${l_arm_link_06_ixz}" iyy="${l_arm_link_06_iyy}" iyz="${l_arm_link_06_iyz}" izz="${l_arm_link_06_izz}" colvis_rpy="0 0 0" colvis_xyz="0 0.0027174 -0.0051051" radius="0.05" length="${l_arm_link_06_length}"/>
+
+<m_joint_100 name="${l_arm_link_05_name}_${l_arm_link_06_name}" type="revolute" axis_xyz="0 0 -1" origin_rpy="0 0 0" origin_xyz="0.0245 0.00175 -0.235" parent="${l_arm_link_05_name}" child="${l_arm_link_06_name}" limit_e="100" limit_l="-0.7854" limit_u="0.7854" limit_v="1"/>
+
+</robot>

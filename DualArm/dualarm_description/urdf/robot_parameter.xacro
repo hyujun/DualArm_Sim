@@ -3,11 +3,9 @@
   <xacro:property name="m_pi" value="3.14159"/>
 <!--base-->
   <xacro:property name="base_link_name" value="base_link" />
-
 <!--waist-->
   <xacro:property name="waist_link_01_name" value="link_01" />
   <xacro:property name="waist_link_02_name" value="link_02" />
-
 <!--right_arm-->
   <xacro:property name="r_arm_link_01_name" value="link_03" />
   <xacro:property name="r_arm_link_02_name" value="link_04" />
@@ -15,7 +13,6 @@
   <xacro:property name="r_arm_link_04_name" value="link_06" />
   <xacro:property name="r_arm_link_05_name" value="link_07" />
   <xacro:property name="r_arm_link_06_name" value="link_08" />
-
 <!--left_arm-->
   <xacro:property name="l_arm_link_01_name" value="link_09" />
   <xacro:property name="l_arm_link_02_name" value="link_10" />

@@ -1,11 +1,7 @@
 <?xml version="1.0"?>
-<robot
-		xmlns:xacro="http://www.ros.org/wiki/xacro" name = "dual_arm" >
-
+<robot name = "dualarm" xmlns:xacro="http://www.ros.org/wiki/xacro" >
 	<xacro:include filename="$(find dualarm_description)/urdf/link_to_joint.xacro" />
-
 	<xacro:include filename="$(find dualarm_description)/urdf/robot_parameter.xacro" />
-
 	<xacro:include filename="$(find dualarm_description)/urdf/dual_arm.gazebo" />
 
 <!-- Base parts -->

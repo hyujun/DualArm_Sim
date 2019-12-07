@@ -93,6 +93,7 @@ void SerialManipulator::UpdateManipulatorParam(void)
 
     	pCoMKin->UpdateKinematicInfo( this->w[i], this->p[i], this->CoM[i], i );
     	pDyn->UpdateDynamicInfo( Iner[i], mass[i], CoM[i], i );
+
     }
 }
 

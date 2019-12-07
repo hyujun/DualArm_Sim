@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
   <xacro:macro name="m_joint_100" params="name type axis_xyz origin_rpy origin_xyz parent child limit_e limit_l limit_u limit_v">
     <joint name="${name}" type="${type}">
       <axis xyz="${axis_xyz}" />
@@ -20,7 +21,8 @@
     </transmission>
   </xacro:macro>
 
-  <xacro:macro name="m_link_cylinder" params="name origin_xyz origin_rpy colvis_xyz colvis_rpy radius length mass ixx ixy ixz iyy iyz izz">
+  <xacro:macro name="m_link_cylinder"
+               params="name origin_xyz origin_rpy col_xyz col_rpy vis_rpy vis_xyz radius length mass ixx ixy ixz iyy iyz izz mesh_file mesh_scale">
     <link name="${name}">
       <inertial>
         <mass value="${mass}" />
@@ -28,15 +30,15 @@
         <inertia ixx="${ixx}" ixy="${ixy}" ixz="${ixz}" iyy="${iyy}" iyz="${iyz}" izz="${izz}" />
       </inertial>
       <collision>
-        <origin rpy="${colvis_rpy}" xyz="${colvis_xyz}" />
+        <origin rpy="${col_rpy}" xyz="${col_xyz}" />
         <geometry>
           <cylinder radius="${radius}" length="${length}" />
         </geometry>
       </collision>
       <visual>
-        <origin rpy="${colvis_rpy}" xyz="${colvis_xyz}" />
+        <origin rpy="${vis_rpy}" xyz="${vis_xyz}" />
         <geometry>
-          <cylinder radius="${radius}" length="${length}" />
+          <mesh filename="${mesh_file}" scale="${mesh_scale}"/>
         </geometry>
       </visual>
     </link>

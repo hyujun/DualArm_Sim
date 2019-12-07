@@ -56,6 +56,8 @@ Liedynamics::Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoE
 
 	grav.resize(6);
 	grav << 0, 0, 0, 0, 0, 9.8;
+
+	Eigen::initParallel();
 }
 
 Liedynamics::~Liedynamics()
@@ -67,7 +69,6 @@ void Liedynamics::UpdateDynamicInfo( Matrix3d _Inertia, double _Mass, Vector3d _
 {
 	GeneralizedInertia(_Inertia, _Mass, this->GIner[_LinkNum]);
 	this->A[_LinkNum] = AdjointMatrix(inverse_SE3(pCoM->GetMMat(_LinkNum+1)))*pCoM->GetTwist(_LinkNum);
-	//this->GIner[_LinkNum] = AdjointMatrix(inverse_SE3(pPoEKinematics->GetM(_CoM))*pPoEKinematics->GetMMat(_LinkNum+1)).transpose()*GIner[_LinkNum]*AdjointMatrix(inverse_SE3(pPoEKinematics->GetM(_CoM))*pPoEKinematics->GetMMat(_LinkNum+1));
 }
 
 void Liedynamics::GeneralizedInertia(const Matrix3d &_Inertia, const double &_Mass, Matrix6d &GIner)

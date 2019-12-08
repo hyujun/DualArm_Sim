@@ -195,6 +195,15 @@ void PoEKinematics::AnalyticJacobian( void )
 	return;
 }
 
+void PoEKinematics::GetpInvJacobianWOOrientation(Eigen::MatrixXd & _pInvJacobian)
+{
+    MatrixXd posJacobian(3*m_NumChain, m_DoF);
+    for(int i=0; i<m_NumChain; i++)
+    {
+        //posJacobian(0, 0, )
+    }
+}
+
 void PoEKinematics::GetpinvJacobian( MatrixXd &_pinvJacobian )
 {
 	_pinvJacobian = mAnalyticJacobian.completeOrthogonalDecomposition().pseudoInverse();

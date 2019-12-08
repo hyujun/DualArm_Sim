@@ -29,7 +29,7 @@ Liedynamics::Liedynamics():isFirstRun(0)
 	this->VdotBase.conservativeResize(6*this->m_DoF);
 
 	grav.resize(6);
-	grav << 0, 0, 0, 0, 0, -9.8;
+	grav << 0, 0, 0, 0, 0, 9.8;
 }
 
 Liedynamics::Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoEKinematics &_PoEKin, HYUMotionKinematics::PoEKinematics &_CoMKin ):isFirstRun(0)
@@ -56,7 +56,7 @@ Liedynamics::Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoE
 
 	grav.resize(6);
 	grav.setZero();
-	grav << 0, 0, 0, 0, 0, -9.8;
+	grav << 0, 0, 0, 0, 0, 9.8;
 
 	Eigen::initParallel();
 }
@@ -163,7 +163,6 @@ void Liedynamics::Vdot_base( void )
 {
 	VdotBase.setZero();
 	this->VdotBase.segment(0, 6).noalias() += LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(0, 1)))*grav;
-    //this->VdotBase.head(6).noalias() += LieOperator::AdjointMatrix(pCoM->GetTMat(1, 0))*grav;
 	return;
 }
 

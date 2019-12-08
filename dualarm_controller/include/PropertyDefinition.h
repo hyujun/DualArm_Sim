@@ -7,7 +7,7 @@
  */
 
 #define ROBOT_DOF 14 /**< Number of Manipulator joint*/
-//#define _WITH_HAND_
+#define _WITH_HAND_
 
 /**
  * @brief Kinematics Infomation

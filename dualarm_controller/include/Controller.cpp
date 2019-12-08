@@ -197,20 +197,8 @@ void Controller::InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq,
 
 	//FrictionCompensator(qdot, dqdot);
 
-	G(1) = -G(1);
-	G(2) = -G(2);
-	//G(8) = -G(8);
-	G(6) = -G(6);
-	G(12) = -G(12);
-
-
 	ToqOut.setZero();
-	//ToqOut = G + FrictionTorque;
-	//ToqOut = M*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + ( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) ) + G + FrictionTorque;
-    //ToqOut = M*( dqddot + K_Hinf.cwiseProduct(( e_dev + Kd.cwiseProduct(e)) )) + G;
-    //ToqOut =  K_Hinf.cwiseProduct(( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) )) + G;
-    ToqOut =  K_Hinf.cwiseProduct(Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) + G;
-    //ToqOut =  K_Hinf.cwiseProduct(( e_dev + Kd.cwiseProduct(e)  )) ;
+    ToqOut =  K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) + G ;
 	Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
 	return;
 

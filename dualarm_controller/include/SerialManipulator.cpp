@@ -2,9 +2,9 @@
 
 SerialManipulator::SerialManipulator()
 {
-	mChainMat.resize(2,14);
-	mChainMat << 1,1,1,1,1,1,1,1,0,0,0,0,0,0,
-				1,1,0,0,0,0,0,0,1,1,1,1,1,1;
+	mChainMat.resize(2,15);
+	mChainMat << 1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,
+				1,1,0,0,0,0,0,0,0,1,1,1,1,1,1;
 
 	this->mDoF_Total = mChainMat.cols();
 	this->mChain_Total = mChainMat.rows();

@@ -113,6 +113,8 @@ public:
 
 	void GetpinvJacobian( MatrixXd &_pinvJacobian );
 
+	void GetpInvJacobianWOOrientation( MatrixXd &_pInvJacobian );
+
 	void GetScaledTransJacobian( MatrixXd &_ScaledTransJacobian );
 
 	void GetTaskVelocity( double *_qdot, VectorXd *_TaskVelocity, int &_size );

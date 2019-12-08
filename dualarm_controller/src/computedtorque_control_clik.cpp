@@ -254,12 +254,6 @@ namespace  dualarm_controller
                 ROS_INFO("Got kdl chain");
             }
 
-            jnt_to_jac_solver_.reset(new KDL::ChainJntToJacSolver(kdl_chain_));
-            jnt_to_jac_solver_2.reset(new KDL::ChainJntToJacSolver(kdl_chain2_));
-            fk_pos_solver_.reset(new KDL::ChainFkSolverPos_recursive(kdl_chain_));
-            fk_pos_solver_2.reset(new KDL::ChainFkSolverPos_recursive(kdl_chain2_));
-
-
             // ********* 5. 각종 변수 초기화 *********
 
             // 5.1 KDL Vector 초기화 (사이즈 정의 및 값 0)
@@ -272,10 +266,6 @@ namespace  dualarm_controller
 
             q_.data = Eigen::VectorXd::Zero(n_joints_);
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
-
-            q_chain[0].data = Eigen::VectorXd::Zero(8);
-            q_chain[1].data = Eigen::VectorXd::Zero(8);
-
 
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
@@ -343,14 +333,10 @@ namespace  dualarm_controller
                 q_(i) = joints_[i].getPosition();
                 qdot_(i) = joints_[i].getVelocity();
                 //torque_(i) = joints_[i].getEffort();
-                if(i >= 0 && i <= 7 )
-                {
-                    q_chain[0](i) = joints_[i].getPosition();
-                }
             }
 
-            Map<VectorXd>(q, 14) = q_.data;
-            Map<VectorXd>(qdot, 14) = qdot_.data;
+            Map<VectorXd>(q, n_joints_) = q_.data;
+            Map<VectorXd>(qdot, n_joints_) = qdot_.data;
 
             cManipulator->pKin->PrepareJacobian(q);
             cManipulator->pDyn->PrepareDynamics(q, qdot);
@@ -359,53 +345,29 @@ namespace  dualarm_controller
             cManipulator->pKin->GetAnalyticJacobian(AJac);
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
 
-            q_chain[0](0) = q_(0);
-            q_chain[0](1) = q_(1);
-            q_chain[0](2) = q_(2);
-            q_chain[0](3) = q_(3);
-            q_chain[0](4) = q_(4);
-            q_chain[0](5) = q_(5);
-            q_chain[0](6) = q_(6);
-            q_chain[0](7) = q_(7);
-
-            q_chain[1](0) = q_(0);
-            q_chain[1](1) = q_(1);
-            q_chain[1](2) = q_(8);
-            q_chain[1](3) = q_(9);
-            q_chain[1](4) = q_(10);
-            q_chain[1](5) = q_(11);
-            q_chain[1](6) = q_(12);
-            q_chain[1](7) = q_(13);
-
-            jnt_to_jac_solver_->JntToJac(q_chain[0], J_[0]);
-            jnt_to_jac_solver_2->JntToJac(q_chain[1], J_[1]);
-
-            fk_pos_solver_->JntToCart(q_chain[0], x_[0]);
-            fk_pos_solver_2->JntToCart(q_chain[1], x_[1]);
-
             xd_dot_.setZero();
 
-            if(t <= 5.0)
+            if(t <= 5.0 || ctr_obj_ == 0)
             {
-                clik_flag = 0;
-
-
                 //qd_.data.setZero();
 
-                qd_.data(0) = 0;
-                qd_.data(1) = 15.0*D2R;
-                qd_.data(2) = 10.0*D2R;
-                qd_.data(3) = -40.0*D2R;
-                qd_.data(4) = 0;
-                qd_.data(5) = 0;
-                qd_.data(6) = -50.0*D2R;
-                qd_.data(7) = 0;
-                qd_.data(8) = -qd_.data(2);
-                qd_.data(9) = qd_.data(3);
-                qd_.data(10) = qd_.data(4);
-                qd_.data(11) = qd_.data(5);
-                qd_.data(12) = qd_.data(6);
-                qd_.data(13) = qd_.data(7);
+                qd_.data(0) = -10.0*D2R;
+                qd_.data(1) = -5.0*D2R;
+
+                qd_.data(2) = 0.0*D2R;
+                qd_.data(3) = -20.0*D2R;
+                qd_.data(4) = -30.0*D2R;
+                qd_.data(5) = -10.0*D2R;
+                qd_.data(6) = -45.0*D2R;
+                qd_.data(7) = 60.0*D2R;
+                qd_.data(8) = 5.0*D2R;
+
+                qd_.data(9) = 0.0*D2R;
+                qd_.data(10) = 20.0*D2R;
+                qd_.data(11) = 30.0*D2R;
+                qd_.data(12) = -10.0*D2R;
+                qd_.data(13) = 45.0*D2R;
+                qd_.data(14) = -10.0*D2R;
 
                 qd_old_ = qd_;
 
@@ -438,16 +400,12 @@ namespace  dualarm_controller
                     }
 
 
-                    qd_.data = qd_old_.data + pInvJac * (xd_dot_ ) * dt;
+                    qd_.data = qd_old_.data + pInvJac * xd_dot_ * dt;
                     qd_old_.data = qd_.data;
 
                 }
                 else if (ctr_obj_ == 2)
                 {
-
-
-
-
                     if (ik_mode_ == 1) // Open-loop Inverse Kinematics
                     {
 
@@ -477,7 +435,7 @@ namespace  dualarm_controller
                         ex_(6) = -0.18;
                         ex_(7) = -1.1;
                         ex_(8) = -0.15;
-                        ex_(9) =0.364;
+                        ex_(9) = 0.364;
                         ex_(10) = 0.204;
                         ex_(11) = 0.326;
 
@@ -497,9 +455,6 @@ namespace  dualarm_controller
                         qd_.data = qd_old_.data + pInvJac * (xd_dot_) * dt;
                         qd_old_.data = qd_.data;
 
-                        //std::cout << qd_.data << std::endl;
-                        //ROS_ERROR_STREAM("STOP!");
-                        //ROS_ERROR("Could not find root link name");
                     }
                     else if (ik_mode_ == 2) // Closed-loop Inverse Kinematics
                     {
@@ -534,9 +489,6 @@ namespace  dualarm_controller
 
                         qd_.data = qd_old_.data + pInvJac * (xd_dot_ + K_tracking_ * ex_) * dt;
                         qd_old_.data = qd_.data;
-
-
-
                     }
 
                 }
@@ -594,25 +546,23 @@ namespace  dualarm_controller
                 {
                     printf("Joint ID:%d \t", i+1);
                     printf("Kp;%0.3lf, Kd:%0.3lf, Kinf:%0.3lf, ", Kp_.data(i), Kd_.data(i), Ki_.data(i));
-                    printf("q: %0.3lf, ", q_.data(i) * 1);
-                    printf("dq: %0.3lf, ", qd_.data(i) * 1);
-                    printf("qdot: %0.3lf, ", qdot_.data(i) * 1);
-                    printf("dqdot: %0.3lf, ", qd_dot_.data(i) * 1);
+                    printf("q: %0.3lf, ", q_.data(i) * R2D);
+                    printf("dq: %0.3lf, ", qd_.data(i) * R2D);
+                    printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
+                    printf("dqdot: %0.3lf, ", qd_dot_.data(i) * R2D);
                     printf("tau: %0.3f", torque[i]);
                     printf("\n");
                 }
+
                 printf("Forward Kinematics:\n");
                 for(int j=0; j<NumChain; j++)
                 {
                     printf("x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
                            ForwardPos[j](0), ForwardPos[j](1),ForwardPos[j](2), ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
-
                 }
-                printf("R eu:%0.3lf, ev:%0.3lf, ew:%0.3lf, ex:%0.2lf, ey:%0.2lf, ez:%0.2lf\n",ex_(0), ex_(1), ex_(2), ex_(3), ex_(4), ex_(5));
-                printf("L eu:%0.3lf, ev:%0.3lf, ew:%0.3lf, ex:%0.2lf, ey:%0.2lf, ez:%0.2lf\n",ex_(6), ex_(7), ex_(8), ex_(9), ex_(10), ex_(11));
-                //std::cout << "ForwardKin SE3\n" << cManipulator->pKin->GetForwardKinematicsSE3(NumChain) << std::endl;
+                printf("Right e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.2lf, e(y):%0.2lf, e(z):%0.2lf\n",ex_(0), ex_(1), ex_(2), ex_(3), ex_(4), ex_(5));
+                printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.2lf, e(y):%0.2lf, e(z):%0.2lf\n",ex_(6), ex_(7), ex_(8), ex_(9), ex_(10), ex_(11));
 
-                //std::cout << AJac << std::endl;
                 count = 0;
             }
             count++;
@@ -624,17 +574,16 @@ namespace  dualarm_controller
         int ctr_obj_;
         int ik_mode_;
         int event;
-        int clik_flag;
 
         //Joint handles
-        unsigned int n_joints_;                               // joint 숫자
-        std::vector<std::string> joint_names_;                // joint name ??
-        std::vector<hardware_interface::JointHandle> joints_; // ??
-        std::vector<urdf::JointConstSharedPtr> joint_urdfs_;  // ??
+        unsigned int n_joints_;
+        std::vector<std::string> joint_names_;
+        std::vector<hardware_interface::JointHandle> joints_;
+        std::vector<urdf::JointConstSharedPtr> joint_urdfs_;
 
         // kdl
-        KDL::Tree kdl_tree_;   // tree?
-        KDL::Chain kdl_chain_; // chain?
+        KDL::Tree kdl_tree_;
+        KDL::Chain kdl_chain_;
         KDL::Chain kdl_chain2_;
 
         Vector3d ForwardPos[2];
@@ -642,39 +591,20 @@ namespace  dualarm_controller
         int NumChain=2;
 
         // kdl and Eigen Jacobian
-        MatrixXd pInvJac;
-        KDL::Jacobian J_[2];
-        //KDL::Jacobian J_inv_;
-        //Eigen::Matrix<double, num_taskspace, num_taskspace> J_inv_;
-        Eigen::MatrixXd J_chain;
-        Eigen::MatrixXd J_inv_;
+        Eigen::MatrixXd pInvJac;
         Eigen::MatrixXd AJac;
-        Eigen::Matrix<double, num_taskspace, num_taskspace> J_transpose_;
-
-        // kdl solver
-        boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_; //Solver to compute the forward kinematics (position)
-        boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_2;
-        boost::scoped_ptr<KDL::ChainJntToJacSolver> jnt_to_jac_solver_; //Solver to compute the jacobian
-        boost::scoped_ptr<KDL::ChainJntToJacSolver> jnt_to_jac_solver_2;
-
 
         // Joint Space State
-        KDL::JntArray qd_, qd_dot_, qd_ddot_;
+        KDL::JntArray qd_;
+        KDL::JntArray qd_dot_;
+        KDL::JntArray qd_ddot_;
         KDL::JntArray qd_old_;
-        KDL::JntArray q_, qdot_;
+        KDL::JntArray q_;
+        KDL::JntArray qdot_;
 
-        KDL::JntArray qd_clik[2];
-        KDL::JntArray qd_dot_clik[2];
-
-        KDL::JntArray q_chain[2];
-        KDL::JntArray qd_chain[2];
-        KDL::JntArray qd_chain_old[2];
-
-        double q[14], qdot[14];
-        double dq[14] = {0.0,};
-        double dqdot[14] = {0.0,};
-        double dqddot[14] = {0.0,};
-        double torque[14] = {0.0,};
+        double q[15];
+        double qdot[15];
+        double torque[15];
 
         // Task Space State
         // ver. 01
@@ -684,9 +614,7 @@ namespace  dualarm_controller
 
         // KDL::Twist xd_dot_, xd_ddot_;
         Eigen::Matrix<double, 2*num_taskspace, 1> ex_;
-        Eigen::Matrix<double, 2*num_taskspace, 1> xd_dot_, xd_ddot_[2];
-        Eigen::Matrix<double, 2*num_taskspace, 1> xdot_;
-        Eigen::Matrix<double, num_taskspace, 1> ex_dot_, ex_int_;
+        Eigen::Matrix<double, 2*num_taskspace, 1> xd_dot_;
 
         // Input
         KDL::JntArray x_cmd_;

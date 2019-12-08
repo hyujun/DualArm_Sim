@@ -23,41 +23,41 @@ dualarm:
 
     gains:
       dualarm_joint1:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 6.4, d: 2}
       dualarm_joint2:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 22.10, d: 2}
       dualarm_joint3:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 8.55, d: 2}
       dualarm_joint4:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 8.65, d: 2}
       dualarm_joint5:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 4.25, d: 2}
       dualarm_joint6:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 4.20, d: 2}
       dualarm_joint7:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 3.20, d: 2}
       dualarm_joint8:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 1.01, d: 2}
       dualarm_joint9:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 8.55, d: 2}
       dualarm_joint10:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 8.65, d: 2}
       dualarm_joint11:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 4.25, d: 2}
       dualarm_joint12:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 4.20, d: 2}
       dualarm_joint13:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 3.20, d: 2}
       dualarm_joint14:
-        pid: {p: 20.0, i: 100.0, d: 1.0}
+        pid: {p: 10.0, i: 1.01, d: 2}
 
 
     root_link: world
     tip_link1: link_08
     tip_link2: link_14
 
-    ctr_obj: 1
+    ctr_obj: 2
 
     ik_mode: 2
 
-    clik_gain: {K_regulation: 6.0, K_tracking: 1.0}
+    clik_gain: {K_regulation: 1.0, K_tracking: 0.01}

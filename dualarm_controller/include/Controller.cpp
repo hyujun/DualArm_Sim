@@ -120,6 +120,14 @@ void Controller::SetPIDGain(double &_Kp, double &_Kd, double &_Hinf, int &_Joint
 	return;
 }
 
+void Controller::SetPIDGain(Eigen::VectorXd & _Kp, Eigen::VectorXd & _Kd, Eigen::VectorXd & _Ki)
+{
+    Kp = _Kp;
+    Kd = _Kd;
+    K_Hinf = _Ki;
+    return;
+}
+
 void Controller::GetPIDGain(double *_Kp, double *_Kd, double *_Hinf, int &_JointNum)
 {
 	_JointNum = this->m_Jnum;
@@ -129,7 +137,14 @@ void Controller::GetPIDGain(double *_Kp, double *_Kd, double *_Hinf, int &_Joint
 	return;
 }
 
-void Controller::PDController(double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, float &_dt)
+void Controller::GetPIDGain(Eigen::VectorXd & _Kp, Eigen::VectorXd & _Kd, Eigen::VectorXd & _Ki)
+{
+    _Kp = Kp;
+    _Kd = Kd;
+    _Ki = K_Hinf;
+}
+
+void Controller::PDController(double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, double &_dt)
 {
 	q = Map<VectorXd>(p_q, this->m_Jnum);
 	qdot = Map<VectorXd>(p_qdot, this->m_Jnum);
@@ -147,7 +162,7 @@ void Controller::PDController(double *p_q, double *p_qdot, double *p_dq, double 
 	return;
 }
 
-void Controller::PDGravController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, float &_dt )
+void Controller::PDGravController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, double &_dt )
 {
 	pManipulator->pDyn->G_Matrix(G);
 
@@ -163,38 +178,39 @@ void Controller::PDGravController( double *p_q, double *p_qdot, double *p_dq, do
 	FrictionCompensator(qdot, dqdot);
 
 	ToqOut.setZero();
-	//ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G;
-	ToqOut = G + FrictionTorque;
+	ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G;
+    //ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) ;
+	//ToqOut = G + FrictionTorque;
 
 	Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
 	return;
 }
 
-void Controller::InvDynController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_dqddot, double *p_Toq, double &_dt )
+void Controller::InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, double *p_Toq, double &_dt )
 {
 	pManipulator->pDyn->MG_Mat_Joint(M, G);
 
-	q = Map<VectorXd>(p_q, this->m_Jnum);
-	qdot = Map<VectorXd>(p_qdot, this->m_Jnum);
-
-	dq = Map<VectorXd>(p_dq, this->m_Jnum);
-	dqdot = Map<VectorXd>(p_dqdot, this->m_Jnum);
-	dqddot = Map<VectorXd>(p_dqddot, this->m_Jnum);
-
-	e = dq - q;
-	e_dev = dqdot - qdot;
-	e_int += e*_dt*1e-6;
+	e = _dq - _q;
+	e_dev = _dqdot - _qdot;
+	//e_int += e*1e-3;
 	//e_int_sat = tanh(e_int);
 
-	FrictionCompensator(qdot, dqdot);
+	//FrictionCompensator(qdot, dqdot);
+
+	G(1) = -G(1);
+	G(2) = -G(2);
+	//G(8) = -G(8);
+	G(6) = -G(6);
+	G(12) = -G(12);
+
 
 	ToqOut.setZero();
 	//ToqOut = G + FrictionTorque;
 	//ToqOut = M*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + ( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) ) + G + FrictionTorque;
-	//ToqOut = M.diagonal().cwiseProduct(dqddot) + Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
-    ToqOut = M*(dqddot + Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev)) + G;
-	//ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
-
+    //ToqOut = M*( dqddot + K_Hinf.cwiseProduct(( e_dev + Kd.cwiseProduct(e)) )) + G;
+    //ToqOut =  K_Hinf.cwiseProduct(( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) )) + G;
+    ToqOut =  K_Hinf.cwiseProduct(Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) + G;
+    //ToqOut =  K_Hinf.cwiseProduct(( e_dev + Kd.cwiseProduct(e)  )) ;
 	Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
 	return;
 
@@ -238,15 +254,15 @@ void Controller::CLIKTaskController( double *_q, double *_qdot, double *_dq, dou
 
 	//dqdot = ScaledTransJacobian*( edotTask + KpTask.cwiseProduct(eTask)) + (MatrixXd::Identity(6*pManipulator->GetTotalChain(),6*pManipulator->GetTotalChain()) - AnalyticJacobian*ScaledTransJacobian)*_dqdotNull;
 	dqdot = ScaledTransJacobian*( edotTask + KpTask.cwiseProduct(eTask) );
-	dq = q + dqdot*_dt*1e-6;
+	dq = q + dqdot*_dt;
 
 	e = dq - q;
 	e_dev = dqdot - qdot;
 
-	FrictionCompensator(qdot, dqdot);
+	//FrictionCompensator(qdot, dqdot);
 
 	ToqOut.setZero();
-	ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
+	ToqOut = K_Hinf.cwiseProduct(Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) + G;
 
 	Map<VectorXd>(_dq, this->m_Jnum) = dq;
 	Map<VectorXd>(_dqdot, this->m_Jnum) = dqdot;

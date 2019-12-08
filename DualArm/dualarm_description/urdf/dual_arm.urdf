@@ -17,33 +17,67 @@
   <joint name="base_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <parent link="world"/>
+    <child link="dual_arm_base_link"/>
+  </joint>
+  <link name="dual_arm_base_link"/>
+  <joint name="dual_arm_base_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="dual_arm_base_link"/>
     <child link="base_link"/>
   </joint>
   <link name="base_link">
     <inertial>
       <mass value="10.0"/>
-      <origin rpy="0 0 0" xyz="0 0 .176"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
     </inertial>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.176"/>
-      <geometry>
-        <cylinder length="0.352" radius="0.15"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.176"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/base.STL" scale="0.001 0.001 0.001"/>
       </geometry>
     </visual>
   </link>
+  <link name="link_01">
+    <inertial>
+      <mass value="11.91"/>
+      <origin rpy="0 0 0" xyz="0 0 0.352"/>
+      <inertia ixx="0.08385456343" ixy="-0.00013584154" ixz="-0.00062578735" iyy="0.07096937134" iyz="-0.01543280798" izz="0.05306201396"/>
+    </inertial>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.352"/>
+      <geometry>
+        <mesh filename="package://dualarm_description/meshes/dualarm/waist_1.STL" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </visual>
+  </link>
   <joint name="dualarm_joint1" type="revolute">
     <axis xyz="0 0 1"/>
-    <limit effort="100" lower="-1.5708" upper="1.5708" velocity="1"/>
+    <limit effort="100" lower="-1.570795" upper="1.570795" velocity="1"/>
     <origin rpy="0 0 0" xyz="0 0 0.352"/>
     <parent link="base_link"/>
     <child link="link_01"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint1">
     <type>transmission_interface/SimpleTransmission</type>
@@ -52,34 +86,39 @@
     </joint>
     <actuator name="motor_dualarm_joint1">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link name="link_01">
+  <link name="link_02">
     <inertial>
-      <mass value="11.91"/>
-      <origin rpy="0 0 0" xyz="0 0 0.1110776"/>
-      <inertia ixx="0.08385456343" ixy="-0.00013584154" ixz="-0.00062578735" iyy="0.07096937134" iyz="-0.01543280798" izz="0.05306201396"/>
+      <mass value="9.901"/>
+      <origin rpy="0 0 0" xyz="0 0 0.148"/>
+      <inertia ixx="0.1408" ixy="0.0" ixz="0.0007" iyy="0.05" iyz="0.003643" izz="0.108"/>
     </inertial>
-    <collision>
-      <origin rpy="-1.57 0 0" xyz="0 0 0.1110776"/>
-      <geometry>
-        <cylinder length="0.148" radius="0.06"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.150"/>
+      <origin rpy="0 0 0" xyz="0 0 0.148"/>
       <geometry>
-        <mesh filename="package://dualarm_description/meshes/dualarm/waist_1.STL" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://dualarm_description/meshes/dualarm/waist_2.STL" scale="0.001 0.001 0.001"/>
       </geometry>
     </visual>
   </link>
   <joint name="dualarm_joint2" type="revolute">
-    <axis xyz="0 -1 0"/>
-    <limit effort="100" lower="-0.2618" upper="1.22173" velocity="1"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="100" lower="1.570795" upper="-0.39269875" velocity="1"/>
     <origin rpy="0 0 0" xyz="0 0 0.148"/>
     <parent link="link_01"/>
     <child link="link_02"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint2">
     <type>transmission_interface/SimpleTransmission</type>
@@ -88,43 +127,27 @@
     </joint>
     <actuator name="motor_dualarm_joint2">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
-  <link name="link_02">
-    <inertial>
-      <mass value="9.901"/>
-      <origin rpy="0 0 0" xyz="0 0 0.1436171"/>
-      <inertia ixx="0.1408" ixy="0.0" ixz="0.0007" iyy="0.05" iyz="0.003643" izz="0.108"/>
-    </inertial>
-    <collision>
-      <origin rpy="-1.57 0 0" xyz="0 0 0.1436171"/>
-      <geometry>
-        <cylinder length="0.217" radius="0.2"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://dualarm_description/meshes/dualarm/waist_2.STL" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </visual>
-  </link>
-  <!-- right_arm part -->
   <link name="link_03">
     <inertial>
       <mass value="3.35"/>
-      <origin rpy="0 0 0" xyz="0.0002952 0.0341703 0.076461"/>
+      <origin rpy="0 0 0" xyz="0 -0.125 0.217"/>
       <inertia ixx="0.00915519492" ixy="0.0001638987" ixz="-5.218213e-05" iyy="0.00765665439" iyz="-0.00098169247" izz="0.0060237451"/>
     </inertial>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.0002952 0.0341703 0.076461"/>
-      <geometry>
-        <cylinder length="0.083" radius="0.04"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0.08 0.083"/>
+      <origin rpy="0 0 0" xyz="0 -0.125 0.217"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/r_arm1.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -132,10 +155,11 @@
   </link>
   <joint name="dualarm_joint3" type="revolute">
     <axis xyz="0 0 -1"/>
-    <limit effort="100" lower="-1.5708" upper="0.5236" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0 0.125 0.217"/>
+    <limit effort="100" lower="-1.570795" upper="0.7853975" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0 -0.125 0.217"/>
     <parent link="link_02"/>
     <child link="link_03"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint3">
     <type>transmission_interface/SimpleTransmission</type>
@@ -144,23 +168,27 @@
     </joint>
     <actuator name="motor_dualarm_joint3">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_04">
     <inertial>
       <mass value="3.51"/>
-      <origin rpy="0 0 0" xyz="0.0112502 0.0950175 0"/>
+      <origin rpy="0 0 0" xyz="0 -0.09 0.083"/>
       <inertia ixx="0.01183318294" ixy="0.00024502838" ixz="-0.00012106848" iyy="0.00596380191" iyz="-8.120478e-05" izz="0.0126743791"/>
     </inertial>
-    <collision>
-      <origin rpy="0 1.57 0" xyz="0.0112502 0.0950175 0"/>
-      <geometry>
-        <cylinder length="0.09" radius="0.04"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0.11 0"/>
+      <origin rpy="0 0 0" xyz="0 -0.09 0.083"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/r_arm2.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -168,10 +196,11 @@
   </link>
   <joint name="dualarm_joint4" type="revolute">
     <axis xyz="0 1 0"/>
-    <limit effort="100" lower="-1.5708" upper="0.7854" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0 0.1 0.083"/>
+    <limit effort="100" lower="-0.7853975" upper="1.570795" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0 -0.09 0.083"/>
     <parent link="link_03"/>
     <child link="link_04"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint4">
     <type>transmission_interface/SimpleTransmission</type>
@@ -180,23 +209,27 @@
     </joint>
     <actuator name="motor_dualarm_joint4">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_05">
     <inertial>
       <mass value="2.59"/>
-      <origin rpy="0 0 0" xyz="0.0015675 0.0003615 -0.1633768"/>
+      <origin rpy="0 0 0" xyz="0 -0.11 0"/>
       <inertia ixx="0.01434915807" ixy="0.0" ixz="0.0" iyy="0.01595751714" iyz="-0.00112640495" izz="0.00381111816"/>
     </inertial>
-    <collision>
-      <origin rpy="3.14 0 0" xyz="0.0015675 0.0003615 -0.1633768"/>
-      <geometry>
-        <cylinder length="0.242" radius="0.05"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 -0.242"/>
+      <origin rpy="0 0 0" xyz="0 -0.11 0"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/r_arm3.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -204,10 +237,11 @@
   </link>
   <joint name="dualarm_joint5" type="revolute">
     <axis xyz="1 0 0"/>
-    <limit effort="100" lower="-1.5708" upper="0.349" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0 0.11 0"/>
+    <limit effort="100" lower="-1.570795" upper="0.7853975" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0 -0.11 0"/>
     <parent link="link_04"/>
     <child link="link_05"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint5">
     <type>transmission_interface/SimpleTransmission</type>
@@ -216,23 +250,27 @@
     </joint>
     <actuator name="motor_dualarm_joint5">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_06">
     <inertial>
       <mass value="2.49"/>
-      <origin rpy="0 0 0" xyz="0.0219475 -0.008888 -0.1347982"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.158"/>
       <inertia ixx="0.01230578809" ixy="0.0" ixz="0.00132629535" iyy="0.01094988937" iyz="-0.00032261465" izz="0.0036752981"/>
     </inertial>
-    <collision>
-      <origin rpy="1.57 0 0" xyz="0.0219475 -0.008888 -0.1347982"/>
-      <geometry>
-        <cylinder length="0.158" radius="0.05"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="-0.00245 0.00175 -0.158"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.158"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/r_arm4.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -240,10 +278,11 @@
   </link>
   <joint name="dualarm_joint6" type="revolute">
     <axis xyz="0 0 1"/>
-    <limit effort="100" lower="-1.5708" upper="1.5708" velocity="0"/>
-    <origin rpy="0 0 0" xyz="0 0 -0.242"/>
+    <limit effort="100" lower="-1.570795" upper="1.570795" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0 0 -0.158"/>
     <parent link="link_05"/>
     <child link="link_06"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint6">
     <type>transmission_interface/SimpleTransmission</type>
@@ -252,23 +291,27 @@
     </joint>
     <actuator name="motor_dualarm_joint6">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_07">
     <inertial>
       <mass value="1.86"/>
-      <origin rpy="0 0 0" xyz="0.0282566 -0.0026831 -0.1626786"/>
+      <origin rpy="0 0 0" xyz="-0.0245 0 -0.158"/>
       <inertia ixx="0.00492717075" ixy="0.0" ixz="-0.00035330192" iyy="0.00407685409" iyz="0.00029876964" izz="0.00225029268"/>
     </inertial>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.0282566 -0.0026831 -0.1626786"/>
-      <geometry>
-        <cylinder length="0.235" radius="0.05"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="-0.0245 0 -0.158"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/r_arm5.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -276,10 +319,11 @@
   </link>
   <joint name="dualarm_joint7" type="revolute">
     <axis xyz="0 1 0"/>
-    <limit effort="100" lower="0" upper="2.3562" velocity="1"/>
-    <origin rpy="0 0 0" xyz="-0.0245 0.00175 -0.158"/>
+    <limit effort="100" lower="-0.39269875" upper="1.570795" velocity="1"/>
+    <origin rpy="0 0 0" xyz="-0.0245 0 -0.158"/>
     <parent link="link_06"/>
     <child link="link_07"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint7">
     <type>transmission_interface/SimpleTransmission</type>
@@ -288,23 +332,27 @@
     </joint>
     <actuator name="motor_dualarm_joint7">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_08">
     <inertial>
       <mass value="2.676"/>
-      <origin rpy="0 0 0" xyz="0 -0.0027174 -0.0051051"/>
+      <origin rpy="0 0 0" xyz="0.0245 0 -0.155"/>
       <inertia ixx="5e-05" ixy="0.0" ixz="0.0" iyy="5e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 -0.0027174 -0.0051051"/>
-      <geometry>
-        <cylinder length="0.01" radius="0.05"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="3.14 0 0" xyz="-0.032 0.034 0.085"/>
+      <origin rpy="0 0 0" xyz="0.0245 0 -0.155"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/link6.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -312,10 +360,11 @@
   </link>
   <joint name="dualarm_joint8" type="revolute">
     <axis xyz="0 0 1"/>
-    <limit effort="100" lower="-1.5708" upper="1.5708" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0.0245 -0.00175 -0.235"/>
+    <limit effort="100" lower="-0.7853975" upper="0.7853975" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0.0245 0 -0.155"/>
     <parent link="link_07"/>
     <child link="link_08"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint8">
     <type>transmission_interface/SimpleTransmission</type>
@@ -324,23 +373,27 @@
     </joint>
     <actuator name="motor_dualarm_joint8">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_09">
     <inertial>
       <mass value="3.35"/>
-      <origin rpy="0 0 0" xyz="0.0002952 -0.0341703 0.076461"/>
+      <origin rpy="0 0 0" xyz="0 0.125 0.217"/>
       <inertia ixx="0.0057" ixy="0.0" ixz="0.0" iyy="0.0055" iyz="-0.0005" izz="0.0044"/>
     </inertial>
-    <collision>
-      <origin rpy="1.57 0 0" xyz="0.0002952 -0.0341703 0.076461"/>
-      <geometry>
-        <cylinder length="0.083" radius="0.04"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 -0.075 0.083"/>
+      <origin rpy="0 0 0" xyz="0 0.125 0.217"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/l_arm1.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -348,10 +401,11 @@
   </link>
   <joint name="dualarm_joint9" type="revolute">
     <axis xyz="0 0 -1"/>
-    <limit effort="100" lower="-1.5708" upper="0.5236" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0 -0.125 0.217"/>
+    <limit effort="100" lower="-0.7853975" upper="1.570795" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0 0.125 0.217"/>
     <parent link="link_02"/>
     <child link="link_09"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint9">
     <type>transmission_interface/SimpleTransmission</type>
@@ -360,23 +414,27 @@
     </joint>
     <actuator name="motor_dualarm_joint9">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_10">
     <inertial>
       <mass value="3.51"/>
-      <origin rpy="0 0 0" xyz="0.0112502 -0.0950175 0"/>
+      <origin rpy="0 0 0" xyz="0 0.09 0.083"/>
       <inertia ixx="0.01162556171" ixy="-7.354231e-05" ixz="0.00240453461" iyy="0.00634066394" iyz="0.81708848413" izz="0.0130982826"/>
     </inertial>
-    <collision>
-      <origin rpy="0 -1.57 0" xyz="0.0112502 -0.0950175 0"/>
-      <geometry>
-        <cylinder length="0.09" radius="0.04"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 -0.11 -0.00"/>
+      <origin rpy="0 0 0" xyz="0 0.09 0.083"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/l_arm2.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -384,10 +442,11 @@
   </link>
   <joint name="dualarm_joint10" type="revolute">
     <axis xyz="0 -1 0"/>
-    <limit effort="100" lower="-1.5708" upper="0.7854" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0 -0.09 0.083"/>
+    <limit effort="100" lower="-1.570795" upper="0.7853975" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0 0.09 0.083"/>
     <parent link="link_09"/>
     <child link="link_10"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint10">
     <type>transmission_interface/SimpleTransmission</type>
@@ -396,23 +455,27 @@
     </joint>
     <actuator name="motor_dualarm_joint10">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_11">
     <inertial>
       <mass value="2.59"/>
-      <origin rpy="0 0 0" xyz="0.0015675 -0.0003615 -0.1633768"/>
+      <origin rpy="0 0 0" xyz="0 0.11 0"/>
       <inertia ixx="0.01434915775" ixy="0.0" ixz="-0.00111864019" iyy="0.01595929297" iyz="0.0007" izz="0.00381289368"/>
     </inertial>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.0015675 -0.0003615 -0.1633768"/>
-      <geometry>
-        <cylinder length="0.242" radius="0.05"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 -0.242"/>
+      <origin rpy="0 0 0" xyz="0 0.11 0"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/l_arm3.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -420,10 +483,11 @@
   </link>
   <joint name="dualarm_joint11" type="revolute">
     <axis xyz="1 0 0"/>
-    <limit effort="100" lower="-1.5708" upper="0.349" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0 -0.11 0"/>
+    <limit effort="100" lower="-0.7853975" upper="1.570795" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0 0.11 0"/>
     <parent link="link_10"/>
     <child link="link_11"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint11">
     <type>transmission_interface/SimpleTransmission</type>
@@ -432,23 +496,27 @@
     </joint>
     <actuator name="motor_dualarm_joint11">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_12">
     <inertial>
       <mass value="2.49"/>
-      <origin rpy="0 0 0" xyz="0.0219475 0.008888 -0.1347982"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.158"/>
       <inertia ixx="0.01236605679" ixy="0.0" ixz="0.00131406231" iyy="0.01100446334" iyz="0.0" izz="0.0036703831"/>
     </inertial>
-    <collision>
-      <origin rpy="-1.57 0 0" xyz="0.0219475 0.008888 -0.1347982"/>
-      <geometry>
-        <cylinder length="0.158" radius="0.05"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="-0.0245 -0.00175 -0.158"/>
+      <origin rpy="0 0 0" xyz="0 0 -0.158"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/l_arm4.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -456,10 +524,11 @@
   </link>
   <joint name="dualarm_joint12" type="revolute">
     <axis xyz="0 0 1"/>
-    <limit effort="100" lower="-1.5708" upper="1.5708" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0 0 -0.242"/>
+    <limit effort="100" lower="-1.570795" upper="1.570795" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0 0 -0.158"/>
     <parent link="link_11"/>
     <child link="link_12"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint12">
     <type>transmission_interface/SimpleTransmission</type>
@@ -468,23 +537,27 @@
     </joint>
     <actuator name="motor_dualarm_joint12">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_13">
     <inertial>
       <mass value="1.86"/>
-      <origin rpy="0 0 0" xyz="0.0282566 0.0026831 -0.1626786"/>
+      <origin rpy="0 0 0" xyz="-0.0245 0 -0.158"/>
       <inertia ixx="0.0049321265" ixy="8.082944e-05" ixz="-0.00035330192" iyy="0.00407685409" iyz="-0.00035589762" izz="0.00225524843"/>
     </inertial>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.0282566 0.0026831 -0.1626786"/>
-      <geometry>
-        <cylinder length="0.158" radius="0.05"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="-0.0245 0 -0.158"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/l_arm5.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -492,10 +565,11 @@
   </link>
   <joint name="dualarm_joint13" type="revolute">
     <axis xyz="0 -1 0"/>
-    <limit effort="100" lower="0" upper="2.3562" velocity="1"/>
-    <origin rpy="0 0 0" xyz="-0.0245 -0.00175 -0.158"/>
+    <limit effort="100" lower="-1.570795" upper="0.7853975" velocity="1"/>
+    <origin rpy="0 0 0" xyz="-0.0245 0 -0.158"/>
     <parent link="link_12"/>
     <child link="link_13"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint13">
     <type>transmission_interface/SimpleTransmission</type>
@@ -504,23 +578,27 @@
     </joint>
     <actuator name="motor_dualarm_joint13">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
   <link name="link_14">
     <inertial>
       <mass value="0.0646"/>
-      <origin rpy="0 0 0" xyz="0 0.0027174 -0.0051051"/>
+      <origin rpy="0 0 0" xyz="0.0245 0 -0.155"/>
       <inertia ixx="5e-05" ixy="0.0" ixz="0.0" iyy="5e-05" iyz="0.0" izz="5e-05"/>
     </inertial>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0.0027174 -0.0051051"/>
-      <geometry>
-        <cylinder length="0.01" radius="0.05"/>
-      </geometry>
-    </collision>
+    <!--<collision>
+        <origin
+                rpy="${vis_rpy}"
+                xyz="${vis_xyz}" />
+        <geometry>
+          <mesh
+                  filename="${mesh_file}"
+                  scale="${mesh_scale}"/>
+        </geometry>
+      </collision>-->
     <visual>
-      <origin rpy="3.14 0 0" xyz="-0.032 0.034 0.085"/>
+      <origin rpy="0 0 0" xyz="0.0245 0 -0.155"/>
       <geometry>
         <mesh filename="package://dualarm_description/meshes/dualarm/link6.STL" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -528,10 +606,11 @@
   </link>
   <joint name="dualarm_joint14" type="revolute">
     <axis xyz="0 0 1"/>
-    <limit effort="100" lower="-0.7854" upper="0.7854" velocity="1"/>
-    <origin rpy="0 0 0" xyz="0.0245 0.00175 -0.235"/>
+    <limit effort="100" lower="-0.7853975" upper="0.7853975" velocity="1"/>
+    <origin rpy="0 0 0" xyz="0.0245 0 -0.155"/>
     <parent link="link_13"/>
     <child link="link_14"/>
+    <dynamics damping="0" friction="0.1"/>
   </joint>
   <transmission name="trans_dualarm_joint14">
     <type>transmission_interface/SimpleTransmission</type>
@@ -540,7 +619,7 @@
     </joint>
     <actuator name="motor_dualarm_joint14">
       <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
-      <mechanicalReduction>101</mechanicalReduction>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
 </robot>

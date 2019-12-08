@@ -29,7 +29,7 @@ Liedynamics::Liedynamics():isFirstRun(0)
 	this->VdotBase.conservativeResize(6*this->m_DoF);
 
 	grav.resize(6);
-	grav << 0, 0, 0, 0, 0, 9.8;
+	grav << 0, 0, 0, 0, 0, -9.8;
 }
 
 Liedynamics::Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoEKinematics &_PoEKin, HYUMotionKinematics::PoEKinematics &_CoMKin ):isFirstRun(0)
@@ -55,7 +55,8 @@ Liedynamics::Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoE
 	this->VdotBase.conservativeResize(6*this->m_DoF);
 
 	grav.resize(6);
-	grav << 0, 0, 0, 0, 0, 9.8;
+	grav.setZero();
+	grav << 0, 0, 0, 0, 0, -9.8;
 
 	Eigen::initParallel();
 }
@@ -101,7 +102,7 @@ void Liedynamics::Gamma_Link( void )
 	return;
 }
 
-void Liedynamics::L_link( void )
+void Liedynamics::L_link( )
 {
 	this->L_mat.setIdentity();
 	for(int k=0; k < this->m_NumChain; k++)
@@ -121,8 +122,6 @@ void Liedynamics::L_link( void )
 			}
 		}
 	}
-
-	return;
 }
 
 void Liedynamics::A_Link( void )
@@ -163,7 +162,8 @@ void Liedynamics::ad_V_Link( VectorXd _qdot )
 void Liedynamics::Vdot_base( void )
 {
 	VdotBase.setZero();
-	this->VdotBase.head(6).noalias() += LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(0, 1)))*grav;
+	this->VdotBase.segment(0, 6).noalias() += LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(0, 1)))*grav;
+    //this->VdotBase.head(6).noalias() += LieOperator::AdjointMatrix(pCoM->GetTMat(1, 0))*grav;
 	return;
 }
 

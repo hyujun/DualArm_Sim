@@ -61,7 +61,7 @@ void PoEKinematics::UpdateKinematicInfo( Vector3d _w, Vector3d _p, Vector3d _l, 
 
 Vector3d PoEKinematics::GetV( const Vector3d &_w, const Vector3d &_p )
 {
-	return (-SkewMatrix(_w))*_p;
+	return -SkewMatrix(_w)*_p;
 }
 
 SE3 PoEKinematics::GetM( const Vector3d &_link )
@@ -275,7 +275,8 @@ void PoEKinematics::GetForwardKinematics( Vector3d *_Position, Vector3d *_Orient
 
 SE3 PoEKinematics::GetForwardKinematicsSE3( const int &_EndPosition ) const
 {
-	return T[0][JointEndNum[_EndPosition]];
+	//return T[0][JointEndNum[_EndPosition]];
+    return T[0][_EndPosition];
 }
 
 void PoEKinematics::GetAngleAxis( Vector3d *_Axis, double *_Angle, int &_NumChain )

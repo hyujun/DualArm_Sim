@@ -1,0 +1,53 @@
+digraph G {
+node [shape=box];
+"world" [label="world"];
+"dual_arm_base_link" [label="dual_arm_base_link"];
+"base_link" [label="base_link"];
+"link_01" [label="link_01"];
+"link_02" [label="link_02"];
+"link_03" [label="link_03"];
+"link_04" [label="link_04"];
+"link_05" [label="link_05"];
+"link_06" [label="link_06"];
+"link_07" [label="link_07"];
+"link_08" [label="link_08"];
+"link_09" [label="link_09"];
+"link_10" [label="link_10"];
+"link_11" [label="link_11"];
+"link_12" [label="link_12"];
+"link_13" [label="link_13"];
+"link_14" [label="link_14"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"world" -> "base_joint" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"base_joint" -> "dual_arm_base_link"
+"dual_arm_base_link" -> "dual_arm_base_joint" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"dual_arm_base_joint" -> "base_link"
+"base_link" -> "dualarm_joint1" [label="xyz: 0 0 0.352 \nrpy: 0 -0 0"]
+"dualarm_joint1" -> "link_01"
+"link_01" -> "dualarm_joint2" [label="xyz: 0 0 0.148 \nrpy: 0 -0 0"]
+"dualarm_joint2" -> "link_02"
+"link_02" -> "dualarm_joint3" [label="xyz: 0 -0.125 0.217 \nrpy: 0 -0 0"]
+"dualarm_joint3" -> "link_03"
+"link_03" -> "dualarm_joint4" [label="xyz: 0 -0.09 0.083 \nrpy: 0 -0 0"]
+"dualarm_joint4" -> "link_04"
+"link_04" -> "dualarm_joint5" [label="xyz: 0 -0.11 0 \nrpy: 0 -0 0"]
+"dualarm_joint5" -> "link_05"
+"link_05" -> "dualarm_joint6" [label="xyz: 0 0 -0.158 \nrpy: 0 -0 0"]
+"dualarm_joint6" -> "link_06"
+"link_06" -> "dualarm_joint7" [label="xyz: -0.0245 0 -0.158 \nrpy: 0 -0 0"]
+"dualarm_joint7" -> "link_07"
+"link_07" -> "dualarm_joint8" [label="xyz: 0.0245 0 -0.155 \nrpy: 0 -0 0"]
+"dualarm_joint8" -> "link_08"
+"link_02" -> "dualarm_joint9" [label="xyz: 0 0.125 0.217 \nrpy: 0 -0 0"]
+"dualarm_joint9" -> "link_09"
+"link_09" -> "dualarm_joint10" [label="xyz: 0 0.09 0.083 \nrpy: 0 -0 0"]
+"dualarm_joint10" -> "link_10"
+"link_10" -> "dualarm_joint11" [label="xyz: 0 0.11 0 \nrpy: 0 -0 0"]
+"dualarm_joint11" -> "link_11"
+"link_11" -> "dualarm_joint12" [label="xyz: 0 0 -0.158 \nrpy: 0 -0 0"]
+"dualarm_joint12" -> "link_12"
+"link_12" -> "dualarm_joint13" [label="xyz: -0.0245 0 -0.158 \nrpy: 0 -0 0"]
+"dualarm_joint13" -> "link_13"
+"link_13" -> "dualarm_joint14" [label="xyz: 0.0245 0 -0.155 \nrpy: 0 -0 0"]
+"dualarm_joint14" -> "link_14"
+}

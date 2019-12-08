@@ -19,6 +19,7 @@ LieOperator::~LieOperator() {
 
 SE3 LieOperator::inverse_SE3( const SE3 &_SE3 )
 {
+    SE3Res.setZero();
 	SE3Res << _SE3.block<3, 3>(0, 0).transpose(), -_SE3.block<3, 3>(0, 0).transpose()*_SE3.block<3, 1>(0, 3),
 			0, 0, 0, 1;
 	return SE3Res;

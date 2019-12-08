@@ -54,7 +54,9 @@ public:
 	 * @param[in] JointNum number of joint
 	 */
 	void SetPIDGain(double &_Kp, double &_Kd, double &_Ki, int &_JointNum);
+	void SetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki);
 	void GetPIDGain(double *_Kp, double *_Kd, double *_Ki, int &_JointNum);
+	void GetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki);
 	/**
 	 * @brief simple pd controller
 	 * @param[in] q current joint position
@@ -63,9 +65,9 @@ public:
 	 * @param[in] dq_dot desired joint velocity
 	 * @param[in] toq joint input torque as control input
 	 */
-	void PDController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, float &_dt );
-	void PDGravController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, float &_dt );
-	void InvDynController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_dqddot, double *p_Toq, double &_dt );
+	void PDController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, double &_dt );
+	void PDGravController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, double &_dt );
+	void InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, double *p_Toq, double &_dt );
 
 	void CLIKTaskController( double *_q, double *_qdot, double *_dq, double *_dqdot, const VectorXd *_dx, const VectorXd *_dxdot, const VectorXd &_dqdotNull, double *p_Toq, double &_dt );
 

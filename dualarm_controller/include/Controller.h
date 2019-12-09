@@ -103,6 +103,7 @@ private:
 	Eigen::VectorXd GainWeightFactor;
 
 	Eigen::MatrixXd ScaledTransJacobian;
+	Eigen::MatrixXd pInvJacobian;
 	Eigen::MatrixXd BodyJacobian;
 	Eigen::MatrixXd AnalyticJacobian;
 

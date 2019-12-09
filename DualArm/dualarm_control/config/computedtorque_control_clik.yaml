@@ -39,7 +39,7 @@ dualarm:
       dualarm_joint7:
         pid: {p: 10.0, i: 13.20, d: 2}
       dualarm_joint8:
-        pid: {p: 10.0, i: 19.01, d: 2}
+        pid: {p: 10.0, i: 20.01, d: 2}
       dualarm_joint9:
         pid: {p: 10.0, i: 12.55, d: 2}
       dualarm_joint10:
@@ -60,8 +60,8 @@ dualarm:
     tip_link1: link_R_hand
     tip_link2: link_L_hand
 
-    ctr_obj: 0
+    ctr_obj: 2
 
-    ik_mode: 2
+    ik_mode: 1
 
-    clik_gain: {K_regulation: 1.0, K_tracking: 0.01}
+    clik_gain: {K_regulation: 1.0, K_tracking: 0.00005}

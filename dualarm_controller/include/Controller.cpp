@@ -212,6 +212,7 @@ void Controller::CLIKTaskController( double *_q, double *_qdot, double *_dq, dou
 	qdot = Map<VectorXd>(_qdot, this->m_Jnum);
 
 	pManipulator->pKin->GetScaledTransJacobian(this->ScaledTransJacobian);
+	pManipulator->pKin->GetpinvJacobian(this->pInvJacobian);
 	pManipulator->pKin->GetBodyJacobian(this->BodyJacobian);
 
 	eTask.setZero();
@@ -230,17 +231,13 @@ void Controller::CLIKTaskController( double *_q, double *_qdot, double *_dq, dou
 		eTask.segment(6*i,3) = omega*theta;
 		eTask.segment(6*i+3,3) = eSE3.block(0,3,3,1);
 
-		LieOperator::invExpdExpInvMapMatrix(omega, theta, dexp);
-		edotTmp.block(6*i,6*i,6,6).noalias() += -dexp*LieOperator::AdjointMatrix(LieOperator::inverse_SE3(eSE3));
+		edotTask.segment(6*i, 6) = _dxdot[i];
 	}
-
-	edotTask.noalias() += edotTmp*BodyJacobian*qdot;
 
 	dq.setZero();
 	dqdot.setZero();
 	dqddot.setZero();
 
-	//dqdot = ScaledTransJacobian*( edotTask + KpTask.cwiseProduct(eTask)) + (MatrixXd::Identity(6*pManipulator->GetTotalChain(),6*pManipulator->GetTotalChain()) - AnalyticJacobian*ScaledTransJacobian)*_dqdotNull;
 	dqdot = ScaledTransJacobian*( edotTask + KpTask.cwiseProduct(eTask) );
 	dq = q + dqdot*_dt;
 

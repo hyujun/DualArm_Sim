@@ -260,8 +260,8 @@
 			parent="${r_arm_link_05_name}"
 			child="${r_arm_link_06_name}"
 			limit_effort="100"
-			limit_lower="-${M_PI/2}"
-			limit_upper="${M_PI/2}"
+			limit_lower="-${M_PI}"
+			limit_upper="${M_PI}"
 			limit_v="1"
 	/>
 	<m_link_cylinder

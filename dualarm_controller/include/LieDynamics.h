@@ -20,6 +20,8 @@ using namespace std;
 
 typedef Matrix<double, 6, 6> Matrix6d;
 
+#include <omp.h>
+
 /**
  * @brief Newton-Euler Dynamics expressed in Lie Group
  * @version 1.1.0

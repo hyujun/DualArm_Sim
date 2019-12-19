@@ -69,7 +69,7 @@ Liedynamics::~Liedynamics()
 void Liedynamics::UpdateDynamicInfo( Matrix3d _Inertia, double _Mass, Vector3d _CoM, int _LinkNum )
 {
 	GeneralizedInertia(_Inertia, _Mass, this->GIner[_LinkNum]);
-	this->A[_LinkNum] = AdjointMatrix(inverse_SE3(pCoM->GetMMat(_LinkNum+1)))*pCoM->GetTwist(_LinkNum);
+	this->A[_LinkNum] = AdjointMatrix(inverse_SE3(pCoM->GetMMat(_LinkNum)))*pCoM->GetTwist(_LinkNum);
 }
 
 void Liedynamics::GeneralizedInertia(const Matrix3d &_Inertia, const double &_Mass, Matrix6d &GIner)

@@ -60,7 +60,7 @@ dualarm:
     tip_link1: link_R_hand
     tip_link2: link_L_hand
 
-    ctr_obj: 2
+    ctr_obj: 0
 
     ik_mode: 1
 

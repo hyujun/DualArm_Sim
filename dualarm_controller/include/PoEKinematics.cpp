@@ -48,11 +48,7 @@ PoEKinematics::~PoEKinematics()
 
 void PoEKinematics::UpdateKinematicInfo( Vector3d _w, Vector3d _p, Vector3d _l, int _link_num )
 {
-	if(_link_num == 0)
-	{
-		M[_link_num] = GetM(_p);
-	}
-	M[_link_num+1] = GetM(_l);
+	M[_link_num] = GetM(_l);
 
 	v_se3[_link_num] = GetTwist(_w, GetV(_w, _p));
 
@@ -73,8 +69,8 @@ SE3 PoEKinematics::GetM( const Vector3d &_link )
 
 se3 PoEKinematics::GetTwist( const Vector3d &_w, const Vector3d &_v )
 {
-	se3_Tmp.head(3) = _w;
-	se3_Tmp.tail(3) = _v;
+	se3_Tmp.segment(0,3) = _w;
+	se3_Tmp.segment(3,3) = _v;
 
 	return se3_Tmp;
 }
@@ -104,7 +100,7 @@ void PoEKinematics::HTransMatrix( const double *_q )
 				TCounter++;
 
 				T[0][j+1].setZero();
-				T[0][j+1].noalias() += SE3_Tmp*M[j+1];
+				T[0][j+1].noalias() += SE3_Tmp*M[j];
 			}
 		}
 

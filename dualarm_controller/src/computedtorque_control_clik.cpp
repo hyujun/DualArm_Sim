@@ -331,6 +331,8 @@ namespace  dualarm_controller
             cManipulator->pKin->PrepareJacobian(q);
             cManipulator->pDyn->PrepareDynamics(q, qdot);
 
+            cManipulator->pDyn->G_Matrix(G);
+
             cManipulator->pKin->GetpinvJacobian(pInvJac);
             cManipulator->pKin->GetAnalyticJacobian(AJac);
             cManipulator->pKin->GetScaledTransJacobian(ScaledTransJac);
@@ -341,7 +343,7 @@ namespace  dualarm_controller
 
             InitTime=5.0;
 
-            if(t <= InitTime)
+            if(t <= InitTime || ctr_obj_ == 0)
             {
                 //qd_.data.setZero();
 
@@ -364,7 +366,6 @@ namespace  dualarm_controller
                 qd_.data(14) = -0.0*D2R;
 
                 qd_old_ = qd_;
-
 
             } else{
                 if (ctr_obj_ == 1)
@@ -567,6 +568,7 @@ namespace  dualarm_controller
                 }
             }
 
+
             Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
 
             for (int i = 0; i < n_joints_; i++)
@@ -623,7 +625,7 @@ namespace  dualarm_controller
                     printf("dq: %0.3lf, ", qd_.data(i) * R2D);
                     printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
                     printf("dqdot: %0.3lf, ", qd_dot_.data(i) * R2D);
-                    printf("tau: %0.3f", torque[i]);
+                    printf("tau: %0.3f, %0.3f", torque[i], G(i));
                     printf("\n");
                 }
 
@@ -666,6 +668,8 @@ namespace  dualarm_controller
         KDL::Tree kdl_tree_;
         KDL::Chain kdl_chain_;
         KDL::Chain kdl_chain2_;
+
+        VectorXd G;
 
         Vector3d ForwardPos[2];
         Vector3d ForwardOri[2];

@@ -198,25 +198,25 @@ private:
 	/**
 	 * @brief SE(3) Homogeneous transform matrix container
 	 */
-	SE3 T[15][15];
+	SE3 T[16][16];
 	//SE3 **T;
 
 	/**
 	 * @brief SE(3) matrix container w.r.t., base coordinate
 	 */
-	SE3 M[15];
+	SE3 M[16];
 	//SE3 *M;
 
 	/**
 	 * @brief SE(3) matrix container
 	 */
-	SE3 Exp_S[15];
+	SE3 Exp_S[16];
 	//SE3 *Exp_S;
 
 	/**
 	 * @brief twist expression for Adjoint/adjoint matrix
 	 */
-	se3 v_se3[15];
+	se3 v_se3[16];
 	//se3 *v_se3;
 
 	/**

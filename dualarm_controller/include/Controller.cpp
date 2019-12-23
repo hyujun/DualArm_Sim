@@ -198,8 +198,8 @@ void Controller::InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq,
 	//FrictionCompensator(qdot, dqdot);
 
 	ToqOut.setZero();
-    //ToqOut =  K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) + G ;
-    ToqOut =  M*( dqddot + K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) )+ G ;
+    ToqOut =  K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) + G ;
+    //ToqOut =  M*( dqddot + K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) )+ G ;
 	Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
 	return;
 

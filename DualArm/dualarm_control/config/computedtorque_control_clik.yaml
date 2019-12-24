@@ -64,4 +64,4 @@ dualarm:
 
     ik_mode: 1
 
-    clik_gain: {K_regulation: 1.0, K_tracking: 0.00005}
+    clik_gain: {K_regulation: 1.0, K_tracking: 0.0001}

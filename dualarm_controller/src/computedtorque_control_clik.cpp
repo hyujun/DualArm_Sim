@@ -435,7 +435,7 @@ namespace  dualarm_controller
                         x_[1].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[1](0), ForwardOri[1](1), ForwardOri[1](2)));
 
                         ex_.setZero();
-                        ex_temp_ = diff(x_[0], xd_[0]);
+                        ex_temp_ = diff(xd_[0], x_[0]);
                         ex_(0) = ex_temp_(3);
                         ex_(1) = ex_temp_(4);
                         ex_(2) = ex_temp_(5);
@@ -443,7 +443,7 @@ namespace  dualarm_controller
                         ex_(4) = ex_temp_(1);
                         ex_(5) = ex_temp_(2);
 
-                        ex_temp_ = diff(x_[1], xd_[1]);
+                        ex_temp_ = diff(xd_[1], x_[1]);
                         ex_(6) = ex_temp_(3);
                         ex_(7) = ex_temp_(4);
                         ex_(8) = ex_temp_(5);

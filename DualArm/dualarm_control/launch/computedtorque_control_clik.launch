@@ -4,6 +4,7 @@
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
           output="screen" ns="/dualarm" args="joint_state_controller computedtorque_control_clik"/>
 
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" ns="/dualarm">
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" ns="/dualarm" respawn="false" output="screen">
+        <remap from="/joint_states" to="/dualarm/joint_states"/>
     </node>
 </launch>

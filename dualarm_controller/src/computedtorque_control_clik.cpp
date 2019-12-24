@@ -28,7 +28,7 @@
 #define num_taskspace 6
 #define SaveDataMax 97
 
-#define A 0.10
+#define A 0.20
 #define b1 0.551
 #define b2 -0.516
 #define b3 0.643

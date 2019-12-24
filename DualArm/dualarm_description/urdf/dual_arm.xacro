@@ -5,7 +5,7 @@
 
 	<xacro:include filename="$(find dualarm_description)/urdf/robot_parameter.xacro" />
 
-	<xacro:include filename="$(find dualarm_description)/urdf/dual_arm.gazebo" />
+	<xacro:include filename="$(find dualarm_description)/urdf/dual_arm.gazebo.xacro" />
 
 	<!-- Base parts -->
 	<link name = "world"/>

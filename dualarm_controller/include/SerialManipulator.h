@@ -84,13 +84,13 @@ public:
 	}
 
 private:
-    Vector3d w[14]; 	/**< kinematic information container */
-    Vector3d p[14]; 	/**< kinematic information container */
-    Vector3d L[14]; 	/**< kinematic information container */
-    Vector3d CoM[14];
+    Vector3d w[15]; 	/**< kinematic information container */
+    Vector3d p[15]; 	/**< kinematic information container */
+    Vector3d L[15]; 	/**< kinematic information container */
+    Vector3d CoM[15];
 
-    Matrix3d Iner[14];
-    double mass[14];
+    Matrix3d Iner[15];
+    double mass[15];
 
     MatrixXi mChainMat;
 

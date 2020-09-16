@@ -28,7 +28,7 @@
 #define num_taskspace 6
 #define SaveDataMax 97
 
-#define A 0.20
+#define A 0.10
 #define b1 0.551
 #define b2 -0.516
 #define b3 0.643
@@ -340,12 +340,12 @@ namespace  dualarm_controller
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
 
             xd_dot_.setZero();
-
+            
             InitTime=5.0;
 
             if(t <= InitTime || ctr_obj_ == 0)
             {
-                //qd_.data.setZero();
+                qd_.data.setZero();
 
                 qd_.data(0) = -0.0*D2R;
                 qd_.data(1) = -0.0*D2R;
@@ -364,12 +364,16 @@ namespace  dualarm_controller
                 qd_.data(12) = -0.0*D2R;
                 qd_.data(13) = 70.0*D2R;
                 qd_.data(14) = -0.0*D2R;
+                qd_.data(15) = -0.0*D2R;
 
                 qd_old_ = qd_;
+               
+            } 
 
-            } else{
+            else{
                 if (ctr_obj_ == 1)
                 {
+                  
                     xd_[0].p(0) = b1;
                     xd_[0].p(1) = b2;
                     xd_[0].p(2) = b3;
@@ -404,13 +408,13 @@ namespace  dualarm_controller
                     //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
                     qd_.data = qd_old_.data + qd_dot_.data * dt;
                     qd_old_.data = qd_.data;
-
+                   
                 }
                 else if (ctr_obj_ == 2)
                 {
                     if (ik_mode_ == 1) // Open-loop Inverse Kinematics
                     {
-
+                
                         xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
                         xd_[0].p(1) = b2;
                         xd_[0].p(2) = b3;
@@ -435,7 +439,7 @@ namespace  dualarm_controller
                         x_[1].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[1](0), ForwardOri[1](1), ForwardOri[1](2)));
 
                         ex_.setZero();
-                        ex_temp_ = diff(xd_[0], x_[0]);
+                        ex_temp_ = diff(x_[0], xd_[0]);
                         ex_(0) = ex_temp_(3);
                         ex_(1) = ex_temp_(4);
                         ex_(2) = ex_temp_(5);
@@ -443,7 +447,7 @@ namespace  dualarm_controller
                         ex_(4) = ex_temp_(1);
                         ex_(5) = ex_temp_(2);
 
-                        ex_temp_ = diff(xd_[1], x_[1]);
+                        ex_temp_ = diff(x_[1], xd_[1]);
                         ex_(6) = ex_temp_(3);
                         ex_(7) = ex_temp_(4);
                         ex_(8) = ex_temp_(5);
@@ -456,11 +460,11 @@ namespace  dualarm_controller
                         //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
                         qd_.data = qd_old_.data + qd_dot_.data * dt;
                         qd_old_.data = qd_.data;
-
+                 
                     }
                     else if (ik_mode_ == 2) // Closed-loop Inverse Kinematics
                     {
-
+                  
                         xd_[0].p(0) = b1;
                         xd_[0].p(1) = A * sin(f * M_PI * (t - InitTime)) + b2;
                         xd_[0].p(2) = b3;
@@ -492,7 +496,7 @@ namespace  dualarm_controller
                         dSE3.block<3,1>(0,3) = dx.segment(9,3);
                         cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
                         dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=15;
+                        EndNum=16;
                         aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
                         eSE3 = cManipulator->pKin->inverse_SE3(aSE3)*dSE3;
                         cManipulator->pKin->LogSO3(eSE3.block(0,0,3,3), eAxis, eAngle);
@@ -508,10 +512,11 @@ namespace  dualarm_controller
                         //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
                         qd_.data = qd_old_.data + qd_dot_.data * dt;
                         qd_old_.data = qd_.data;
+                
                     }
                     else if (ik_mode_ == 3) // Closed-loop Inverse Kinematics
                     {
-
+               
                         dx(0) = -M_PI/2;
                         dx(1) = 0;
                         dx(2) = M_PI/2;
@@ -547,7 +552,7 @@ namespace  dualarm_controller
                         dSE3.block<3,1>(0,3) = dx.segment(9,3);
                         cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
                         dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=15;
+                        EndNum=16;
                         aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
                         eSE3 = cManipulator->pKin->inverse_SE3(aSE3)*dSE3;
                         cManipulator->pKin->LogSO3(eSE3.block(0,0,3,3), eAxis, eAngle);
@@ -563,12 +568,13 @@ namespace  dualarm_controller
                         qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
                         qd_.data = qd_old_.data + qd_dot_.data * dt;
                         qd_old_.data = qd_.data;
+                   
                     }
 
                 }
             }
-
-
+            
+         
             Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
 
             for (int i = 0; i < n_joints_; i++)
@@ -690,9 +696,9 @@ namespace  dualarm_controller
         KDL::JntArray q_;
         KDL::JntArray qdot_;
 
-        double q[15];
-        double qdot[15];
-        double torque[15];
+        double q[16];
+        double qdot[16];
+        double torque[16];
 
         // Task Space State
         // ver. 01

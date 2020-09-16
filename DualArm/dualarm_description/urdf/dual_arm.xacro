@@ -5,7 +5,7 @@
 
 	<xacro:include filename="$(find dualarm_description)/urdf/robot_parameter.xacro" />
 
-	<xacro:include filename="$(find dualarm_description)/urdf/dual_arm.gazebo.xacro" />
+	<xacro:include filename="$(find dualarm_description)/urdf/dual_arm.gazebo" />
 
 	<!-- Base parts -->
 	<link name = "world"/>
@@ -32,7 +32,7 @@
 			name="${base_link_name}"
 			mass="${base_link_mass}"
 			origin_rpy= "0 0 0"
-			origin_xyz="0 0 0"
+			origin_xyz="0 0 0.3"
 			ixx="${base_link_ixx}"
 			ixy="${base_link_ixy}"
 			ixz="${base_link_ixz}"
@@ -50,7 +50,7 @@
 			type="revolute"
 			axis_xyz="0 0 1"
 			origin_rpy="0 0 0"
-			origin_xyz="0 0 0.658"
+			origin_xyz="0 0 0.652"
 			parent="${base_link_name}"
 			child="${waist_link_01_name}"
 			limit_effort="800"
@@ -71,7 +71,7 @@
 			iyz="${waist_link_01_iyz}"
 			izz="${waist_link_01_izz}"
 			vis_rpy="0 0 0"
-			vis_xyz="0 0 0.0"
+			vis_xyz="0 0 -0.011"
 			mesh_file="package://dualarm_description/meshes/dualarm1/link1.STL"
 			mesh_scale="0.001 0.001 0.001"
 	/>
@@ -160,7 +160,7 @@
 			iyz="${r_arm_link_02_iyz}"
 			izz="${r_arm_link_02_izz}"
 			vis_rpy="0 0 0"
-			vis_xyz="0 0 0"
+			vis_xyz="0 0.011 0"
 			mesh_file="package://dualarm_description/meshes/dualarm1/link4.STL"
 			mesh_scale="0.001 0.001 0.001"
 	/>
@@ -198,7 +198,7 @@
 			type="revolute"
 			axis_xyz="0 0 1"
 			origin_rpy="0 0 0"
-			origin_xyz="0 0 -0.158"
+			origin_xyz="0 0 -0.242"
 			parent="${r_arm_link_03_name}"
 			child="${r_arm_link_04_name}"
 			limit_effort="200"
@@ -286,7 +286,7 @@
 		type="revolute"
 		axis_xyz="1 0 0"
 		origin_rpy="0 0 0"
-		origin_xyz="0 0 -0.216"
+		origin_xyz="0 0 -0.066"
 		parent="${r_arm_link_06_name}"
 		child="${r_arm_link_hand}"
 		limit_effort="100"
@@ -299,7 +299,7 @@
 			name="${r_arm_link_hand}"
 			mass="${r_arm_link_07_mass}"
 			origin_rpy="0 0 0"
-			origin_xyz="0.01382 0.01787 -0.12277"
+			origin_xyz="0 0 0"
 			ixx="${r_arm_link_07_ixx}"
 			ixy="${r_arm_link_07_ixy}"
 			ixz="${r_arm_link_07_ixz}"
@@ -308,7 +308,7 @@
 			izz="${r_arm_link_07_izz}"
 			vis_rpy="0 0 0"
 			vis_xyz="0 0 0"
-			mesh_file="package://dualarm_description/meshes/dualarm1/Hand.STL"
+			mesh_file="package://dualarm_description/meshes/dualarm1/Allegro_wrist.STL"
 			mesh_scale="0.001 0.001 0.001"
 	/>
 	<!-- left_arm part-->
@@ -366,7 +366,7 @@
 			iyz="${l_arm_link_02_iyz}"
 			izz="${l_arm_link_02_izz}"
 			vis_rpy="${M_PI} 0 0"
-			vis_xyz="0 0 0"
+			vis_xyz="0 -0.011 0"
 			mesh_file="package://dualarm_description/meshes/dualarm1/link4.STL"
 			mesh_scale="0.001 0.001 0.001"
 	/>
@@ -404,7 +404,7 @@
 			type="revolute"
 			axis_xyz="0 0 1"
 			origin_rpy="0 0 0"
-			origin_xyz="0 0 -0.158"
+			origin_xyz="0 0 -0.242"
 			parent="${l_arm_link_03_name}"
 			child="${l_arm_link_04_name}"
 			limit_effort="200"
@@ -464,17 +464,17 @@
 			origin_rpy="0 0 0"
 			origin_xyz="0.0245 0 -0.155"
 			parent="${l_arm_link_05_name}"
-			child="${l_arm_link_hand}"
+			child="${l_arm_link_06_name}"
 			limit_effort="100"
 			limit_lower="-${3*M_PI/2}"
 			limit_upper="${3*M_PI/2}"
 			limit_v="1"
 	/>
 	<m_link_cylinder
-			name="${l_arm_link_hand}"
+			name="${l_arm_link_06_name}"
 			mass="${l_arm_link_06_mass}"
 			origin_rpy="0 0 0"
-			origin_xyz="0.00824 -0.01572 -0.19016"
+			origin_xyz="0 0 0"
 			ixx="${l_arm_link_06_ixx}"
 			ixy="${l_arm_link_06_ixy}"
 			ixz="${l_arm_link_06_ixz}"
@@ -483,8 +483,36 @@
 			izz="${l_arm_link_06_izz}"
 			vis_rpy="0 0 0"
 			vis_xyz="0 0 0"
-			mesh_file="package://dualarm_description/meshes/dualarm1/HandwithWrist.STL"
+			mesh_file="package://dualarm_description/meshes/dualarm1/Wrist_controller.STL"
 			mesh_scale="0.001 0.001 0.001"
 	/>
-
+	<m_joint_100
+			name="dualarm_joint16"
+			type="revolute"
+			axis_xyz="0 0 1"
+			origin_rpy="0 0 0"
+			origin_xyz="0 0 -0.205"
+			parent="${l_arm_link_06_name}"
+			child="${l_arm_link_hand}"
+			limit_effort="100"
+			limit_lower="-${3*M_PI/2}"
+			limit_upper="${3*M_PI/2}"
+			limit_v="1"
+	/>
+	<m_link_cylinder
+			name="${l_arm_link_hand}"
+			mass="${l_arm_link_07_mass}"
+			origin_rpy="0 0 0"
+			origin_xyz="0 0 0"
+			ixx="${l_arm_link_07_ixx}"
+			ixy="${l_arm_link_07_ixy}"
+			ixz="${l_arm_link_07_ixz}"
+			iyy="${l_arm_link_07_iyy}"
+			iyz="${l_arm_link_07_iyz}"
+			izz="${l_arm_link_07_izz}"
+			vis_rpy="0 0 0"
+			vis_xyz="0 0 0"
+			mesh_file="package://dualarm_description/meshes/dualarm1/hand_adapter_L.STL"
+			mesh_scale="0.001 0.001 0.001"
+	/>	
 </robot>

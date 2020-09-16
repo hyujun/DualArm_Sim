@@ -1,12 +1,14 @@
 <launch>
     <include file="$(find gazebo_ros)/launch/empty_world.launch" />
 
-    <param name="robot_description" command="$(find xacro)/xacro '$(find dualarm_description)/urdf/dual_arm.xacro'"/>
+    <param name="robot_description"
+           command="$(find xacro)/xacro '$(find dualarm_description)/urdf/dual_arm.xacro'"/>
 
-    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-    </node>
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
-    </node>
+    <arg name="gui" default="True"/>
+    <!--<node name="rviz" pkg="rviz" type="rviz"/>-->
+
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" />
 
     <node
             name="urdf_spawner"
@@ -14,5 +16,5 @@
             type="spawn_model"
             respawn="false"
             output="screen"
-            args="-param robot_description -urdf -model dualarm " />
+            args="-urdf -model dualarm -param robot_description" />
 </launch>

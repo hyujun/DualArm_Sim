@@ -70,13 +70,15 @@ Controller::Controller(SerialManipulator *pManipulator)
 	GainWeightFactor(5) = 4.0;
 	GainWeightFactor(6) = 3.5;
 	GainWeightFactor(7) = 3.5;
+	GainWeightFactor(8) = 3.5; //wrist1
 
-	GainWeightFactor(8) = 10.5;
-	GainWeightFactor(9) = 10.5; //8
-	GainWeightFactor(10) = 8.0;
-	GainWeightFactor(11) = 4.0;
-	GainWeightFactor(12) = 3.7;
-	GainWeightFactor(13) = 3.5;
+	GainWeightFactor(9) = 10.5;
+	GainWeightFactor(10) = 10.5;
+	GainWeightFactor(11) = 8.0;
+	GainWeightFactor(12) = 4.0;
+	GainWeightFactor(13) = 3.7;
+    GainWeightFactor(14) = 3.5;
+    GainWeightFactor(15) = 3.5; //wrist2
 
 
 	Kp = GainWeightFactor*m_KpBase;
@@ -273,13 +275,16 @@ void Controller::FrictionIdentification( double *p_q, double *p_qdot, double *p_
 	GainWeightFactor(5) = 1.0;
 	GainWeightFactor(6) = 0.8;
 	GainWeightFactor(7) = 1.0;
+    GainWeightFactor(8) = 1.0; //wrist1
 
-	GainWeightFactor(8) = 2.0;
-	GainWeightFactor(9) = 1.5; //8
-	GainWeightFactor(10) = 3.0;
-	GainWeightFactor(11) = 1.0;
-	GainWeightFactor(12) = 0.8;
-	GainWeightFactor(13) = 1.0;
+	GainWeightFactor(9) = 2.0;
+	GainWeightFactor(10) = 1.5; //8
+	GainWeightFactor(11) = 3.0;
+	GainWeightFactor(12) = 1.0;
+	GainWeightFactor(13) = 0.8;
+	GainWeightFactor(14) = 1.0;
+    GainWeightFactor(15) = 0.8; //wrist2
+
 
 
 	Kp = GainWeightFactor*m_KpBase;

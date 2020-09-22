@@ -15,7 +15,8 @@
 #define ENC_OFFSET_J13 19522733
 #define ENC_OFFSET_J14 37893089
 
-#define ENC_OFFSET_WRIST 50578817
+#define ENC_OFFSET_WRIST1 -43440443
+#define ENC_OFFSET_WRIST2 114169447
 
 #define HARMONIC_100 101
 #define ABS_ENC_19 524288
@@ -35,12 +36,12 @@
 
 // {w_x, w_y, w_z, q_x, q_y, q_z, l_x, l_y, l_z}
 robot_kinematic_info serial_Kinematic_info[] = {
-		{0, 0, 1,
+		{0, 0, -1,
 				0.0, 0.0, 352.0e-3+306e-3,
 				0.0, 0.0, 500.0e-3+306e-3},			// 1
 		{0, -1, 0,
 				0.0, 0.0, 500.0e-3+306e-3,
-				0.0, 0.0e-3, 800.0e-3+306e-3},		// 2
+				0.0, 0.0, 800.0e-3+306e-3},		// 2
 //Right hand
 		{0, 0, -1,
 				0.0, -125.0e-3, 717.0e-3+306e-3,
@@ -91,6 +92,9 @@ robot_kinematic_info serial_Kinematic_info[] = {
 		{0, 0, 1,
 				0.0, 325.0e-3, 245.0e-3+306e-3,
 				0.0, 299.5e-3, 2.21e-3+306e-3},		// 14
+		{1, 0, 0,
+				0.0, -325.0e-3, 29.0e-3+306e-3,
+				0.0, -299.52e-3, -120.8e-3+306e-3},		// Wrist		
 #else
 		{0, 0, 1,
 				0.0, 325.0e-3, 245.0e-3,
@@ -132,7 +136,7 @@ robot_dynamic_info serial_Dynamic_info[] = {
 
 		{1.29,
 				7534883.39e-9, 9485578.12e-9, 25880996.64e-9, 0.0, -659219.99e-9, 0.0,
-				13.82e-3, -307.13e-3, -93.77e-3+306e-3},			// Wrist
+				13.82e-3, -307.13e-3, -93.77e-3+306e-3},			// Wrist1
 #else
 		{0.0646,
 				0.00005, 0.00005, 0.00005, 0.0, 0.0, 0.0,
@@ -158,6 +162,9 @@ robot_dynamic_info serial_Dynamic_info[] = {
 		{2.1946,
 				64638829.47e-9, 66659017.77e-9, 4566899.4e-9, -182585.55e-9, 2023270.8e-9, -1132418.18e-9,
 				8.24e-3, 309.28e-3, 54.84e-3+306e-3},			// 8
+		{1.29,
+				7534883.39e-9, 9485578.12e-9, 25880996.64e-9, 0.0, -659219.99e-9, 0.0,
+				13.82e-3, -307.13e-3, -93.77e-3+306e-3},			// Wrist2
 #else
 		{0.0646,
 				0.00005, 0.00005, 0.00005, 0.0, 0.0, 0.0,
@@ -176,7 +183,7 @@ robot_motor_info serial_Motor_info[] = {
 		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_TYPE2, TORQUE_CONST_TYPE2, ENC_OFFSET_J6},
 		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_TYPE3, TORQUE_CONST_TYPE3, ENC_OFFSET_J7},
 		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_TYPE3, TORQUE_CONST_TYPE3, ENC_OFFSET_J8},
-		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_WRIST, TORQUE_CONST_WRIST, ENC_OFFSET_WRIST},
+		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_WRIST, TORQUE_CONST_WRIST, ENC_OFFSET_WRIST1},
 
 		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_TYPE1, TORQUE_CONST_TYPE1, ENC_OFFSET_J9},
 		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_TYPE1, TORQUE_CONST_TYPE1, ENC_OFFSET_J10},
@@ -184,6 +191,7 @@ robot_motor_info serial_Motor_info[] = {
 		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_TYPE2, TORQUE_CONST_TYPE2, ENC_OFFSET_J12},
 		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_TYPE3, TORQUE_CONST_TYPE3, ENC_OFFSET_J13},
 		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_TYPE3, TORQUE_CONST_TYPE3, ENC_OFFSET_J14},
+		{HARMONIC_100, ABS_ENC_19, MAX_CURRENT_WRIST, TORQUE_CONST_WRIST, ENC_OFFSET_WRIST2}
 };
 
 FrictionMap frictionmap[] ={
@@ -203,6 +211,8 @@ FrictionMap frictionmap[] ={
 		{0.05, 4.0},	//12
 		{0.03, 3.3},	//13
 		{0.03, 2.5},	//14
+        {0.03, 2.5},    //wrist1
+        {0.03, 2.5},    //wrist2
 };
 
 FrictionTanh frictiontanh[] = {
@@ -215,12 +225,15 @@ FrictionTanh frictiontanh[] = {
 		{151.3, 16.42, 17.26, 4.56, 14.47, 0.05998}, 		//6
 		{2.444, 3.931, 159.1, 3.963, 77.64, 0.0543}, 		//7
 		{2.444, 3.931, 159.1, 3.963, 77.64, 0.0543}, 		//8
-		{2.444, 3.931, 159.1, 3.963, 77.64, 0.0543}, 		//Wrist
+		{2.444, 3.931, 159.1, 3.963, 77.64, 0.0543}, 		//Wrist1
 
 		{1.287, 1.641, 165.9, 7.541, 19.43, 0.1302}, 		//9
 		{19.99, 35.09, 64.18, 17.6, 36.34, 2.398e-7}, 		//10
 		{2.069, 59.79, 95.02, 18.5, 3.299, 2.49e-7}, 		//11
 		{325.2, 22, 22.72, 4.02, 28.35, 0.07359}, 			//12
 		{2.444, 3.931, 159.1, 3.963, 77.64, 0.0543}, 		//13
-		{2.444, 3.931, 159.1, 3.963, 77.64, 0.0543}, 		//14
+		{2.444, 3.931, 159.1, 3.963, 77.64, 0.0543},
+        {2.444, 3.931, 159.1, 3.963, 77.64, 0.0543},        //14
+
+		
 };

@@ -20,6 +20,7 @@
   <xacro:property name="l_arm_link_03_name" value="link_11" />
   <xacro:property name="l_arm_link_04_name" value="link_12" />
   <xacro:property name="l_arm_link_05_name" value="link_13" />
+  <xacro:property name="l_arm_link_06_name" value="link_14" />
   <xacro:property name="l_arm_link_hand" value="link_L_hand" />
 <!-- link_mass -->
   <xacro:property name="base_link_mass" value="10.0"/>
@@ -38,6 +39,7 @@
   <xacro:property name="l_arm_link_04_mass" value="2.49"/>
   <xacro:property name="l_arm_link_05_mass" value="1.86"/>
   <xacro:property name="l_arm_link_06_mass" value="2.1946"/>
+  <xacro:property name="l_arm_link_07_mass" value="1.29"/>
 
 <!-- link_inertia -->
   <xacro:property name="base_link_ixx" value="0.0"/>
@@ -47,12 +49,12 @@
   <xacro:property name="base_link_izz" value="0.0"/>
   <xacro:property name="base_link_iyz" value="0.0"/>
 
-  <xacro:property name="waist_link_01_ixx" value="83854563.43E-9"/>
-  <xacro:property name="waist_link_01_ixy" value="-135841.54E-9"/>
-  <xacro:property name="waist_link_01_ixz" value="-625787.35E-9"/>
-  <xacro:property name="waist_link_01_iyy" value="70969371.34E-9"/>
-  <xacro:property name="waist_link_01_iyz" value="-15432807.98E-9"/>
-  <xacro:property name="waist_link_01_izz" value="53062013.96E-9"/>
+  <xacro:property name="waist_link_01_ixx" value="0.0463"/>
+  <xacro:property name="waist_link_01_ixy" value="0.0"/>
+  <xacro:property name="waist_link_01_ixz" value="0.0"/>
+  <xacro:property name="waist_link_01_iyy" value="-0.0637"/>
+  <xacro:property name="waist_link_01_iyz" value="0.0027"/>
+  <xacro:property name="waist_link_01_izz" value="0.0271"/>
 
   <xacro:property name="waist_link_02_ixx" value="0.1408"/>
   <xacro:property name="waist_link_02_ixy" value="0.0"/>
@@ -96,12 +98,12 @@
   <xacro:property name="r_arm_link_05_iyz" value="298769.64E-9"/>
   <xacro:property name="r_arm_link_05_izz" value="2250292.68E-9"/>
 
-  <xacro:property name="r_arm_link_06_ixx" value="15715348.78E-9"/>
-  <xacro:property name="r_arm_link_06_ixy" value="0.0"/>
-  <xacro:property name="r_arm_link_06_ixz" value="-347842.21E-9"/>
-  <xacro:property name="r_arm_link_06_iyy" value="16761167.93E-9"/>
-  <xacro:property name="r_arm_link_06_iyz" value="0.0"/>
-  <xacro:property name="r_arm_link_06_izz" value="3543832.43E-9"/>
+  <xacro:property name="r_arm_link_06_ixx" value="372762541.12E-9"/>
+  <xacro:property name="r_arm_link_06_ixy" value="-3411073.92E-9"/>
+  <xacro:property name="r_arm_link_06_ixz" value="1777052.78E-9"/>
+  <xacro:property name="r_arm_link_06_iyy" value="91135956.07E-9"/>
+  <xacro:property name="r_arm_link_06_iyz" value="-156654091.62E-9"/>
+  <xacro:property name="r_arm_link_06_izz" value="3212626.70E-9"/>
 
   <xacro:property name="r_arm_link_07_ixx" value="7534883.39E-9"/>
   <xacro:property name="r_arm_link_07_ixy" value="0.0"/>
@@ -151,6 +153,13 @@
   <xacro:property name="l_arm_link_06_iyy" value="66659017.77E-9"/>
   <xacro:property name="l_arm_link_06_iyz" value="2023270.8E-9"/>
   <xacro:property name="l_arm_link_06_izz" value="4566899.4E-9"/>
+
+  <xacro:property name="l_arm_link_07_ixx" value="7534883.39E-9"/>
+  <xacro:property name="l_arm_link_07_ixy" value="0.0"/>
+  <xacro:property name="l_arm_link_07_ixz" value="0.0"/>
+  <xacro:property name="l_arm_link_07_iyy" value="9485578.12E-9"/>
+  <xacro:property name="l_arm_link_07_iyz" value="-659219.99E-9"/>
+  <xacro:property name="l_arm_link_07_izz" value="25880996.64E-9"/>
 
 </robot>
 

@@ -6,7 +6,7 @@
  * @version 1.0.0
  */
 
-#define ROBOT_DOF 14 /**< Number of Manipulator joint*/
+#define ROBOT_DOF 16 /**< Number of Manipulator joint*/
 #define _WITH_HAND_
 
 /**

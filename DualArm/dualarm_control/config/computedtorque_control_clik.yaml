@@ -21,6 +21,8 @@ dualarm:
       - dualarm_joint12
       - dualarm_joint13
       - dualarm_joint14
+      - dualarm_joint16
+
 
     gains:
       dualarm_joint1:
@@ -54,13 +56,14 @@ dualarm:
         pid: {p: 10.0, i: 18.01, d: 2}
       dualarm_joint15:
         pid: {p: 10.0, i: 2.01, d: 2}
-
+      dualarm_joint16:
+        pid: {p: 10.0, i: 2.01, d: 2}
 
     root_link: world
     tip_link1: link_R_hand
     tip_link2: link_L_hand
 
-    ctr_obj: 0
+    ctr_obj: 2
 
     ik_mode: 1
 

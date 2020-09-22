@@ -48,8 +48,8 @@ public:
 
 private:
 
-	Matrix6d GIner[15]; 	/**< generalized inertia matrix of each link  */
-	se3 A[15];
+	Matrix6d GIner[16]; 	/**< generalized inertia matrix of each link  */
+	se3 A[16];
 	VectorXd grav;
 
 	MatrixXd Gamma_mat;

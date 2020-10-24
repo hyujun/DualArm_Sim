@@ -14,90 +14,117 @@ Controller::Controller():m_Jnum(6)
 	this->pManipulator = NULL;
 	m_KpBase = KpBase;
 	m_KdBase = KdBase;
+	m_KiBase = KiBase;
 	m_HinfBase = HinfBase;
 }
 
 Controller::Controller(SerialManipulator *pManipulator)
 {
-	this->pManipulator = pManipulator;
-
-	m_Jnum = pManipulator->GetTotalDoF();
-	m_KpBase = KpBase;
-	m_KdBase = KdBase;
-	m_HinfBase = HinfBase;
-
-	Kp.resize(m_Jnum);
-	Kp.setConstant(m_KpBase);
-	Kd.resize(m_Jnum);
-	Kd.setConstant(m_KdBase);
-
-	K_Hinf.resize(m_Jnum);
-	K_Hinf.setConstant(m_HinfBase);
-
-	KpTask.resize(6*pManipulator->pKin->GetNumChain());
-	KdTask.resize(6*pManipulator->pKin->GetNumChain());
-	KiTask.resize(6*pManipulator->pKin->GetNumChain());
-
-	e.resize(m_Jnum);
-	e.setZero();
-
-	e_dev.resize(m_Jnum);
-	e_dev.setZero();
-
-	e_int.resize(m_Jnum);
-	e_int_sat.resize(m_Jnum);
-
-	edotTask.resize(6*pManipulator->GetTotalChain());
-	eTask.resize(6*pManipulator->GetTotalChain());
-
-	edotTmp.resize(6*pManipulator->GetTotalChain(), 6*pManipulator->GetTotalChain());
-	dexp.resize(6,6);
-
-	ToqOut.resize(m_Jnum);
-	ToqOut.setZero();
-
-	FrictionTorque.resize(m_Jnum);
-	FrictionTorque.setZero();
-
-	GainWeightFactor.resize(m_Jnum);
-
-	GainWeightFactor(0) = 21.0;
-	GainWeightFactor(1) = 21.0;
-
-	GainWeightFactor(2) = 10.5;
-	GainWeightFactor(3) = 10.5; //8
-	GainWeightFactor(4) = 8.0;
-	GainWeightFactor(5) = 4.0;
-	GainWeightFactor(6) = 3.5;
-	GainWeightFactor(7) = 3.5;
-	GainWeightFactor(8) = 3.5; //wrist1
-
-	GainWeightFactor(9) = 10.5;
-	GainWeightFactor(10) = 10.5;
-	GainWeightFactor(11) = 8.0;
-	GainWeightFactor(12) = 4.0;
-	GainWeightFactor(13) = 3.7;
-    GainWeightFactor(14) = 3.5;
-    GainWeightFactor(15) = 3.5; //wrist2
+    this->pManipulator = pManipulator;
 
 
-	Kp = GainWeightFactor*m_KpBase;
-	Kd = GainWeightFactor*m_KdBase;
-	//K_Hinf = m_HinfBase;
+    m_Jnum = pManipulator->GetTotalDoF();
+    m_KpBase = KpBase;
+    m_KdBase = KdBase;
+    m_HinfBase = HinfBase;
 
-	dq.resize(m_Jnum);
-	dqdot.resize(m_Jnum);
-	dqddot.resize(m_Jnum);
+    Kp.resize(m_Jnum);
+    Kp.setConstant(m_KpBase);
+    Kd.resize(m_Jnum);
+    Kd.setConstant(m_KdBase);
+    Ki.resize(m_Jnum);
+    Ki.setConstant(m_KiBase);
 
-	KpTask(0) = 0.00001;
-	KpTask(1) = 0.00001;
-	KpTask(2) = 0.00001;
+    K_Hinf.resize(m_Jnum);
+    K_Hinf.setConstant(m_HinfBase);
 
-	KpTask(3) = 0.0001;
-	KpTask(4) = 0.0001;
-	KpTask(5) = 0.0001;
+    KpTask.resize(6*pManipulator->pKin->GetNumChain(), 6*pManipulator->pKin->GetNumChain());
+    KdTask.resize(6*pManipulator->pKin->GetNumChain(), 6*pManipulator->pKin->GetNumChain());
+    KiTask.resize(6*pManipulator->pKin->GetNumChain(), 6*pManipulator->pKin->GetNumChain());
 
-	KpTask.tail(6) = KpTask.head(6);
+    e.resize(m_Jnum);
+    e.setZero();
+
+    e_dev.resize(m_Jnum);
+    e_dev.setZero();
+
+    e_int.resize(m_Jnum);
+    e_int_sat.resize(m_Jnum);
+
+    edotTask.resize(6*pManipulator->GetTotalChain());
+    eTask.resize(6*pManipulator->GetTotalChain());
+
+    edotTmp.resize(6*pManipulator->GetTotalChain(), 6*pManipulator->GetTotalChain());
+    dexp.resize(6,6);
+
+    ToqOut.resize(m_Jnum);
+    ToqOut.setZero();
+
+    FrictionTorque.resize(m_Jnum);
+    FrictionTorque.setZero();
+
+    GainWeightFactor.resize(m_Jnum);
+
+    GainWeightFactor(0) = 25.0;
+    GainWeightFactor(1) = 25.0;
+
+    GainWeightFactor(2) = 15.5;
+    GainWeightFactor(3) = 15.5; //8
+    GainWeightFactor(4) = 10.0;
+    GainWeightFactor(5) = 9.0;
+    GainWeightFactor(6) = 8.5;
+    GainWeightFactor(7) = 8.5;
+    GainWeightFactor(8) = 8.5; //wrist1
+
+    GainWeightFactor(9) = 15.5;
+    GainWeightFactor(10) = 15.5;
+    GainWeightFactor(11) = 10.0;
+    GainWeightFactor(12) = 9.0;
+    GainWeightFactor(13) = 8.7;
+    GainWeightFactor(14) = 8.5;
+    GainWeightFactor(15) = 8.5; //wrist2
+
+
+    Kp = GainWeightFactor*m_KpBase;
+    Kd = GainWeightFactor*m_KdBase;
+    Ki = GainWeightFactor*m_KiBase;
+    K_Hinf.setConstant(m_HinfBase);
+
+    dq.resize(m_Jnum);
+    dqdot.resize(m_Jnum);
+    dqddot.resize(m_Jnum);
+
+    KpTask(0,0) = 40.0;
+    KpTask(1,1) = 40.0;
+    KpTask(2,2) = 40.0;
+
+    KpTask(3,3) = 40.0;
+    KpTask(4,4) = 40.0;
+    KpTask(5,5) = 40.0;
+
+    KpTask(6,6) = 40.0;
+    KpTask(7,7) = 40.0;
+    KpTask(8,8) = 40.0;
+
+    KpTask(9,9) = 40.0;
+    KpTask(10,10) = 40.0;
+    KpTask(11,11) = 40.0;
+
+    KdTask(0,0) = 0.0001;
+    KdTask(1,1) = 0.0001;
+    KdTask(2,2) = 0.0001;
+
+    KdTask(3,3) = 0.001;
+    KdTask(4,4) = 0.001;
+    KdTask(5,5) = 0.001;
+
+    KdTask(6,6) = 0.0001;
+    KdTask(7,7) = 0.0001;
+    KdTask(8,8) = 0.0001;
+
+    KdTask(9,9) = 0.001;
+    KdTask(10,10) = 0.001;
+    KdTask(11,11) = 0.001;
 
 }
 
@@ -122,11 +149,12 @@ void Controller::SetPIDGain(double &_Kp, double &_Kd, double &_Hinf, int &_Joint
 	return;
 }
 
-void Controller::SetPIDGain(Eigen::VectorXd & _Kp, Eigen::VectorXd & _Kd, Eigen::VectorXd & _Ki)
+void Controller::SetPIDGain(Eigen::VectorXd & _Kp, Eigen::VectorXd & _Kd, Eigen::VectorXd & _Ki, Eigen::VectorXd &_Hinf)
 {
     Kp = _Kp;
     Kd = _Kd;
-    K_Hinf = _Ki;
+    Ki = _Ki;
+    K_Hinf = _Hinf;
     return;
 }
 
@@ -181,7 +209,7 @@ void Controller::PDGravController( double *p_q, double *p_qdot, double *p_dq, do
 
 	ToqOut.setZero();
 	ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G;
-    //ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) ;
+	//ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) ;
 	//ToqOut = G + FrictionTorque;
 
 	Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
@@ -190,21 +218,44 @@ void Controller::PDGravController( double *p_q, double *p_qdot, double *p_dq, do
 
 void Controller::InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, double *p_Toq, double &_dt )
 {
-	pManipulator->pDyn->MG_Mat_Joint(M, G);
+    pManipulator->pDyn->MG_Mat_Joint(M, G);
 
-	e = _dq - _q;
-	e_dev = _dqdot - _qdot;
-	//e_int += e*1e-3;
-	//e_int_sat = tanh(e_int);
+    e = _dq - _q;
+    e_dev = _dqdot - _qdot;
+    e_int += e*1e-3;
+    for(int i=0; i<e_int.size(); i++)
+    {
+        e_int_sat(i) = tanh(e_int(i));
+    }
+    // FrictionCompensator(qdot, dqdot);
 
-	//FrictionCompensator(qdot, dqdot);
+    ToqOut.setZero();
+    ToqOut =  K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + G ;
+    //ToqOut =  K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) + Ki.cwiseProduct(e_int_sat)) + G ;
+    //ToqOut =  M.diagonal()*( dqddot + K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) )+ G ;
+    Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
+    return;
 
-	ToqOut.setZero();
-    ToqOut =  K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) + G ;
-    //ToqOut =  M*( dqddot + K_Hinf.cwiseProduct( Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e)) )+ G ;
-	Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
-	return;
+}
 
+void Controller::TaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd &_q, VectorXd &_qdot, double *p_Toq, double &_dt)
+{
+    pManipulator->pDyn->MG_Mat_Joint(M, G);
+    ToqOut.setZero();
+    MatrixXd AJacobian;
+    MatrixXd pInvJac;
+    MatrixXd eye = MatrixXd::Identity(m_Jnum,m_Jnum);
+    VectorXd q0dot;
+    double alpha = 0.001;
+    q0dot = alpha*(_q.cwiseInverse()*pManipulator->pKin->GetManipulabilityMeasure());
+    pManipulator->pKin->GetAnalyticJacobian(AJacobian);
+    //pManipulator->pKin->GetpinvJacobian(pInvJac);
+
+    ToqOut = AJacobian.transpose()*(KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+    //ToqOut = pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + G;
+    //ToqOut = pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+    Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
+    return;
 }
 
 void Controller::CLIKTaskController( double *_q, double *_qdot, double *_dq, double *_dqdot, const VectorXd *_dx, const VectorXd *_dxdot, const VectorXd &_dqdotNull, double *p_Toq, double &_dt )

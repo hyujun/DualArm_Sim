@@ -101,7 +101,7 @@ void SerialManipulator::ENCtoRAD( int *_enc, double *_rad )
 {
 	for(int i=0; i < this->mDoF_Total; i++)
 	{
-		_rad[i] = (double)(_enc[i] - serial_Motor_info[i].Offset)/(double)(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size)*(2.0*M_PI);
+		_rad[i] = (double)(_enc[i])/(double)(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size)*(2.0*M_PI);
 	}
 	return;
 }
@@ -110,7 +110,7 @@ void SerialManipulator::RADtoENC( int *_enc, double *_rad )
 {
 	for(int i=0; i < this->mDoF_Total; i++)
 	{
-		_enc[i] = (int)(_rad[i]/(2*M_PI)*(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size) + serial_Motor_info[i].Offset);
+		_enc[i] = (int)(_rad[i]/(2*M_PI)*(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size));
 	}
 	return;
 }

@@ -1,19 +1,20 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>dualarm_control</name>
-  <version>0.0.0</version>
+  <version>1.1.0</version>
   <description>The dualarm_control package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="june@todo.todo">june</maintainer>
+  <maintainer email="somedayif@hanyang.ac.kr">Junho Park</maintainer>
+  <maintainer email="unixia@hanyang.ac.kr">Chanryul Beak</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>GPLv3</license>
 
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->

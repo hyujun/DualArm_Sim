@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
         dynamic_reconfigure
         realtime_tools
         urdf
+        sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -127,6 +128,7 @@ include_directories(
 ## Declare a C++ library
  add_library(${PROJECT_NAME}
          src/computedtorque_control_clik.cpp
+         src/taskspace_control.cpp
          include/Controller.cpp
          include/LieOperator.cpp
          include/LieDynamics.cpp

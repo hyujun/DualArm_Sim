@@ -32,7 +32,7 @@
 			name="${base_link_name}"
 			mass="${base_link_mass}"
 			origin_rpy= "0 0 0"
-			origin_xyz="0 0 0.3"
+			origin_xyz="0 0 0"
 			ixx="${base_link_ixx}"
 			ixy="${base_link_ixy}"
 			ixz="${base_link_ixz}"
@@ -48,7 +48,7 @@
 	<m_joint_100
 			name="dualarm_joint1"
 			type="revolute"
-			axis_xyz="0 0 1"
+			axis_xyz="0 0 -1"
 			origin_rpy="0 0 0"
 			origin_xyz="0 0 0.652"
 			parent="${base_link_name}"
@@ -230,7 +230,7 @@
 			origin_xyz="-0.0245 0 -0.158"
 			parent="${r_arm_link_04_name}"
 			child="${r_arm_link_05_name}"
-			limit_effort="100"
+			limit_effort="300"
 			limit_lower="-${M_PI/2}"
 			limit_upper="${M_PI/8}"
 			limit_v="1"
@@ -259,7 +259,7 @@
 			origin_xyz="0.0245 0 -0.155"
 			parent="${r_arm_link_05_name}"
 			child="${r_arm_link_06_name}"
-			limit_effort="100"
+			limit_effort="300"
 			limit_lower="-${M_PI}"
 			limit_upper="${M_PI}"
 			limit_v="1"
@@ -282,17 +282,17 @@
 	/>
 
 	<m_joint_100
-		name="dualarm_joint15"
-		type="revolute"
-		axis_xyz="1 0 0"
-		origin_rpy="0 0 0"
-		origin_xyz="0 0 -0.066"
-		parent="${r_arm_link_06_name}"
-		child="${r_arm_link_hand}"
-		limit_effort="100"
-		limit_lower="-${3*M_PI/2}"
-		limit_upper="${3*M_PI/2}"
-		limit_v="1"
+			name="dualarm_joint9"
+			type="revolute"
+			axis_xyz="1 0 0"
+			origin_rpy="0 0 0"
+			origin_xyz="0 0 -0.0755"
+			parent="${r_arm_link_06_name}"
+			child="${r_arm_link_hand}"
+			limit_effort="300"
+			limit_lower="-${M_PI}"
+			limit_upper="${M_PI}"
+			limit_v="1"
 	/>
 
 	<m_link_cylinder
@@ -311,9 +311,18 @@
 			mesh_file="package://dualarm_description/meshes/dualarm1/Allegro_wrist.STL"
 			mesh_scale="0.001 0.001 0.001"
 	/>
+
+	<joint name="dualarm_R_end" type="fixed">
+		<origin xyz="0 0 -0.122"
+				rpy="0 0 0"/>
+		<parent link="${r_arm_link_hand}"/>
+		<child link="dualarm_R_end_frame" />
+	</joint>
+
+	<link name="dualarm_R_end_frame"/>
 	<!-- left_arm part-->
 	<m_joint_100
-			name="dualarm_joint9"
+			name="dualarm_joint10"
 			type="revolute"
 			axis_xyz="0 0 -1"
 			origin_rpy="0 0 0"
@@ -342,7 +351,7 @@
 			mesh_scale="0.001 0.001 0.001"
 	/>
 	<m_joint_100
-			name="dualarm_joint10"
+			name="dualarm_joint11"
 			type="revolute"
 			axis_xyz="0 -1 0"
 			origin_rpy="0 0 0"
@@ -371,7 +380,7 @@
 			mesh_scale="0.001 0.001 0.001"
 	/>
 	<m_joint_100
-			name="dualarm_joint11"
+			name="dualarm_joint12"
 			type="revolute"
 			axis_xyz="1 0 0"
 			origin_rpy="0 0 0"
@@ -400,7 +409,7 @@
 			mesh_scale="0.001 0.001 0.001"
 	/>
 	<m_joint_100
-			name="dualarm_joint12"
+			name="dualarm_joint13"
 			type="revolute"
 			axis_xyz="0 0 1"
 			origin_rpy="0 0 0"
@@ -429,14 +438,14 @@
 			mesh_scale="0.001 0.001 0.001"
 	/>
 	<m_joint_100
-			name="dualarm_joint13"
+			name="dualarm_joint14"
 			type="revolute"
 			axis_xyz="0 -1 0"
 			origin_rpy="0 0 0"
 			origin_xyz="-0.0245 0 -0.158"
 			parent="${l_arm_link_04_name}"
 			child="${l_arm_link_05_name}"
-			limit_effort="100"
+			limit_effort="300"
 			limit_lower="-${M_PI/4}"
 			limit_upper="${M_PI/2}"
 			limit_v="1"
@@ -458,23 +467,23 @@
 			mesh_scale="0.001 0.001 0.001"
 	/>
 	<m_joint_100
-			name="dualarm_joint14"
+			name="dualarm_joint15"
 			type="revolute"
 			axis_xyz="0 0 1"
 			origin_rpy="0 0 0"
 			origin_xyz="0.0245 0 -0.155"
 			parent="${l_arm_link_05_name}"
 			child="${l_arm_link_06_name}"
-			limit_effort="100"
-			limit_lower="-${3*M_PI/2}"
-			limit_upper="${3*M_PI/2}"
+			limit_effort="300"
+			limit_lower="-${M_PI}"
+			limit_upper="${M_PI}"
 			limit_v="1"
 	/>
 	<m_link_cylinder
 			name="${l_arm_link_06_name}"
 			mass="${l_arm_link_06_mass}"
 			origin_rpy="0 0 0"
-			origin_xyz="0 0 0"
+			origin_xyz="0.00173 0.00014 -0.13722"
 			ixx="${l_arm_link_06_ixx}"
 			ixy="${l_arm_link_06_ixy}"
 			ixz="${l_arm_link_06_ixz}"
@@ -483,20 +492,20 @@
 			izz="${l_arm_link_06_izz}"
 			vis_rpy="0 0 0"
 			vis_xyz="0 0 0"
-			mesh_file="package://dualarm_description/meshes/dualarm1/Wrist_controller.STL"
+			mesh_file="package://dualarm_description/meshes/dualarm1/Wrist.STL"
 			mesh_scale="0.001 0.001 0.001"
 	/>
 	<m_joint_100
 			name="dualarm_joint16"
 			type="revolute"
-			axis_xyz="0 0 1"
+			axis_xyz="1 0 0"
 			origin_rpy="0 0 0"
-			origin_xyz="0 0 -0.205"
+			origin_xyz="0 0 -0.0755"
 			parent="${l_arm_link_06_name}"
 			child="${l_arm_link_hand}"
-			limit_effort="100"
-			limit_lower="-${3*M_PI/2}"
-			limit_upper="${3*M_PI/2}"
+			limit_effort="300"
+			limit_lower="-${M_PI}"
+			limit_upper="${M_PI}"
 			limit_v="1"
 	/>
 	<m_link_cylinder
@@ -514,5 +523,14 @@
 			vis_xyz="0 0 0"
 			mesh_file="package://dualarm_description/meshes/dualarm1/hand_adapter_L.STL"
 			mesh_scale="0.001 0.001 0.001"
-	/>	
+	/>
+
+	<joint name="dualarm_L_end" type="fixed">
+		<origin xyz="0 0 -0.122"
+				rpy="0 0 0"/>
+		<parent link="${l_arm_link_hand}"/>
+		<child link="dualarm_L_end_frame" />
+	</joint>
+
+	<link name="dualarm_L_end_frame"/>
 </robot>

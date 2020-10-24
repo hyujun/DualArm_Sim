@@ -304,291 +304,304 @@ namespace  dualarm_controller
 
             cManipulator->UpdateManipulatorParam();
 
-            Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data);
+            //Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data);
 
             dx.setZero();
             dxdot.setZero();
         }
 
-        void update(const ros::Time &time, const ros::Duration &period) override
+      void update(const ros::Time &time, const ros::Duration &period) override
+      {
+        // ********* 0. Get states from gazebo *********
+        // 0.1 sampling time
+        double dt = period.toSec();
+        t = t + 0.001;
+
+        // 0.2 joint state
+        for (int i = 0; i < n_joints_; i++)
         {
-            // ********* 0. Get states from gazebo *********
-            // 0.1 sampling time
-            double dt = period.toSec();
-            t = t + 0.001;
+          q_(i) = joints_[i].getPosition();
+          qdot_(i) = joints_[i].getVelocity();
+          //torque_(i) = joints_[i].getEffort();
+        }
 
-            // 0.2 joint state
-            for (int i = 0; i < n_joints_; i++)
-            {
-                q_(i) = joints_[i].getPosition();
-                qdot_(i) = joints_[i].getVelocity();
-                //torque_(i) = joints_[i].getEffort();
-            }
+        Map<VectorXd>(q, n_joints_) = q_.data;
+        Map<VectorXd>(qdot, n_joints_) = qdot_.data;
 
-            Map<VectorXd>(q, n_joints_) = q_.data;
-            Map<VectorXd>(qdot, n_joints_) = qdot_.data;
+        cManipulator->pKin->PrepareJacobian(q);
+        cManipulator->pDyn->PrepareDynamics(q, qdot);
 
-            cManipulator->pKin->PrepareJacobian(q);
-            cManipulator->pDyn->PrepareDynamics(q, qdot);
+        cManipulator->pDyn->G_Matrix(G);
 
-            cManipulator->pDyn->G_Matrix(G);
+        cManipulator->pKin->GetpinvJacobian(pInvJac);
+        cManipulator->pKin->GetAnalyticJacobian(AJac);
+        cManipulator->pKin->GetScaledTransJacobian(ScaledTransJac);
+        cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
+        cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
 
-            cManipulator->pKin->GetpinvJacobian(pInvJac);
-            cManipulator->pKin->GetAnalyticJacobian(AJac);
-            cManipulator->pKin->GetScaledTransJacobian(ScaledTransJac);
-            cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
-            cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
+        xd_dot_.setZero();
+
+        InitTime=5.0;
+
+        if(t <= InitTime || ctr_obj_ == 0)
+        {
+          qd_.data.setZero();
+
+          qd_.data(0) = -0.0*D2R;
+          qd_.data(1) = -0.0*D2R;
+
+          qd_.data(2) = 0.0*D2R;
+          qd_.data(3) = -10.0*D2R;
+          qd_.data(4) = -20.0*D2R;
+          qd_.data(5) = -0.0*D2R;
+          qd_.data(6) = -70.0*D2R;
+          qd_.data(7) = 70.0*D2R;
+          qd_.data(8) = 0.0*D2R;
+
+          qd_.data(9) = 0.0*D2R;
+          qd_.data(10) = 10.0*D2R;
+          qd_.data(11) = 0.0*D2R;
+          qd_.data(12) = -0.0*D2R;
+          qd_.data(13) = 70.0*D2R;
+          qd_.data(14) = -0.0*D2R;
+          qd_.data(15) = -0.0*D2R;
+
+          qd_old_ = qd_;
+
+        }
+
+        else{
+          if (ctr_obj_ == 1)
+          {
+
+            xd_[0].p(0) = b1;
+            xd_[0].p(1) = b2;
+            xd_[0].p(2) = b3;
+            xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
 
             xd_dot_.setZero();
-            
-            InitTime=5.0;
 
-            if(t <= InitTime || ctr_obj_ == 0)
+            xd_[1].p(0) = 0.763;
+            xd_[1].p(1) = -0.027;
+            xd_[1].p(2) = 0.710;
+            xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(0, M_PI/2, 0));
+
+            ex_.setZero();
+            ex_temp_ = diff(xd_[0], x_[0]);
+            ex_(0) = ex_temp_(3);
+            ex_(1) = ex_temp_(4);
+            ex_(2) = ex_temp_(5);
+            ex_(3) = ex_temp_(0);
+            ex_(4) = ex_temp_(1);
+            ex_(5) = ex_temp_(2);
+
+            ex_temp_ = diff(xd_[1], x_[1]);
+            ex_(6) = ex_temp_(3);
+            ex_(7) = ex_temp_(4);
+            ex_(8) = ex_temp_(5);
+            ex_(9) = ex_temp_(0);
+            ex_(10) = ex_temp_(1);
+            ex_(11) = ex_temp_(2);
+
+            //qd_dot_.data = pInvJac * (xd_dot_ + K_tracking_ * ex_);
+            qd_dot_.data = AJac.transpose() * (xd_dot_ + K_tracking_ * ex_);
+            //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
+            qd_.data = qd_old_.data + qd_dot_.data * dt;
+            qd_old_.data = qd_.data;
+
+          }
+          else if (ctr_obj_ == 2)
+          {
+            if (ik_mode_ == 1) // Open-loop Inverse Kinematics
             {
-                qd_.data.setZero();
 
-                qd_.data(0) = -0.0*D2R;
-                qd_.data(1) = -0.0*D2R;
+              xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
+              xd_[0].p(1) = b2;
+              xd_[0].p(2) = b3;
+              xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
 
-                qd_.data(2) = 0.0*D2R;
-                qd_.data(3) = -10.0*D2R;
-                qd_.data(4) = -20.0*D2R;
-                qd_.data(5) = -0.0*D2R;
-                qd_.data(6) = -70.0*D2R;
-                qd_.data(7) = 70.0*D2R;
-                qd_.data(8) = 0.0*D2R;
+              xd_dot_.setZero();
+              xd_dot_(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
 
-                qd_.data(9) = 0.0*D2R;
-                qd_.data(10) = 10.0*D2R;
-                qd_.data(11) = 0.0*D2R;
-                qd_.data(12) = -0.0*D2R;
-                qd_.data(13) = 70.0*D2R;
-                qd_.data(14) = -0.0*D2R;
-                qd_.data(15) = -0.0*D2R;
+              xd_[1].p(0) = 0.763;
+              xd_[1].p(1) = -0.027;
+              xd_[1].p(2) = 0.710;
+              xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(0, M_PI/2, 0));
 
-                qd_old_ = qd_;
-               
-            } 
+              x_[0].p(0) = ForwardPos[0](0);
+              x_[0].p(1) = ForwardPos[0](1);
+              x_[0].p(2) = ForwardPos[0](2);
+              x_[0].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[0](0), ForwardOri[0](1), ForwardOri[0](2)));
 
-            else{
-                if (ctr_obj_ == 1)
-                {
-                  
-                    xd_[0].p(0) = b1;
-                    xd_[0].p(1) = b2;
-                    xd_[0].p(2) = b3;
-                    xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
+              x_[1].p(0) = ForwardPos[1](0);
+              x_[1].p(1) = ForwardPos[1](1);
+              x_[1].p(2) = ForwardPos[1](2);
+              x_[1].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[1](0), ForwardOri[1](1), ForwardOri[1](2)));
 
-                    xd_dot_.setZero();
+              ex_.setZero();
+              ex_temp_ = diff(xd_[0], x_[0]);
+              ex_(0) = ex_temp_(3);
+              ex_(1) = ex_temp_(4);
+              ex_(2) = ex_temp_(5);
+              ex_(3) = ex_temp_(0);
+              ex_(4) = ex_temp_(1);
+              ex_(5) = ex_temp_(2);
 
-                    xd_[1].p(0) = 0.763;
-                    xd_[1].p(1) = -0.027;
-                    xd_[1].p(2) = 0.710;
-                    xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(0, M_PI/2, 0));
+              ex_temp_ = diff(xd_[1], x_[1]);
+              ex_(6) = ex_temp_(3);
+              ex_(7) = ex_temp_(4);
+              ex_(8) = ex_temp_(5);
+              ex_(9) = ex_temp_(0);
+              ex_(10) = ex_temp_(1);
+              ex_(11) = ex_temp_(2);
 
-                    ex_.setZero();
-                    ex_temp_ = diff(x_[0], xd_[0]);
-                    ex_(0) = ex_temp_(3);
-                    ex_(1) = ex_temp_(4);
-                    ex_(2) = ex_temp_(5);
-                    ex_(3) = ex_temp_(0);
-                    ex_(4) = ex_temp_(1);
-                    ex_(5) = ex_temp_(2);
+              qd_dot_.data = pInvJac * (xd_dot_ + K_tracking_ * ex_);
+              //qd_dot_.data = AJac.transpose() * (xd_dot_ + K_tracking_ * ex_);
+              //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
+              qd_.data = qd_old_.data + qd_dot_.data * dt;
+              qd_old_.data = qd_.data;
 
-                    ex_temp_ = diff(x_[1], xd_[1]);
-                    ex_(6) = ex_temp_(3);
-                    ex_(7) = ex_temp_(4);
-                    ex_(8) = ex_temp_(5);
-                    ex_(9) = ex_temp_(0);
-                    ex_(10) = ex_temp_(1);
-                    ex_(11) = ex_temp_(2);
-
-                    //qd_dot_.data = pInvJac * (xd_dot_ + K_tracking_ * ex_);
-                    qd_dot_.data = AJac.transpose() * (xd_dot_ + K_tracking_ * ex_);
-                    //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
-                    qd_.data = qd_old_.data + qd_dot_.data * dt;
-                    qd_old_.data = qd_.data;
-                   
-                }
-                else if (ctr_obj_ == 2)
-                {
-                    if (ik_mode_ == 1) // Open-loop Inverse Kinematics
-                    {
-                
-                        xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
-                        xd_[0].p(1) = b2;
-                        xd_[0].p(2) = b3;
-                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
-
-                        xd_dot_.setZero();
-                        xd_dot_(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                        xd_[1].p(0) = 0.763;
-                        xd_[1].p(1) = -0.027;
-                        xd_[1].p(2) = 0.710;
-                        xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(0, M_PI/2, 0));
-
-                        x_[0].p(0) = ForwardPos[0](0);
-                        x_[0].p(1) = ForwardPos[0](1);
-                        x_[0].p(2) = ForwardPos[0](2);
-                        x_[0].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[0](0), ForwardOri[0](1), ForwardOri[0](2)));
-
-                        x_[1].p(0) = ForwardPos[1](0);
-                        x_[1].p(1) = ForwardPos[1](1);
-                        x_[1].p(2) = ForwardPos[1](2);
-                        x_[1].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[1](0), ForwardOri[1](1), ForwardOri[1](2)));
-
-                        ex_.setZero();
-                        ex_temp_ = diff(x_[0], xd_[0]);
-                        ex_(0) = ex_temp_(3);
-                        ex_(1) = ex_temp_(4);
-                        ex_(2) = ex_temp_(5);
-                        ex_(3) = ex_temp_(0);
-                        ex_(4) = ex_temp_(1);
-                        ex_(5) = ex_temp_(2);
-
-                        ex_temp_ = diff(x_[1], xd_[1]);
-                        ex_(6) = ex_temp_(3);
-                        ex_(7) = ex_temp_(4);
-                        ex_(8) = ex_temp_(5);
-                        ex_(9) = ex_temp_(0);
-                        ex_(10) = ex_temp_(1);
-                        ex_(11) = ex_temp_(2);
-
-                        qd_dot_.data = pInvJac * (xd_dot_ + K_tracking_ * ex_);
-                        //qd_dot_.data = AJac.transpose() * (xd_dot_ + K_tracking_ * ex_);
-                        //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
-                        qd_.data = qd_old_.data + qd_dot_.data * dt;
-                        qd_old_.data = qd_.data;
-                 
-                    }
-                    else if (ik_mode_ == 2) // Closed-loop Inverse Kinematics
-                    {
-                  
-                        xd_[0].p(0) = b1;
-                        xd_[0].p(1) = A * sin(f * M_PI * (t - InitTime)) + b2;
-                        xd_[0].p(2) = b3;
-                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
-
-                        xd_[1].p(0) = 0.763;
-                        xd_[1].p(1) = -0.027;
-                        xd_[1].p(2) = 0.710;
-                        xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(0, M_PI/2, 0));
-
-                        xd_dot_.setZero();
-                        xd_dot_(4) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                        dSE3.block<3,1>(0,3) = dx.segment(3,3);
-                        cManipulator->pKin->RollPitchYawtoSO3(dx(0), dx(1), dx(2), dSO3);
-                        dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=9;
-                        aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                        eSE3 = cManipulator->pKin->inverse_SE3(aSE3)*dSE3;
-                        cManipulator->pKin->LogSO3(eSE3.block(0,0,3,3), eAxis, eAngle);
-
-                        ex_(0) = eAxis(0)*eAngle;
-                        ex_(1) = eAxis(1)*eAngle;
-                        ex_(2) = eAxis(2)*eAngle;
-                        ex_(3) = (xd_[0].p(0) - ForwardPos[0](0));
-                        ex_(4) = (xd_[0].p(1) - ForwardPos[0](1));
-                        ex_(5) = (xd_[0].p(2) - ForwardPos[0](2));
-
-                        dSE3.block<3,1>(0,3) = dx.segment(9,3);
-                        cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
-                        dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=16;
-                        aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                        eSE3 = cManipulator->pKin->inverse_SE3(aSE3)*dSE3;
-                        cManipulator->pKin->LogSO3(eSE3.block(0,0,3,3), eAxis, eAngle);
-                        ex_(6) = eAxis(0)*eAngle;
-                        ex_(7) = eAxis(1)*eAngle;
-                        ex_(8) = eAxis(2)*eAngle;
-                        ex_(9) = (xd_[1].p(0) - ForwardPos[1](0));
-                        ex_(10) = (xd_[1].p(1) - ForwardPos[1](1));
-                        ex_(11) = (xd_[1].p(2) - ForwardPos[1](2));
-
-                        //qd_dot_.data = pInvJac * (xd_dot_ + K_tracking_ * ex_);
-                        qd_dot_.data = AJac.transpose() * (xd_dot_ + K_tracking_ * ex_);
-                        //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
-                        qd_.data = qd_old_.data + qd_dot_.data * dt;
-                        qd_old_.data = qd_.data;
-                
-                    }
-                    else if (ik_mode_ == 3) // Closed-loop Inverse Kinematics
-                    {
-               
-                        dx(0) = -M_PI/2;
-                        dx(1) = 0;
-                        dx(2) = M_PI/2;
-                        dx(3) = b1;
-                        dx(4) = b2;
-                        dx(5) = A * sin(f * M_PI * (t - InitTime)) + b3;
-
-                        dx(6) = 0;
-                        dx(7) = M_PI/2;
-                        dx(8) = 0;
-                        dx(9) = 0.763;
-                        dx(10) = -0.027;
-                        dx(11) = 0.710;
-
-                        dxdot.setZero();
-                        dxdot(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                        dSE3.block<3,1>(0,3) = dx.segment(3,3);
-                        cManipulator->pKin->RollPitchYawtoSO3(dx(0), dx(1), dx(2), dSO3);
-                        dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=9;
-                        aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                        eSE3 = cManipulator->pKin->inverse_SE3(aSE3)*dSE3;
-                        cManipulator->pKin->LogSO3(eSE3.block(0,0,3,3), eAxis, eAngle);
-
-                        ex_(0) = eAxis(0)*eAngle;
-                        ex_(1) = eAxis(1)*eAngle;
-                        ex_(2) = eAxis(2)*eAngle;
-                        ex_(3) = (xd_[0].p(0) - ForwardPos[0](0));
-                        ex_(4) = (xd_[0].p(1) - ForwardPos[0](1));
-                        ex_(5) = (xd_[0].p(2) - ForwardPos[0](2));
-
-                        dSE3.block<3,1>(0,3) = dx.segment(9,3);
-                        cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
-                        dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=16;
-                        aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                        eSE3 = cManipulator->pKin->inverse_SE3(aSE3)*dSE3;
-                        cManipulator->pKin->LogSO3(eSE3.block(0,0,3,3), eAxis, eAngle);
-                        ex_(6) = eAxis(0)*eAngle;
-                        ex_(7) = eAxis(1)*eAngle;
-                        ex_(8) = eAxis(2)*eAngle;
-                        ex_(9) = (xd_[1].p(0) - ForwardPos[1](0));
-                        ex_(10) = (xd_[1].p(1) - ForwardPos[1](1));
-                        ex_(11) = (xd_[1].p(2) - ForwardPos[1](2));
-
-                        //qd_dot_.data = pInvJac * (xd_dot_ + K_tracking_ * ex_);
-                        //qd_dot_.data = AJac.transpose() * (xd_dot_ + K_tracking_ * ex_);
-                        qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
-                        qd_.data = qd_old_.data + qd_dot_.data * dt;
-                        qd_old_.data = qd_.data;
-                   
-                    }
-
-                }
             }
-            
-         
-            Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
-
-            for (int i = 0; i < n_joints_; i++)
+            else if (ik_mode_ == 2) // Closed-loop Inverse Kinematics
             {
-                joints_[i].setCommand(torque[i]);
-                //joints_[i].setCommand(0.0);
+
+              //xd_[0].p(0) = b1;
+              //xd_[0].p(1) = A * sin(f * M_PI * (t - InitTime)) + b2;
+              //xd_[0].p(2) = b3;
+
+              xd_[0].p(0) = b1;
+              xd_[0].p(1) = b2;
+              xd_[0].p(2) = A * sin(f * M_PI * (t - InitTime)) + b3;
+              xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
+
+              xd_[1].p(0) = 0.763;
+              xd_[1].p(1) = -0.027;
+              xd_[1].p(2) = 0.710;
+              xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(0, M_PI/2, 0));
+
+              xd_dot_.setZero();
+              xd_dot_(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+
+              dSE3.block<3,1>(0,3) = Eigen::Vector3d{xd_[0].p(0), xd_[0].p(1), xd_[0].p(2)};
+              for(int i=0; i < 3; i++)
+              {
+                for(int j=0; j<3; j++)
+                {
+                  dSO3(i,j) = xd_[0].M(i,j);
+                }
+              }
+
+              dSE3.block<3,3>(0,0) = dSO3;
+              EndNum=9;
+              aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
+              eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
+              cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
+              ex_(0) = eAxis(0);
+              ex_(1) = eAxis(1);
+              ex_(2) = eAxis(2);
+              ex_(3) = (xd_[0].p(0) - aSE3(3,0));
+              ex_(4) = (xd_[0].p(1) - aSE3(3,1));
+              ex_(5) = (xd_[0].p(2) - aSE3(3,2));
+
+              dSE3.block<3,1>(0,3) = Eigen::Vector3d{xd_[1].p(0), xd_[1].p(1), xd_[1].p(2)};
+              for(int i=0; i < 3; i++)
+              {
+                for(int j=0; j<3; j++)
+                {
+                  dSO3(i,j) = xd_[1].M(i,j);
+                }
+              }
+              EndNum=16;
+              aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
+              eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
+              //cManipulator->pKin->LogSO3(eSE3.block(0,0,3,3), eAxis, eAngle);
+              cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
+              ex_(6) = eAxis(0);
+              ex_(7) = eAxis(1);
+              ex_(8) = eAxis(2);
+              ex_(9) = (xd_[1].p(0) - aSE3(3,0));
+              ex_(10) = (xd_[1].p(1) - aSE3(3,1));
+              ex_(11) = (xd_[1].p(2) - aSE3(3,2));
+
+              qd_dot_.data = pInvJac * (xd_dot_ + K_tracking_ * ex_);
+              //qd_dot_.data = AJac.transpose() * (xd_dot_ + K_tracking_ * ex_);
+              //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
+              qd_.data = qd_old_.data + qd_dot_.data * dt;
+              qd_old_.data = qd_.data;
+
             }
+            else if (ik_mode_ == 3) // Closed-loop Inverse Kinematics
+            {
 
-            // ********* 4. data 저장 *********
-            save_data();
+              dx(0) = -M_PI/2;
+              dx(1) = 0;
+              dx(2) = M_PI/2;
+              dx(3) = b1;
+              dx(4) = b2;
+              dx(5) = A * sin(f * M_PI * (t - InitTime)) + b3;
 
-            // ********* 5. state 출력 *********
-            print_state();
+              dx(6) = 0;
+              dx(7) = M_PI/2;
+              dx(8) = 0;
+              dx(9) = 0.763;
+              dx(10) = -0.027;
+              dx(11) = 0.710;
+
+              dxdot.setZero();
+              dxdot(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+
+              dSE3.block<3,1>(0,3) = dx.segment(3,3);
+              cManipulator->pKin->RollPitchYawtoSO3(dx(0), dx(1), dx(2), dSO3);
+              dSE3.block<3,3>(0,0) = dSO3;
+              EndNum=9;
+              aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
+              eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
+              cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
+              ex_(0) = eAxis(0);
+              ex_(1) = eAxis(1);
+              ex_(2) = eAxis(2);
+              ex_(3) = (xd_[0].p(0) - aSE3(3,0));
+              ex_(4) = (xd_[0].p(1) - aSE3(3,1));
+              ex_(5) = (xd_[0].p(2) - aSE3(3,2));
+
+              dSE3.block<3,1>(0,3) = dx.segment(9,3);
+              cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
+              dSE3.block<3,3>(0,0) = dSO3;
+              EndNum=16;
+              aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
+              eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
+              cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
+              ex_(6) = eAxis(0);
+              ex_(7) = eAxis(1);
+              ex_(8) = eAxis(2);
+              ex_(9) = (xd_[1].p(0) - aSE3(3,0));
+              ex_(10) = (xd_[1].p(1) - aSE3(3,1));
+              ex_(11) = (xd_[1].p(2) - aSE3(3,2));
+
+              qd_dot_.data = pInvJac * (xd_dot_ + K_tracking_ * ex_);
+              //qd_dot_.data = AJac.transpose() * (xd_dot_ + K_tracking_ * ex_);
+              //qd_dot_.data = ScaledTransJac * (xd_dot_ + K_tracking_ * ex_);
+              qd_.data = qd_old_.data + qd_dot_.data * dt;
+              qd_old_.data = qd_.data;
+
+            }
+          }
         }
+
+        Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+
+        for (int i = 0; i < n_joints_; i++)
+        {
+          joints_[i].setCommand(torque[i]);
+          //joints_[i].setCommand(0.0);
+        }
+
+        // ********* 4. data 저장 *********
+        save_data();
+
+        // ********* 5. state 출력 *********
+        print_state();
+      }
 
         void stopping(const ros::Time &time) override
         {

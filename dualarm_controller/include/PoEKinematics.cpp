@@ -164,10 +164,42 @@ void PoEKinematics::SpaceToBodyJacobian( void )
 	return;
 }
 
+void PoEKinematics::GetSpaceJacobianDot(MatrixXd &_sJacobianDot)
+{
+  _sJacobianDot.setZero(6, this->m_DoF);
+  for(int i = 0; i < this->m_DoF; i++)
+  {
+    for(int j=0; j < this->m_DoF; j++)
+    {
+      if(i > j)
+      {
+        _sJacobianDot.block(i, 6*j, 6, 1) = adjointMatrix(mSpaceJacobian.col(i))*mSpaceJacobian.col(j);
+      }
+    }
+  }
+}
+
+void PoEKinematics::GetBodyJacobianDot(MatrixXd &_bJacobianDot )
+{
+  _bJacobianDot.setZero(6, this->m_DoF);
+  for(int i = 0; i < this->m_DoF; i++)
+  {
+    for(int j=0; j < this->m_DoF; j++)
+    {
+      if(i < j)
+      {
+        _bJacobianDot.block(i, 6*j, 6, 1) = adjointMatrix(mBodyJacobian.col(i))*mBodyJacobian.col(j);
+      }
+    }
+  }
+}
+
 void PoEKinematics::AnalyticJacobian( void )
 {
 	Mat_Tmp.resize(6*this->m_NumChain, 6*this->m_NumChain);
 	Mat_Tmp.setZero();
+
+    mAnalyticJacobian.setZero();
 
 	for(int i=0; i < this->m_NumChain; i++)
 	{
@@ -178,16 +210,20 @@ void PoEKinematics::AnalyticJacobian( void )
 		}
 		else
 		{
-			r = Omega*Theta;
-			Mat_Tmp.block(6*i,6*i,3,3) += Matrix3d::Identity();
-			Mat_Tmp.block(6*i,6*i,3,3) += 1/2*LieOperator::SkewMatrix(r);
-			Mat_Tmp.block(6*i,6*i,3,3) += ((1/pow(Theta,2) - (1-cos(Theta)/(2*Theta*sin(Theta))))*LieOperator::SkewMatrixSquare(r));
+            Mat_Tmp.block(6*i,6*i,3,3) = Matrix3d::Identity();
+            //Mat_Tmp.block(6*i,6*i,3,3) = LieOperator::SkewMatrix(Omega);
+			//r = Omega*fmod(Theta,M_PI);
+			//r = Omega;
+			//Mat_Tmp.block(6*i,6*i,3,3) = Matrix3d::Identity() -  1/2*LieOperator::SkewMatrix(r) - ((1/r.squaredNorm() + (1+cos(r.norm())/(2*r.norm()*sin(r.norm()))))*LieOperator::SkewMatrixSquare(r));
 		}
 		Mat_Tmp.block((6*i+3),(6*i+3),3,3) = T[0][JointEndNum[i]].block(0,0,3,3);
-	}
 
-	mAnalyticJacobian.setZero();
-	mAnalyticJacobian.noalias() += Mat_Tmp*mBodyJacobian;
+		mAnalyticJacobian.block(6*i, 0, 3, this->m_DoF).noalias() += mSpaceJacobian.block(6*i, 0, 3, this->m_DoF);
+        mAnalyticJacobian.block(6*i+3, 0, 3, this->m_DoF) = T[0][JointEndNum[i]].block(0,0,3,3)*mBodyJacobian.block(6*i+3, 0, 3, this->m_DoF);
+    }
+
+
+	//mAnalyticJacobian.noalias() += Mat_Tmp*mBodyJacobian;
 	return;
 }
 
@@ -247,6 +283,11 @@ void PoEKinematics::GetManipulability( double *_TaskEigen, double *_OrientEigen 
 		_TaskEigen[i] = SVDsolver.singularValues().maxCoeff() / SVDsolver.singularValues().minCoeff();
 	}
 	return;
+}
+
+double PoEKinematics::GetManipulabilityMeasure()
+{
+    return sqrt((mAnalyticJacobian*mAnalyticJacobian.transpose()).determinant());
 }
 
 void PoEKinematics::GetTaskVelocity( double *_qdot, VectorXd *_TaskVelocity, int &_size )

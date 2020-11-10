@@ -32,14 +32,14 @@
 #define num_taskspace 6
 #define SaveDataMax 97
 
-#define A 0.15
+#define A 0.25
 #define b1 0.451
 #define b2 -0.316
 #define b3 0.843
 #define f 0.3
 
-#define l_p1 0.110
-#define l_p2 0.20
+#define l_p1 0.470
+#define l_p2 0.40
 #define l_p3 0.812
 
 #define Deg_A 70
@@ -143,13 +143,13 @@ namespace dualarm_controller
 
             // 1.2.2 Closed-loop Inverse Kinematics Controller
 
-            if (!n.getParam("/dualarm/taskspace_control/clik_gain/K_regulation", K_regulation_))
+            if (!n.getParam("/dualarm/taskspace_control/clik_gain/K_pos", K_regulation_))
             {
                 ROS_ERROR("Cannot find clik regulation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/clik_gain/K_tracking", K_tracking_))
+            if (!n.getParam("/dualarm/taskspace_control/clik_gain/K_ori", K_tracking_))
             {
                 ROS_ERROR("Cannot find clik tracking gain");
                 return false;
@@ -404,37 +404,34 @@ namespace dualarm_controller
             {
                 qd_.data.setZero();
 
-
                 qd_.data(0) = -0.0*D2R;
                 qd_.data(1) = -0.0*D2R;
 
                 qd_.data(2) = 0.0*D2R;
-                qd_.data(3) = -10.0*D2R;
-                qd_.data(4) = -20.0*D2R;
+                qd_.data(3) = -0.0*D2R;
+                qd_.data(4) = -0.0*D2R;
                 qd_.data(5) = -0.0*D2R;
                 qd_.data(6) = -70.0*D2R;
                 qd_.data(7) = 0.0*D2R;
                 qd_.data(8) = 0.0*D2R;
 
                 qd_.data(9) = 0.0*D2R;
-                qd_.data(10) = 10.0*D2R;
+                qd_.data(10) = 0.0*D2R;
                 qd_.data(11) = 0.0*D2R;
                 qd_.data(12) = -0.0*D2R;
                 qd_.data(13) = 70.0*D2R;
                 qd_.data(14) = -0.0*D2R;
                 qd_.data(15) = -0.0*D2R;
 
-
                 qd_old_ = qd_;
             }
             else{
                 if (ctr_obj_ == 1)
                 {
-                  
                     xd_[0].p(0) = b1;
                     xd_[0].p(1) = b2;
                     xd_[0].p(2) = b3;
-                    xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, 0));
+                    xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(M_PI/2, 0, 0));
 
                     xd_dot_.setZero();
 
@@ -459,13 +456,6 @@ namespace dualarm_controller
                     ex_(9) = ex_temp_(0);
                     ex_(10) = ex_temp_(1);
                     ex_(11) = ex_temp_(2);
-
-                    //qd_dot_.data = pInvJac * (xd_dot_ + CLIK_GAIN * ex_);
-                    qd_dot_.data = AJac.transpose() * (xd_dot_ + CLIK_GAIN * ex_);
-                    //qd_dot_.data = ScaledTransJac * (xd_dot_ + CLIK_GAIN * ex_);
-                    qd_.data = qd_old_.data + qd_dot_.data * dt;
-                    qd_old_.data = qd_.data;
-                   
                 }
                 else if (ctr_obj_ == 2)
                 {
@@ -474,7 +464,7 @@ namespace dualarm_controller
                         xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
                         xd_[0].p(1) = b2;
                         xd_[0].p(2) = b3;
-                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(M_PI/2, 0, 0));
+                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, -M_PI/2, 0));
 
                         xd_dot_.setZero();
                         xd_dot_(2+1) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
@@ -510,19 +500,14 @@ namespace dualarm_controller
                         ex_(9) = ex_temp_(0);
                         ex_(10) = ex_temp_(1);
                         ex_(11) = ex_temp_(2);
-
-                        qd_dot_.data = pInvJac * (xd_dot_ + CLIK_GAIN * ex_);
-                        //qd_dot_.data = AJac.transpose() * (xd_dot_ + CLIK_GAIN * ex_);
-                        //qd_dot_.data = ScaledTransJac * (xd_dot_ + CLIK_GAIN * ex_);
-                        qd_.data = qd_old_.data + qd_dot_.data * dt;
-                        qd_old_.data = qd_.data;
+                        ex_.tail(6).setZero();
                     }
                     else if (ik_mode_ == 2)
                     {
-                        xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
-                        xd_[0].p(1) = b2;
+                        xd_[0].p(0) = b1;
+                        xd_[0].p(1) = A * sin(f * M_PI * (t - InitTime)) + b2;
                         xd_[0].p(2) = b3;
-                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(M_PI/2, 0, 0));
+                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, -M_PI/2, 0));
 
                         xd_[1].p(0) = l_p1;
                         xd_[1].p(1) = l_p2;
@@ -530,7 +515,7 @@ namespace dualarm_controller
                         xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(M_PI/2, 0, 0));
 
                         xd_dot_.setZero();
-                        xd_dot_(2+1) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                        xd_dot_(2+2) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
 
                         dSE3.block<3,1>(0,3) = Eigen::Vector3d{xd_[0].p(0), xd_[0].p(1), xd_[0].p(2)};
                         for(int i=0; i < 3; i++)
@@ -572,37 +557,18 @@ namespace dualarm_controller
                         ex_(10) = (xd_[1].p(1) - aSE3(1,3));
                         ex_(11) = (xd_[1].p(2) - aSE3(2,3));
                         ex_.tail(6).setZero();
-
-                        MatrixXd aJac1, aJac2, pInvaJac1, pInvaJac2, pInvAJac;
-                        aJac1 = AJac.block(0,0,6,9);
-                        aJac2.block(0,2,6,7) = AJac.block(6,9,6,7);
-                        aJac2.block(0,0,6,2) = AJac.block(0,0,6,2);
-                        pInvaJac1 = aJac1.completeOrthogonalDecomposition().pseudoInverse();
-                        pInvaJac2 = aJac2.completeOrthogonalDecomposition().pseudoInverse();
-                        pInvAJac.setZero(16,12);
-                        pInvAJac.block(0,0,9,6) = pInvaJac1;
-                        pInvAJac.block(9,6,7,6) = pInvaJac2;
-
-                        double alpha = 0.005;
-                        q0dot = alpha*(q_.data.cwiseInverse()*cManipulator->pKin->GetManipulabilityMeasure());
-                        qd_dot_.data = pInvAJac * (xd_dot_ + CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
-                        //qd_dot_.data = pInvJac * (xd_dot_ + CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
-                        //qd_dot_.data = AJac.transpose() * (xd_dot_ + CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
-                        //qd_dot_.data = ScaledTransJac * (xd_dot_ + CLIK_GAIN * ex_);
-                        qd_.data = qd_old_.data + qd_dot_.data * dt;
-                        qd_old_.data = qd_.data;
                     }
                     else if (ik_mode_ == 3)
                     {
-                        dx(0) = M_PI/2;
-                        dx(1) = 0;
+                        dx(0) = 0;
+                        dx(1) = -M_PI_2;
                         dx(2) = 0;
                         dx(3) = b1;
                         dx(4) = b2;
                         dx(5) = A * sin(f * M_PI * (t - InitTime)) + b3;
 
                         dx(6) = 0;
-                        dx(7) = 0;
+                        dx(7) = -M_PI_2;
                         dx(8) = 0; //M_PI/2;
                         dx(9) = l_p1;
                         dx(10) = l_p2;
@@ -639,15 +605,7 @@ namespace dualarm_controller
                         ex_(9) = eSE3(0,3);
                         ex_(10) = eSE3(1,3);
                         ex_(11) = eSE3(2,3);
-
-
-                        double alpha = 0.005;
-                        q0dot = alpha*(q_.data.cwiseInverse()*cManipulator->pKin->GetManipulabilityMeasure());
-                        //qd_dot_.data = pInvJac * (xd_dot_ + CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
-                        qd_dot_.data = AJac.transpose() * (xd_dot_ + CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
-                        //qd_dot_.data = ScaledTransJac * (xd_dot_ + CLIK_GAIN * ex_);
-                        qd_.data = qd_old_.data + qd_dot_.data * dt;
-                        qd_old_.data = qd_.data;
+                        //ex_.tail(6).setZero();
                     }
                 }
                 else if( ctr_obj_ == 3 )
@@ -675,8 +633,7 @@ namespace dualarm_controller
                     EndNum=9;
                     aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
                     eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-                    //std::cout << eSE3 << "\n"<< std::endl;
-                    //sleep(1);
+
                     cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
                     ex_(0) = eAxis(0);
                     ex_(1) = eAxis(1);
@@ -691,8 +648,7 @@ namespace dualarm_controller
                     EndNum=16;
                     aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
                     eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-                    //std::cout << eSE3 << "\n"<< std::endl;
-                    //sleep(1);
+
                     cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
                     ex_(6) = eAxis(0);
                     ex_(7) = eAxis(1);
@@ -724,13 +680,20 @@ namespace dualarm_controller
             id_solver1_->JntToGravity(q2_, G1_kdl_);
             fk_pos_solver1_->JntToCart(q2_, x_[1]);
 
-
             if( ctr_obj_ == 3)
             {
                 Control->TaskInvDynController(ex_, ex_dot_, q_.data, qdot_.data, torque, dt);
             }
             else
             {
+                double alpha = 0.001;
+                q0dot = alpha*(q_.data.cwiseInverse()*cManipulator->pKin->GetManipulabilityMeasure());
+                //qd_dot_.data = pInvJac * (xd_dot_ - CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
+                qd_dot_.data = AJac.transpose() * (xd_dot_ - CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
+                //qd_dot_.data = ScaledTransJac * (xd_dot_ - CLIK_GAIN * ex_);
+
+                qd_.data = qd_old_.data + qd_dot_.data * dt;
+                qd_old_.data = qd_.data;
                 Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
             }
 
@@ -795,12 +758,12 @@ namespace dualarm_controller
                 printf("Forward Kinematics:\n");
                 for(int j=0; j<NumChain; j++)
                 {
-                    printf("x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
+                    printf("no.%d, PoE: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
                            ForwardPos[j](0), ForwardPos[j](1),ForwardPos[j](2), ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
-                    //double a, b, g;
-                    //x_[j].M.GetEulerZYX(a, b, g);
-                    //printf("x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
-                    printf("Axis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n", ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
+                    double a, b, g;
+                    x_[j].M.GetEulerZYX(a, b, g);
+                    printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
+                    printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n", j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
 
 
                 }
@@ -814,13 +777,17 @@ namespace dualarm_controller
                 //std::cout << AJac << "\n"<< std::endl;
                 //std::cout << spaceJac<< "\n"<< std::endl;
                 //std::cout << bodyJac << "\n"<< std::endl;
-                //sleep(1);
+                //usleep(100000);
+
+                std::cout << CLIK_GAIN*ex_ << "\n"<< std::endl;
+                std::cout << xd_dot_ << "\n"<< std::endl;
+                std::cout << q0dot << "\n"<< std::endl;
+                usleep(100000);
 
                 //std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
                 //std::cout << M1_kdl_.data << "\n"<< std::endl;
-                //sleep(1);
                 //std::cout << M << "\n"<< std::endl;
-                //sleep(1);
+                //usleep(100000);
             }
             count++;
         }

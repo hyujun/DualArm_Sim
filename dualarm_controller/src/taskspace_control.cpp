@@ -461,7 +461,7 @@ namespace dualarm_controller
                 {
                     if (ik_mode_ == 1)
                     {
-                        xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
+                        xd_[0].p(0) =
                         xd_[0].p(1) = b2;
                         xd_[0].p(2) = b3;
                         xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, -M_PI/2, 0));
@@ -504,28 +504,26 @@ namespace dualarm_controller
                     }
                     else if (ik_mode_ == 2)
                     {
-                        xd_[0].p(0) = b1;
-                        xd_[0].p(1) = A * sin(f * M_PI * (t - InitTime)) + b2;
-                        xd_[0].p(2) = b3;
-                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, -M_PI/2, 0));
+                        dx(0) = 0;
+                        dx(1) = -M_PI_2;
+                        dx(2) = 0;
+                        dx(3) = b1;
+                        dx(4) = A * sin(f * M_PI * (t - InitTime)) + b2;
+                        dx(5) = b3;
 
-                        xd_[1].p(0) = l_p1;
-                        xd_[1].p(1) = l_p2;
-                        xd_[1].p(2) = l_p3;
-                        xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(M_PI/2, 0, 0));
+                        dx(6) = 0;
+                        dx(7) = -M_PI_2;
+                        dx(8) = 0; //M_PI/2;
+                        dx(9) = l_p1;
+                        dx(10) = l_p2;
+                        dx(11) = l_p3;
 
                         xd_dot_.setZero();
-                        xd_dot_(2+2) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                        xd_dot_(4) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                        //xd_dot_(11) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
 
-                        dSE3.block<3,1>(0,3) = Eigen::Vector3d{xd_[0].p(0), xd_[0].p(1), xd_[0].p(2)};
-                        for(int i=0; i < 3; i++)
-                        {
-                          for(int j=0; j<3; j++)
-                          {
-                            dSO3(i,j) = xd_[0].M(i,j);
-                          }
-                        }
-
+                        dSE3.block<3,1>(0,3) = dx.segment(3,3);
+                        cManipulator->pKin->RollPitchYawtoSO3(dx(0), dx(1), dx(2), dSO3);
                         dSE3.block<3,3>(0,0) = dSO3;
                         EndNum=9;
                         aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
@@ -534,18 +532,13 @@ namespace dualarm_controller
                         ex_(0) = eAxis(0);
                         ex_(1) = eAxis(1);
                         ex_(2) = eAxis(2);
-                        ex_(3) = (xd_[0].p(0) - aSE3(0,3));
-                        ex_(4) = (xd_[0].p(1) - aSE3(1,3));
-                        ex_(5) = (xd_[0].p(2) - aSE3(2,3));
+                        ex_(3) = eSE3(0,3);
+                        ex_(4) = eSE3(1,3);
+                        ex_(5) = eSE3(2,3);
 
-                        dSE3.block<3,1>(0,3) = Eigen::Vector3d{xd_[1].p(0), xd_[1].p(1), xd_[1].p(2)};
-                        for(int i=0; i < 3; i++)
-                        {
-                          for(int j=0; j<3; j++)
-                          {
-                            dSO3(i,j) = xd_[1].M(i,j);
-                          }
-                        }
+                        dSE3.block<3,1>(0,3) = dx.segment(9,3);
+                        cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
+                        dSE3.block<3,3>(0,0) = dSO3;
                         EndNum=16;
                         aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
                         eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
@@ -553,10 +546,9 @@ namespace dualarm_controller
                         ex_(6) = eAxis(0);
                         ex_(7) = eAxis(1);
                         ex_(8) = eAxis(2);
-                        ex_(9) = (xd_[1].p(0) - aSE3(0,3));
-                        ex_(10) = (xd_[1].p(1) - aSE3(1,3));
-                        ex_(11) = (xd_[1].p(2) - aSE3(2,3));
-                        ex_.tail(6).setZero();
+                        ex_(9) = eSE3(0,3);
+                        ex_(10) = eSE3(1,3);
+                        ex_(11) = eSE3(2,3);
                     }
                     else if (ik_mode_ == 3)
                     {
@@ -611,21 +603,22 @@ namespace dualarm_controller
                 else if( ctr_obj_ == 3 )
                 {
                     dx(0) = 0;
-                    dx(1) = 0;
+                    dx(1) = -M_PI_2;
                     dx(2) = 0;
                     dx(3) = b1;
                     dx(4) = b2;
                     dx(5) = b3;
 
                     dx(6) = 0;
-                    dx(7) = 0;
-                    dx(8) = 0;
+                    dx(7) = -M_PI_2;
+                    dx(8) = 0; //M_PI/2;
                     dx(9) = l_p1;
                     dx(10) = l_p2;
                     dx(11) = l_p3;
 
                     xd_dot_.setZero();
                     //xd_dot_(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                    //xd_dot_(11) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
 
                     dSE3.block<3,1>(0,3) = dx.segment(3,3);
                     cManipulator->pKin->RollPitchYawtoSO3(dx(0), dx(1), dx(2), dSO3);
@@ -633,7 +626,6 @@ namespace dualarm_controller
                     EndNum=9;
                     aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
                     eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-
                     cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
                     ex_(0) = eAxis(0);
                     ex_(1) = eAxis(1);
@@ -648,7 +640,6 @@ namespace dualarm_controller
                     EndNum=16;
                     aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
                     eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-
                     cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
                     ex_(6) = eAxis(0);
                     ex_(7) = eAxis(1);
@@ -656,7 +647,7 @@ namespace dualarm_controller
                     ex_(9) = eSE3(0,3);
                     ex_(10) = eSE3(1,3);
                     ex_(11) = eSE3(2,3);
-                    ex_.tail(6).setZero();
+                    //ex_.tail(6).setZero();
                 }
             }
 
@@ -704,7 +695,7 @@ namespace dualarm_controller
             }
 
             // ********* 4. data 저장 *********
-            save_data();
+            publish_data();
 
             // ********* 5. state 출력 *********
             print_state();
@@ -716,9 +707,35 @@ namespace dualarm_controller
             delete cManipulator;
         }
 
-        static void save_data()
+        void publish_data()
         {
+            msg_q_.data.clear();
+            msg_qd_.data.clear();
+            msg_e_.data.clear();
+            msg_qddot_.data.clear();
+            msg_x_.data.clear();
+            msg_xd_.data.clear();
+            msg_ex_.data.clear();
 
+            for(int i=0; i < n_joints_; i++)
+            {
+                msg_q_.data.push_back(q_(i));
+                msg_qd_.data.push_back(qd_(i));
+                msg_e_.data.push_back(qd_(i) - q_(i));
+            }
+
+            for(int j=0; j<2*num_taskspace; j++)
+            {
+                msg_xd_.data.push_back(dx(j));
+                msg_ex_.data.push_back(ex_(j));
+            }
+
+            pub_q_.publish(msg_q_);
+            pub_qd_.publish(msg_qd_);
+            pub_e_.publish(msg_e_);
+
+            pub_xd_.publish(msg_xd_);
+            pub_ex_.publish(msg_ex_);
         }
 
         void print_state()
@@ -755,7 +772,7 @@ namespace dualarm_controller
                     printf("\n");
                 }
 
-                printf("Forward Kinematics:\n");
+                printf("\nForward Kinematics:\n");
                 for(int j=0; j<NumChain; j++)
                 {
                     printf("no.%d, PoE: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
@@ -779,10 +796,10 @@ namespace dualarm_controller
                 //std::cout << bodyJac << "\n"<< std::endl;
                 //usleep(100000);
 
-                std::cout << CLIK_GAIN*ex_ << "\n"<< std::endl;
-                std::cout << xd_dot_ << "\n"<< std::endl;
-                std::cout << q0dot << "\n"<< std::endl;
-                usleep(100000);
+                //std::cout << CLIK_GAIN*ex_ << "\n"<< std::endl;
+                //std::cout << xd_dot_ << "\n"<< std::endl;
+                //std::cout << q0dot << "\n"<< std::endl;
+                //usleep(100000);
 
                 //std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
                 //std::cout << M1_kdl_.data << "\n"<< std::endl;
@@ -894,6 +911,7 @@ namespace dualarm_controller
 
         // ros message
         std_msgs::Float64MultiArray msg_qd_, msg_q_, msg_e_;
+        std_msgs::Float64MultiArray msg_qddot_;
         std_msgs::Float64MultiArray msg_xd_, msg_x_, msg_ex_;
         std_msgs::Float64MultiArray msg_SaveData_;
 

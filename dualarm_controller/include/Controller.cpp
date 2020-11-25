@@ -94,21 +94,21 @@ Controller::Controller(SerialManipulator *pManipulator)
     dqdot.resize(m_Jnum);
     dqddot.resize(m_Jnum);
 
-    KpTask(0,0) = 40.0;
-    KpTask(1,1) = 40.0;
-    KpTask(2,2) = 40.0;
+    KpTask(0,0) = 10.0;
+    KpTask(1,1) = 10.0;
+    KpTask(2,2) = 10.0;
 
-    KpTask(3,3) = 40.0;
-    KpTask(4,4) = 40.0;
-    KpTask(5,5) = 40.0;
+    KpTask(3,3) = 10.0;
+    KpTask(4,4) = 10.0;
+    KpTask(5,5) = 10.0;
 
-    KpTask(6,6) = 40.0;
-    KpTask(7,7) = 40.0;
-    KpTask(8,8) = 40.0;
+    KpTask(6,6) = 10.0;
+    KpTask(7,7) = 10.0;
+    KpTask(8,8) = 10.0;
 
-    KpTask(9,9) = 40.0;
-    KpTask(10,10) = 40.0;
-    KpTask(11,11) = 40.0;
+    KpTask(9,9) = 10.0;
+    KpTask(10,10) = 10.0;
+    KpTask(11,11) = 10.0;
 
     KdTask(0,0) = 0.0001;
     KdTask(1,1) = 0.0001;
@@ -252,7 +252,7 @@ void Controller::TaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd 
     pManipulator->pKin->GetAnalyticJacobian(AJacobian);
     //pManipulator->pKin->GetpinvJacobian(pInvJac);
 
-    ToqOut = AJacobian.transpose()*(KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+    ToqOut = AJacobian.transpose()*(-KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
     //ToqOut = pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + G;
     //ToqOut = pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
     Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;

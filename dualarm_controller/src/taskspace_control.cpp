@@ -169,8 +169,6 @@ namespace dualarm_controller
             CLIK_GAIN(10,10) = K_regulation_;
             CLIK_GAIN(11,11) = K_regulation_;
 
-
-
             // 2. ********* urdf *********
             urdf::Model urdf;
             if (!urdf.initParam("robot_description"))

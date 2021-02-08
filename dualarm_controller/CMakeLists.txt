@@ -129,6 +129,7 @@ include_directories(
  add_library(${PROJECT_NAME}
          src/computedtorque_control_clik.cpp
          src/taskspace_control.cpp
+         src/taskspace_control_cy.cpp
          include/Controller.cpp
          include/LieOperator.cpp
          include/LieDynamics.cpp

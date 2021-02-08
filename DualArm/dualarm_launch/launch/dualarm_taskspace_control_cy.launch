@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find dualarm_gazebo)/launch/dualarm_empty_world.launch"/>
+
+    <include file="$(find dualarm_control)/launch/taskspace_control_cy.launch" />
+</launch>

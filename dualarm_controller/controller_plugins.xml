@@ -16,4 +16,11 @@
         </description>
     </class>
 
+    <class name="dualarm_controller/Taskspace_Control_CY"
+           type="dualarm_controller::Taskspace_Control_CY"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            Direct Task-space Controller for Chanryul
+        </description>
+    </class>
 </library>

@@ -9,6 +9,7 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <urdf/model.h>
 #include <sensor_msgs/JointState.h>
+#include <robot_state_publisher/robot_state_publisher.h>
 
 // from kdl packages
 #include <kdl/tree.hpp>
@@ -701,6 +702,7 @@ namespace dualarm_controller
 
         void stopping(const ros::Time &time) override
         {
+            ROS_INFO("Stop Task space Controller");
             delete Control;
             delete cManipulator;
         }

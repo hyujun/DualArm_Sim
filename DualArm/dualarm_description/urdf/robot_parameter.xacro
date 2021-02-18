@@ -24,24 +24,24 @@
   <xacro:property name="l_arm_link_hand" value="link_L_hand" />
 <!-- link_mass -->
   <xacro:property name="base_link_mass" value="10.0"/>
-  <xacro:property name="waist_link_01_mass" value="6.61"/>
-  <xacro:property name="waist_link_02_mass" value="8.2662"/>
+  <xacro:property name="waist_link_01_mass" value="11.91"/>
+  <xacro:property name="waist_link_02_mass" value="10.901"/>
 
-  <xacro:property name="r_arm_link_01_mass" value="2.8163"/>
-  <xacro:property name="r_arm_link_02_mass" value="3.213"/>
-  <xacro:property name="r_arm_link_03_mass" value="2.4856"/>
-  <xacro:property name="r_arm_link_04_mass" value="2.1204"/>
-  <xacro:property name="r_arm_link_05_mass" value="1.8777"/>
-  <xacro:property name="r_arm_link_06_mass" value="2.6999"/>
-  <xacro:property name="r_arm_link_07_mass" value="1.6338"/>
+  <xacro:property name="r_arm_link_01_mass" value="3.35"/>
+  <xacro:property name="r_arm_link_02_mass" value="3.51"/>
+  <xacro:property name="r_arm_link_03_mass" value="2.59"/>
+  <xacro:property name="r_arm_link_04_mass" value="2.49"/>
+  <xacro:property name="r_arm_link_05_mass" value="1.8"/>
+  <xacro:property name="r_arm_link_06_mass" value="1.73"/>
+  <xacro:property name="r_arm_link_07_mass" value="1.08"/>
 
-  <xacro:property name="l_arm_link_01_mass" value="2.8163"/>
-  <xacro:property name="l_arm_link_02_mass" value="3.213"/>
-  <xacro:property name="l_arm_link_03_mass" value="2.4856"/>
-  <xacro:property name="l_arm_link_04_mass" value="2.1204"/>
-  <xacro:property name="l_arm_link_05_mass" value="1.8777"/>
-  <xacro:property name="l_arm_link_06_mass" value="2.6999"/>
-  <xacro:property name="l_arm_link_07_mass" value="1.5"/>
+  <xacro:property name="l_arm_link_01_mass" value="3.35"/>
+  <xacro:property name="l_arm_link_02_mass" value="3.51"/>
+  <xacro:property name="l_arm_link_03_mass" value="2.59"/>
+  <xacro:property name="l_arm_link_04_mass" value="2.49"/>
+  <xacro:property name="l_arm_link_05_mass" value="1.8"/>
+  <xacro:property name="l_arm_link_06_mass" value="1.73"/>
+  <xacro:property name="l_arm_link_07_mass" value="1.147"/>
 
 <!-- link_inertia -->
   <xacro:property name="base_link_ixx" value="0.0"/>
@@ -51,117 +51,117 @@
   <xacro:property name="base_link_izz" value="0.0"/>
   <xacro:property name="base_link_iyz" value="0.0"/>
 
-  <xacro:property name="waist_link_01_ixx" value="0.0522"/>
-  <xacro:property name="waist_link_01_ixy" value="-0.0001"/>
-  <xacro:property name="waist_link_01_ixz" value="0.0"/>
-  <xacro:property name="waist_link_01_iyy" value="0.0395"/>
-  <xacro:property name="waist_link_01_iyz" value="0.0003"/>
-  <xacro:property name="waist_link_01_izz" value="0.0314"/>
+  <xacro:property name="waist_link_01_ixx" value="0.094"/>
+  <xacro:property name="waist_link_01_ixy" value="-0.0002"/>
+  <xacro:property name="waist_link_01_ixz" value="-0.0001"/>
+  <xacro:property name="waist_link_01_iyy" value="0.0712"/>
+  <xacro:property name="waist_link_01_iyz" value="0.0005"/>
+  <xacro:property name="waist_link_01_izz" value="0.0565"/>
 
-  <xacro:property name="waist_link_02_ixx" value="0.1164"/>
-  <xacro:property name="waist_link_02_ixy" value="-0.0003"/>
-  <xacro:property name="waist_link_02_ixz" value="0.0021"/>
-  <xacro:property name="waist_link_02_iyy" value="0.0422"/>
-  <xacro:property name="waist_link_02_iyz" value="-0.0034"/>
-  <xacro:property name="waist_link_02_izz" value="0.0948"/>
+  <xacro:property name="waist_link_02_ixx" value="0.1614"/>
+  <xacro:property name="waist_link_02_ixy" value="-0.0006"/>
+  <xacro:property name="waist_link_02_ixz" value="0.0026"/>
+  <xacro:property name="waist_link_02_iyy" value="0.0558"/>
+  <xacro:property name="waist_link_02_iyz" value="-0.0059"/>
+  <xacro:property name="waist_link_02_izz" value="0.1339"/>
 
-  <xacro:property name="r_arm_link_01_ixx" value="0.0077"/>
-  <xacro:property name="r_arm_link_01_ixy" value="0.0001"/>
-  <xacro:property name="r_arm_link_01_ixz" value="0.0"/>
-  <xacro:property name="r_arm_link_01_iyy" value="0.0065"/>
-  <xacro:property name="r_arm_link_01_iyz" value="-0.0008"/>
-  <xacro:property name="r_arm_link_01_izz" value="0.005"/>
+  <xacro:property name="r_arm_link_01_ixx" value="0.0092"/>
+  <xacro:property name="r_arm_link_01_ixy" value="0.0002"/>
+  <xacro:property name="r_arm_link_01_ixz" value="-0.0001"/>
+  <xacro:property name="r_arm_link_01_iyy" value="0.0077"/>
+  <xacro:property name="r_arm_link_01_iyz" value="-0.001"/>
+  <xacro:property name="r_arm_link_01_izz" value="0.006"/>
 
-  <xacro:property name="r_arm_link_02_ixx" value="0.0108"/>
+  <xacro:property name="r_arm_link_02_ixx" value="0.0118"/>
   <xacro:property name="r_arm_link_02_ixy" value="0.0002"/>
   <xacro:property name="r_arm_link_02_ixz" value="-0.0001"/>
-  <xacro:property name="r_arm_link_02_iyy" value="0.0055"/>
+  <xacro:property name="r_arm_link_02_iyy" value="0.006"/>
   <xacro:property name="r_arm_link_02_iyz" value="-0.0001"/>
-  <xacro:property name="r_arm_link_02_izz" value="0.0116"/>
+  <xacro:property name="r_arm_link_02_izz" value="0.0127"/>
 
-  <xacro:property name="r_arm_link_03_ixx" value="0.0138"/>
+  <xacro:property name="r_arm_link_03_ixx" value="0.0143"/>
   <xacro:property name="r_arm_link_03_ixy" value="0.0"/>
-  <xacro:property name="r_arm_link_03_ixz" value="-0.0011"/>
-  <xacro:property name="r_arm_link_03_iyy" value="0.0153"/>
+  <xacro:property name="r_arm_link_03_ixz" value="-0.0001"/>
+  <xacro:property name="r_arm_link_03_iyy" value="0.016"/>
   <xacro:property name="r_arm_link_03_iyz" value="0.0"/>
-  <xacro:property name="r_arm_link_03_izz" value="0.0037"/>
+  <xacro:property name="r_arm_link_03_izz" value="0.0038"/>
 
-  <xacro:property name="r_arm_link_04_ixx" value="0.0105"/>
-  <xacro:property name="r_arm_link_04_ixy" value="0.0"/>
-  <xacro:property name="r_arm_link_04_ixz" value="0.0011"/>
-  <xacro:property name="r_arm_link_04_iyy" value="0.0093"/>
+  <xacro:property name="r_arm_link_04_ixx" value="0.0123"/>
+  <xacro:property name="r_arm_link_04_ixy" value="-0.0001"/>
+  <xacro:property name="r_arm_link_04_ixz" value="0.0013"/>
+  <xacro:property name="r_arm_link_04_iyy" value="0.0109"/>
   <xacro:property name="r_arm_link_04_iyz" value="-0.0003"/>
-  <xacro:property name="r_arm_link_04_izz" value="0.0031"/>
+  <xacro:property name="r_arm_link_04_izz" value="0.0037"/>
 
-  <xacro:property name="r_arm_link_05_ixx" value="0.0051"/>
+  <xacro:property name="r_arm_link_05_ixx" value="0.0049"/>
   <xacro:property name="r_arm_link_05_ixy" value="-0.0001"/>
-  <xacro:property name="r_arm_link_05_ixz" value="0.0001"/>
-  <xacro:property name="r_arm_link_05_iyy" value="0.0043"/>
+  <xacro:property name="r_arm_link_05_ixz" value="-0.0004"/>
+  <xacro:property name="r_arm_link_05_iyy" value="0.0041"/>
   <xacro:property name="r_arm_link_05_iyz" value="0.0003"/>
   <xacro:property name="r_arm_link_05_izz" value="0.0023"/>
 
-  <xacro:property name="r_arm_link_06_ixx" value="0.0037"/>
+  <xacro:property name="r_arm_link_06_ixx" value="0.002"/>
   <xacro:property name="r_arm_link_06_ixy" value="0.0"/>
-  <xacro:property name="r_arm_link_06_ixz" value="-0.0002"/>
-  <xacro:property name="r_arm_link_06_iyy" value="0.0049"/>
+  <xacro:property name="r_arm_link_06_ixz" value="-0.0001"/>
+  <xacro:property name="r_arm_link_06_iyy" value="0.0029"/>
   <xacro:property name="r_arm_link_06_iyz" value="0.0"/>
-  <xacro:property name="r_arm_link_06_izz" value="0.0031"/>
+  <xacro:property name="r_arm_link_06_izz" value="0.0021"/>
 
-  <xacro:property name="r_arm_link_07_ixx" value="0.0108"/>
-  <xacro:property name="r_arm_link_07_ixy" value="0.0005"/>
-  <xacro:property name="r_arm_link_07_ixz" value="0.0003"/>
-  <xacro:property name="r_arm_link_07_iyy" value="0.0125"/>
-  <xacro:property name="r_arm_link_07_iyz" value="-0.0004"/>
-  <xacro:property name="r_arm_link_07_izz" value="0.0033"/>
+  <xacro:property name="r_arm_link_07_ixx" value="0.0071"/>
+  <xacro:property name="r_arm_link_07_ixy" value="0.0003"/>
+  <xacro:property name="r_arm_link_07_ixz" value="0.0002"/>
+  <xacro:property name="r_arm_link_07_iyy" value="0.0082"/>
+  <xacro:property name="r_arm_link_07_iyz" value="-0.0003"/>
+  <xacro:property name="r_arm_link_07_izz" value="0.0022"/>
 
-  <xacro:property name="l_arm_link_01_ixx" value="0.0077"/>
+  <xacro:property name="l_arm_link_01_ixx" value="0.0092"/>
   <xacro:property name="l_arm_link_01_ixy" value="-0.0001"/>
   <xacro:property name="l_arm_link_01_ixz" value="0.0"/>
-  <xacro:property name="l_arm_link_01_iyy" value="0.0064"/>
-  <xacro:property name="l_arm_link_01_iyz" value="0.0008"/>
-  <xacro:property name="l_arm_link_01_izz" value="0.0051"/>
+  <xacro:property name="l_arm_link_01_iyy" value="0.0077"/>
+  <xacro:property name="l_arm_link_01_iyz" value="0.001"/>
+  <xacro:property name="l_arm_link_01_izz" value="0.006"/>
 
-  <xacro:property name="l_arm_link_02_ixx" value="0.0106"/>
+  <xacro:property name="l_arm_link_02_ixx" value="0.0116"/>
   <xacro:property name="l_arm_link_02_ixy" value="-0.0001"/>
   <xacro:property name="l_arm_link_02_ixz" value="-0.0001"/>
-  <xacro:property name="l_arm_link_02_iyy" value="0.0058"/>
+  <xacro:property name="l_arm_link_02_iyy" value="0.0063"/>
   <xacro:property name="l_arm_link_02_iyz" value="0.0001"/>
-  <xacro:property name="l_arm_link_02_izz" value="0.012"/>
+  <xacro:property name="l_arm_link_02_izz" value="0.0131"/>
 
-  <xacro:property name="l_arm_link_03_ixx" value="0.0138"/>
+  <xacro:property name="l_arm_link_03_ixx" value="0.0143"/>
   <xacro:property name="l_arm_link_03_ixy" value="0.0"/>
   <xacro:property name="l_arm_link_03_ixz" value="-0.0011"/>
-  <xacro:property name="l_arm_link_03_iyy" value="0.0153"/>
-  <xacro:property name="l_arm_link_03_iyz" value="0.0"/>
-  <xacro:property name="l_arm_link_03_izz" value="0.0037"/>
+  <xacro:property name="l_arm_link_03_iyy" value="0.016"/>
+  <xacro:property name="l_arm_link_03_iyz" value="0.0001"/>
+  <xacro:property name="l_arm_link_03_izz" value="0.0038"/>
 
-  <xacro:property name="l_arm_link_04_ixx" value="0.0105"/>
+  <xacro:property name="l_arm_link_04_ixx" value="0.0124"/>
   <xacro:property name="l_arm_link_04_ixy" value="0.0001"/>
-  <xacro:property name="l_arm_link_04_ixz" value="0.0011"/>
-  <xacro:property name="l_arm_link_04_iyy" value="0.0094"/>
-  <xacro:property name="l_arm_link_04_iyz" value="0.0002"/>
-  <xacro:property name="l_arm_link_04_izz" value="0.0031"/>
+  <xacro:property name="l_arm_link_04_ixz" value="0.0013"/>
+  <xacro:property name="l_arm_link_04_iyy" value="0.011"/>
+  <xacro:property name="l_arm_link_04_iyz" value="0.0003"/>
+  <xacro:property name="l_arm_link_04_izz" value="0.0037"/>
 
-  <xacro:property name="l_arm_link_05_ixx" value="0.0051"/>
+  <xacro:property name="l_arm_link_05_ixx" value="0.0049"/>
   <xacro:property name="l_arm_link_05_ixy" value="0.0001"/>
   <xacro:property name="l_arm_link_05_ixz" value="-0.0004"/>
-  <xacro:property name="l_arm_link_05_iyy" value="0.0043"/>
+  <xacro:property name="l_arm_link_05_iyy" value="0.0041"/>
   <xacro:property name="l_arm_link_05_iyz" value="-0.0004"/>
-  <xacro:property name="l_arm_link_05_izz" value="0.0024"/>
+  <xacro:property name="l_arm_link_05_izz" value="0.0023"/>
 
-  <xacro:property name="l_arm_link_06_ixx" value="0.0031"/>
+  <xacro:property name="l_arm_link_06_ixx" value="0.0002"/>
   <xacro:property name="l_arm_link_06_ixy" value="0.0"/>
   <xacro:property name="l_arm_link_06_ixz" value="-0.0001"/>
-  <xacro:property name="l_arm_link_06_iyy" value="0.0044"/>
+  <xacro:property name="l_arm_link_06_iyy" value="0.0028"/>
   <xacro:property name="l_arm_link_06_iyz" value="0.0"/>
-  <xacro:property name="l_arm_link_06_izz" value="0.0032"/>
+  <xacro:property name="l_arm_link_06_izz" value="0.0021"/>
 
-  <xacro:property name="l_arm_link_07_ixx" value="0.0017"/>
-  <xacro:property name="l_arm_link_07_ixy" value="0.0"/>
-  <xacro:property name="l_arm_link_07_ixz" value="0.0004"/>
-  <xacro:property name="l_arm_link_07_iyy" value="0.0031"/>
-  <xacro:property name="l_arm_link_07_iyz" value="0.0"/>
-  <xacro:property name="l_arm_link_07_izz" value="0.0029"/>
+  <xacro:property name="l_arm_link_07_ixx" value="0.0057"/>
+  <xacro:property name="l_arm_link_07_ixy" value="-0.0002"/>
+  <xacro:property name="l_arm_link_07_ixz" value="-0.0007"/>
+  <xacro:property name="l_arm_link_07_iyy" value="0.0072"/>
+  <xacro:property name="l_arm_link_07_iyz" value="0.0006"/>
+  <xacro:property name="l_arm_link_07_izz" value="0.0027"/>
 
 </robot>
 

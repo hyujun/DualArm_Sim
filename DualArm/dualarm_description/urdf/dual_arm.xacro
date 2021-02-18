@@ -21,7 +21,7 @@
 
 	<joint name="dual_arm_base_joint" type="fixed">
 		<origin
-			xyz="0 0 0.3"
+			xyz="0 0 0"
 			rpy="0 0 0"/>
 		<parent
 			link="dual_arm_base_link"/>
@@ -147,7 +147,7 @@
 			<mass value="${waist_link_02_mass}" />
 			<origin
 					rpy="0 0 0"
-					xyz="0.00597 0.0059226 0.1235" />
+					xyz="0.0054 0.0042 0.119" />
 			<inertia
 					ixx="${waist_link_02_ixx}"
 					ixy="${waist_link_02_ixy}"
@@ -946,7 +946,7 @@
 			<mass value="${l_arm_link_07_mass}" />
 			<origin
 					rpy="0 0 0"
-					xyz="0.0099 -0.0087 -0.126" />
+					xyz="0.0188 -0.0157 -0.1202" />
 			<inertia
 					ixx="${l_arm_link_07_ixx}"
 					ixy="${l_arm_link_07_ixy}"
@@ -961,7 +961,7 @@
 					xyz="0 0 0" />
 			<geometry>
 				<mesh
-						filename="package://dualarm_description/meshes/dualarm1/hand_adapter_L.STL"
+						filename="package://dualarm_description/meshes/stl/hand_adapter_L.STL"
 						scale="0.001 0.001 0.001"/>
 			</geometry>
 		</visual>

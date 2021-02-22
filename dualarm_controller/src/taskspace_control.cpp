@@ -777,16 +777,21 @@ namespace dualarm_controller
                 for(int j=0; j<NumChain; j++)
                 {
                     printf("no.%d, PoE: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
-                           ForwardPos[j](0), ForwardPos[j](1),ForwardPos[j](2), ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
+                           ForwardPos[j](0), ForwardPos[j](1),ForwardPos[j](2),
+                           ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
                     double a, b, g;
                     x_[j].M.GetEulerZYX(a, b, g);
-                    printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
-                    printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n", j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
+                    printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
+                           j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
+                    printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n",
+                           j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
 
 
                 }
-                printf("Right e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",ex_(0)*RADtoDEG, ex_(1)*RADtoDEG, ex_(2)*RADtoDEG, ex_(3), ex_(4), ex_(5));
-                printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",ex_(6)*RADtoDEG, ex_(7)*RADtoDEG, ex_(8)*RADtoDEG, ex_(9), ex_(10), ex_(11));
+                printf("Right e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
+                       ex_(0)*RADtoDEG, ex_(1)*RADtoDEG, ex_(2)*RADtoDEG, ex_(3), ex_(4), ex_(5));
+                printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
+                       ex_(6)*RADtoDEG, ex_(7)*RADtoDEG, ex_(8)*RADtoDEG, ex_(9), ex_(10), ex_(11));
                 printf("\n*********************************************************\n");
                 count = 0;
 
@@ -802,10 +807,14 @@ namespace dualarm_controller
                 //std::cout << q0dot << "\n"<< std::endl;
                 //usleep(100000);
 
-                //std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
-                //std::cout << M1_kdl_.data << "\n"<< std::endl;
-                //std::cout << M << "\n"<< std::endl;
-                //usleep(100000);
+                std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
+                std::cout << M1_kdl_.data << "\n"<< std::endl;
+                std::cout << M << "\n"<< std::endl;
+
+                //std::cout << "\n" << G_kdl_.data << "\n"<< std::endl;
+                //std::cout << G1_kdl_.data << "\n"<< std::endl;
+                //std::cout << G << "\n"<< std::endl;
+                usleep(100000);
             }
             count++;
         }

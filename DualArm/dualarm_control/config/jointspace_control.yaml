@@ -1,0 +1,65 @@
+dualarm:
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 1000
+
+  jointspace_control:
+    type: dualarm_controller/JointSpace_Control
+    joints:
+      - dualarm_joint1
+      - dualarm_joint2
+      - dualarm_joint3
+      - dualarm_joint4
+      - dualarm_joint5
+      - dualarm_joint6
+      - dualarm_joint7
+      - dualarm_joint8
+      - dualarm_joint9
+      - dualarm_joint10
+      - dualarm_joint11
+      - dualarm_joint12
+      - dualarm_joint13
+      - dualarm_joint14
+      - dualarm_joint15
+      - dualarm_joint16
+
+
+    gains:
+      dualarm_joint1:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint2:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+
+      dualarm_joint3:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint4:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint5:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint6:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint7:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint8:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint9:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+
+      dualarm_joint10:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint11:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint12:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint13:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint14:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint15:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+      dualarm_joint16:
+        pid: {p: 20.0, i: 100.0, d: 0.05, h: 0.2}
+
+    root_link: world
+    tip_link1: dualarm_R_end_frame
+    tip_link2: dualarm_L_end_frame

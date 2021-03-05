@@ -1,6 +1,11 @@
 std_msgs/Header header
+uint32 seq
+time stamp
+string frame_id
+
 string[] name
-float64[] command
+std_msgs/Float64MultiArray[] command
+JointDesiredState[] target
 float64[] command_dot
 float64[] state
 float64[] state_dot

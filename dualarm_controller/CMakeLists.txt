@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options(-fPIC)
-
+add_definitions(-D__SIMULATION__)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -58,6 +58,7 @@ find_package(Boost REQUIRED COMPONENTS system)
  add_message_files(
          FILES
          ControllerJointState.msg
+         JointDesiredState.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -119,21 +120,24 @@ catkin_package(
 ## Build ##
 ###########
 
-set(CTRL_HEADERS_DIR ${PROJECT_SOURCE_DIR}/Control)
-set(KDL_HEADERS_DIR ${PROJECT_SOURCE_DIR}/KDL)
+set(CTRL_HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Control)
+set(KDL_HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/KDL)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-        include
+        #include
         ${catkin_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIR}
         ${CTRL_HEADERS_DIR}
         ${KDL_HEADERS_DIR}
 )
 
+add_subdirectory(Control)
+add_subdirectory(KDL)
+
 file(GLOB TARGET_SRC
-        include/*.cpp
+        #include/*.cpp
         src/*.cpp
         )
 ## Declare a C++ library
@@ -162,7 +166,9 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME} PUBLIC ${catkin_LIBRARIES} sub::CTRL sub::KDL)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${catkin_LIBRARIES}
+        sub::CTRL sub::KDL
+        )
 
 
 #############

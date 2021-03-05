@@ -67,12 +67,9 @@ public:
 	 * @param[in] toq joint input torque as control input
 	 */
 	void PDController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, float &_dt );
-	void PDGravController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq );
-	void InvDynController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_dqddot, double *p_Toq, float &_dt );
-	void TaskInvDynController(double *p_dx, double *p_dxdot, double *p_q, double *p_qdot, double *p_Toq, double &_dt);
-
-    void simInvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, double *p_Toq, double &_dt );
-	void simTaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd &_q, VectorXd &_qdot, double *p_Toq, double &_dt);
+	void PDGravController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_Toq );
+	void InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, double &_dt );
+	void TaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd &_q, VectorXd &_qdot, VectorXd &_Toq, double &_dt);
 
 	void TaskError(double *_dx, double*_dxdot, double *_q, double *_qdot, double *p_Toq);
 
@@ -115,6 +112,7 @@ private:
 	Eigen::VectorXd GainWeightFactor;
 
 	Eigen::MatrixXd ScaledTransJacobian;
+	Eigen::MatrixXd pInvJacobian;
 	Eigen::MatrixXd BodyJacobian;
 	Eigen::MatrixXd AnalyticJacobian;
 

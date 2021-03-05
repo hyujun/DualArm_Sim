@@ -63,43 +63,49 @@ Controller::Controller(SerialManipulator *pManipulator)
 
 	GainWeightFactor.resize(m_Jnum);
 #if defined(__SIMULATION__)
-    GainWeightFactor(0) = 25.0;
-    GainWeightFactor(1) = 25.0;
-
-    GainWeightFactor(2) = 15.5;
-    GainWeightFactor(3) = 15.5; //8
-    GainWeightFactor(4) = 10.0;
-    GainWeightFactor(5) = 9.0;
-    GainWeightFactor(6) = 8.5;
-    GainWeightFactor(7) = 8.5;
-    GainWeightFactor(8) = 8.5;
-
-    GainWeightFactor(9) = 15.5;
-    GainWeightFactor(10) = 15.5; //8
-    GainWeightFactor(11) = 10.5;
-    GainWeightFactor(12) = 9.0;
-    GainWeightFactor(13) = 8.5;
-    GainWeightFactor(14) = 8.5;
-    GainWeightFactor(15) = 8.5;
+    GainWeightFactor.resize(m_Jnum);
+    GainWeightFactor.setConstant(0.3);
 
     Kp = GainWeightFactor*m_KpBase;
     Kd = GainWeightFactor*m_KdBase;
     Ki = GainWeightFactor*m_KiBase;
-    //K_Hinf = m_HinfBase;
+    K_Hinf.setConstant(m_HinfBase);
 
     dq.resize(m_Jnum);
     dqdot.resize(m_Jnum);
     dqddot.resize(m_Jnum);
 
-    KpTask(0) = 0.00001;
-    KpTask(1) = 0.00001;
-    KpTask(2) = 0.00001;
+    KpTask(0,0) = 10.0;
+    KpTask(1,1) = 10.0;
+    KpTask(2,2) = 10.0;
 
-    KpTask(3) = 0.0001;
-    KpTask(4) = 0.0001;
-    KpTask(5) = 0.0001;
+    KpTask(3,3) = 10.0;
+    KpTask(4,4) = 10.0;
+    KpTask(5,5) = 10.0;
 
-    KpTask.tail(6) = KpTask.head(6);
+    KpTask(6,6) = 10.0;
+    KpTask(7,7) = 10.0;
+    KpTask(8,8) = 10.0;
+
+    KpTask(9,9) = 10.0;
+    KpTask(10,10) = 10.0;
+    KpTask(11,11) = 10.0;
+
+    KdTask(0,0) = 0.0001;
+    KdTask(1,1) = 0.0001;
+    KdTask(2,2) = 0.0001;
+
+    KdTask(3,3) = 0.001;
+    KdTask(4,4) = 0.001;
+    KdTask(5,5) = 0.001;
+
+    KdTask(6,6) = 0.0001;
+    KdTask(7,7) = 0.0001;
+    KdTask(8,8) = 0.0001;
+
+    KdTask(9,9) = 0.001;
+    KdTask(10,10) = 0.001;
+    KdTask(11,11) = 0.001;
 #else
 	GainWeightFactor(0) = 20.0;
 	GainWeightFactor(1) = 23.0;
@@ -165,10 +171,11 @@ void Controller::SetPIDGain(double &_Kp, double &_Kd, double &_Hinf, int &_Joint
 
 void Controller::SetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki, VectorXd &_Kinf)
 {
+    K_Hinf = _Kinf;
     Kp = _Kp;
     Kd = _Kd;
     Ki = _Ki;
-    K_Hinf = _Kinf;
+
     return;
 }
 
@@ -207,105 +214,64 @@ void Controller::PDController(double *p_q, double *p_qdot, double *p_dq, double 
 	return;
 }
 
-void Controller::PDGravController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq )
+void Controller::PDGravController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_Toq )
 {
 	pManipulator->pDyn->G_Matrix(G);
 
-	q = Map<VectorXd>(p_q, this->m_Jnum);
-	qdot = Map<VectorXd>(p_qdot, this->m_Jnum);
+	e = _dq - _q;
+	e_dev = _dqdot - _qdot;
 
-	dq = Map<VectorXd>(p_dq, this->m_Jnum);
-	dqdot = Map<VectorXd>(p_dqdot, this->m_Jnum);
+	FrictionCompensator(_qdot, _dqdot);
 
-	e = dq - q;
-	e_dev = dqdot - qdot;
+    _Toq.setZero();
+	_Toq = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G;
+    //_Toq = G + FrictionTorque;
 
-	FrictionCompensator(qdot, dqdot);
-
-	ToqOut.setZero();
-	//ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G;
-
-	ToqOut = G + FrictionTorque;
-
-	Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
 	return;
 }
 
-void Controller::InvDynController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_dqddot, double *p_Toq, float &_dt )
+void Controller::InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, double &_dt )
 {
-	//pManipulator->pDyn->MG_Mat_Joint(M, G);
-	pManipulator->pDyn->G_Matrix(G);
+	pManipulator->pDyn->MG_Mat_Joint(M, G);
+	//pManipulator->pDyn->G_Matrix(G);
 
-	q = Map<VectorXd>(p_q, this->m_Jnum);
-	qdot = Map<VectorXd>(p_qdot, this->m_Jnum);
-
-	dq = Map<VectorXd>(p_dq, this->m_Jnum);
-	dqdot = Map<VectorXd>(p_dqdot, this->m_Jnum);
-	dqddot = Map<VectorXd>(p_dqddot, this->m_Jnum);
-
-	e = dq - q;
-	e_dev = dqdot - qdot;
+	e = _dq - _q;
+	e_dev = _dqdot - _qdot;
 	//e_int += e*_dt*1e-6;
 	//e_int_sat = tanh(e_int);
 
-	FrictionCompensator(qdot, dqdot);
+	FrictionCompensator(_qdot, _dqdot);
 
-	ToqOut.setZero();
-	//ToqOut = M*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + ( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) ) + G + FrictionTorque;
-	//ToqOut = M.diagonal().cwiseProduct(dqddot) + Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
-	//ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
-	//ToqOut = G + FrictionTorque;
-    ToqOut = G;
+    _Toq.setZero();
+	//_Toq = M*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + ( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) ) + G + FrictionTorque;
+	//_Toq = M.diagonal().cwiseProduct(dqddot) + Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
+	//_Toq = G + FrictionTorque;
 
-	Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
+    _Toq =  M*( dqddot + K_Hinf.cwiseProduct(Kd).cwiseProduct(e_dev) + K_Hinf.cwiseProduct(Kp).cwiseProduct(e) ) + G ;
+    //_Toq =  M.diagonal()*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + G ;
+
 	return;
 
 }
 
-void Controller::simInvDynController(VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, double *p_Toq, double &_dt)
-{
-    //pManipulator->pDyn->MG_Mat_Joint(M, G);
-    pManipulator->pDyn->G_Matrix(G);
-
-    q = _q;
-    qdot = _qdot;
-
-    dq = _dq;
-    dqdot = _dqdot;
-    dqddot = _dqddot;
-
-    e = dq - q;
-    e_dev = dqdot - qdot;
-    //e_int += e*_dt*1e-6;
-    //e_int_sat = tanh(e_int);
-
-    //FrictionCompensator(qdot, dqdot);
-
-    ToqOut.setZero();
-    //ToqOut = M*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + ( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) ) + G + FrictionTorque;
-    //ToqOut = M.diagonal().cwiseProduct(dqddot) + Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
-    //ToqOut = Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
-    //ToqOut = G + FrictionTorque;
-    ToqOut = G;
-
-    Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
-    return;
-}
-
-void Controller::simTaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd &_q, VectorXd &_qdot, double *p_Toq, double &_dt)
+void Controller::TaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd &_q, VectorXd &_qdot, VectorXd &_Toq, double &_dt)
 {
     pManipulator->pDyn->MG_Mat_Joint(M, G);
     ToqOut.setZero();
     MatrixXd AJacobian;
     MatrixXd pInvJac;
-    MatrixXd eye = MatrixXd::Identity(m_Jnum, m_Jnum);
+    MatrixXd eye = MatrixXd::Identity(m_Jnum,m_Jnum);
     VectorXd q0dot;
+    double alpha = 0.001;
     q0dot = alpha*(_q.cwiseInverse()*pManipulator->pKin->GetManipulabilityMeasure());
     pManipulator->pKin->GetAnalyticJacobian(AJacobian);
     //pManipulator->pKin->GetpinvJacobian(pInvJac);
 
-    ToqOut = AJacobian.transpose()*(-KpTask*_dx - KdTask*(AJacobian*_qdot)) + (eye - AJacobian.transpose()*AJacobian)*qdot + G;
-    Map<VectorXd>(p_Toq, this->m_Jnum) = ToqOut;
+    _Toq.setZero();
+    _Toq = AJacobian.transpose()*(-KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+    //_Toq = pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + G;
+    //_Toq = pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+
     return;
 }
 

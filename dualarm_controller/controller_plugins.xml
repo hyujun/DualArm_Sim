@@ -8,6 +8,14 @@
         </description>
     </class>
 
+    <class name="dualarm_controller/JointSpace_Control"
+           type="dualarm_controller::JointSpace_Control"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            Direct Joint-space Controller
+        </description>
+    </class>
+
     <class name="dualarm_controller/Taskspace_Control"
            type="dualarm_controller::Taskspace_Control"
            base_class_type="controller_interface::ControllerBase">

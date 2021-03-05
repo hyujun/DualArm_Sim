@@ -9,9 +9,12 @@
 #include <std_msgs/Float64MultiArray.h>
 #include <urdf/model.h>
 #include <sensor_msgs/JointState.h>
+#include <robot_state_publisher/robot_state_publisher.h>
+#include "dualarm_controller/ControllerJointState.h"
 
 // from kdl packages
 #include <kdl/tree.hpp>
+
 #include <kdl/chain.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/chaindynparam.hpp>              // inverse dynamics
@@ -47,24 +50,12 @@
 
 namespace dualarm_controller
 {
-    class Taskspace_Control_CY : public controller_interface::Controller<hardware_interface::EffortJointInterface>
+    class JointSpace_Control : public controller_interface::Controller<hardware_interface::EffortJointInterface>
     {
     public:
         bool init(hardware_interface::EffortJointInterface *hw, ros::NodeHandle &n)
         {
             // ********* 1. Get joint name / gain from the parameter server *********
-            // 1.0 Control objective & Inverse Kinematics mode
-            if (!n.getParam("ctr_obj", ctr_obj_))
-            {
-                ROS_ERROR("Could not find control objective");
-                return false;
-            }
-
-            if (!n.getParam("ik_mode", ik_mode_))
-            {
-                ROS_ERROR("Could not find control objective");
-                return false;
-            }
 
             // 1.1 Joint Name
             if (!n.getParam("joints", joint_names_))
@@ -99,18 +90,18 @@ namespace dualarm_controller
             for (size_t i = 0; i < n_joints_; i++)
             {
                 std::string si = std::to_string(i + 1);
-                if (n.getParam("/dualarm/taskspace_control_cy/gains/dualarm_joint" + si + "/pid/p", Kp[i]))
+                if (n.getParam("/dualarm/jointspace_control/gains/dualarm_joint" + si + "/pid/p", Kp[i]))
                 {
                     Kp_(i) = Kp[i];
                 }
                 else
                 {
-                    std::cout << "/dualarm/taskspace_control_cy/gains/dualarm_joint" + si + "/pid/p" << std::endl;
+                    std::cout << "/dualarm/jointspace_control/gains/dualarm_joint" + si + "/pid/p" << std::endl;
                     ROS_ERROR("Cannot find pid/p gain");
                     return false;
                 }
 
-                if (n.getParam("/dualarm/taskspace_control_cy/gains/dualarm_joint" + si + "/pid/i", Ki[i]))
+                if (n.getParam("/dualarm/jointspace_control/gains/dualarm_joint" + si + "/pid/i", Ki[i]))
                 {
                     Ki_(i) = Ki[i];
                 }
@@ -120,7 +111,7 @@ namespace dualarm_controller
                     return false;
                 }
 
-                if (n.getParam("/dualarm/taskspace_control_cy/gains/dualarm_joint" + si + "/pid/d", Kd[i]))
+                if (n.getParam("/dualarm/jointspace_control/gains/dualarm_joint" + si + "/pid/d", Kd[i]))
                 {
                     Kd_(i) = Kd[i];
                 }
@@ -130,7 +121,7 @@ namespace dualarm_controller
                     return false;
                 }
 
-                if (n.getParam("/dualarm/taskspace_control_cy/gains/dualarm_joint" + si + "/pid/h", K_inf[i]))
+                if (n.getParam("/dualarm/jointspace_control/gains/dualarm_joint" + si + "/pid/h", K_inf[i]))
                 {
                     K_inf_(i) = K_inf[i];
                 }
@@ -141,33 +132,6 @@ namespace dualarm_controller
                 }
             }
 
-            // 1.2.2 Closed-loop Inverse Kinematics Controller
-
-            if (!n.getParam("/dualarm/taskspace_control_cy/clik_gain/K_pos", K_regulation_))
-            {
-                ROS_ERROR("Cannot find clik regulation gain");
-                return false;
-            }
-
-            if (!n.getParam("/dualarm/taskspace_control_cy/clik_gain/K_ori", K_tracking_))
-            {
-                ROS_ERROR("Cannot find clik tracking gain");
-                return false;
-            }
-
-            CLIK_GAIN.setZero(6*2, 6*2);
-            CLIK_GAIN(0,0) = K_tracking_;
-            CLIK_GAIN(1,1) = K_tracking_;
-            CLIK_GAIN(2,2) = K_tracking_;
-            CLIK_GAIN(3,3) = K_regulation_;
-            CLIK_GAIN(4,4) = K_regulation_;
-            CLIK_GAIN(5,5) = K_regulation_;
-            CLIK_GAIN(6,6) = K_tracking_;
-            CLIK_GAIN(7,7) = K_tracking_;
-            CLIK_GAIN(8,8) = K_tracking_;
-            CLIK_GAIN(9,9) = K_regulation_;
-            CLIK_GAIN(10,10) = K_regulation_;
-            CLIK_GAIN(11,11) = K_regulation_;
 
             // 2. ********* urdf *********
             urdf::Model urdf;
@@ -303,6 +267,7 @@ namespace dualarm_controller
 
             q_.data = Eigen::VectorXd::Zero(n_joints_);
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
+            dq.setZero(n_joints_);
 
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
@@ -319,29 +284,29 @@ namespace dualarm_controller
             // 6.2 subsriber
             sub_x_cmd_ = n.subscribe<std_msgs::Float64MultiArray>(
                     "command",
-                    1, &Taskspace_Control_CY::commandCB,
+                    1, &JointSpace_Control::commandCB,
                     this);
-            event = 0; // subscribe 받기 전: 0
-            // subscribe 받은 후: 1
+            event = 0;  // subscribe 받기 전: 0
+                        // subscribe 받은 후: 1
 
             return true;
         }
 
         void commandCB(const std_msgs::Float64MultiArrayConstPtr &msg)
         {
-            if (msg->data.size() != 2*num_taskspace)
+            if (msg->data.size() != n_joints_)
             {
                 ROS_ERROR_STREAM("Dimension of command (" << msg->data.size() << ") does not match DOF of Task Space (" << 2 << ")! Not executing!");
                 return;
             }
 
-            for (int i = 0; i < 2*num_taskspace; i++)
+            for (int i = 0; i < n_joints_; i++)
             {
-                x_cmd_(i) = msg->data[i];
+                dq(i) = msg->data[i]*D2R;
             }
 
-            event = 1; // subscribe 받기 전: 0
-            // subscribe 받은 후: 1
+            event = 1;  // subscribe 받기 전: 0
+                        // subscribe 받은 후: 1
         }
 
         void starting(const ros::Time &time) override
@@ -356,8 +321,6 @@ namespace dualarm_controller
 
             Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
 
-            dx.setZero();
-            dxdot.setZero();
             torque.setZero(16);
         }
 
@@ -376,9 +339,11 @@ namespace dualarm_controller
                 //torque_(i) = joints_[i].getEffort();
             }
 
+            //----------------------
+            // dynamics calculation
+            //----------------------
             cManipulator->pKin->PrepareJacobian(q_.data);
             cManipulator->pDyn->PrepareDynamics(q_.data, qdot_.data);
-
             cManipulator->pDyn->MG_Mat_Joint(M, G);
 
             cManipulator->pKin->GetSpaceJacobian(spaceJac);
@@ -388,264 +353,6 @@ namespace dualarm_controller
             cManipulator->pKin->GetScaledTransJacobian(ScaledTransJac);
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
-
-            xd_dot_.setZero();
-            ex_.setZero(12);
-            ex1_.setZero(12);
-            ex_dot_.setZero(12);
-            
-            InitTime=5.0;
-
-            if( t <= InitTime || ctr_obj_ == 0 )
-            {
-                qd_.data.setZero();
-
-                qd_.data(0) = -0.0*D2R;
-                qd_.data(1) = -0.0*D2R;
-
-                qd_.data(2) = 0.0*D2R;
-                qd_.data(3) = -0.0*D2R;
-                qd_.data(4) = -0.0*D2R;
-                qd_.data(5) = -0.0*D2R;
-                qd_.data(6) = -70.0*D2R;
-                qd_.data(7) = 0.0*D2R;
-                qd_.data(8) = 0.0*D2R;
-
-                qd_.data(9) = 0.0*D2R;
-                qd_.data(10) = 0.0*D2R;
-                qd_.data(11) = 0.0*D2R;
-                qd_.data(12) = -0.0*D2R;
-                qd_.data(13) = 70.0*D2R;
-                qd_.data(14) = -0.0*D2R;
-                qd_.data(15) = -0.0*D2R;
-
-                qd_old_ = qd_;
-            }
-            else{
-                if (ctr_obj_ == 1)
-                {
-                    xd_[0].p(0) = b1;
-                    xd_[0].p(1) = b2;
-                    xd_[0].p(2) = b3;
-                    xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(M_PI/2, 0, 0));
-
-                    xd_dot_.setZero();
-
-                    xd_[1].p(0) = l_p1;
-                    xd_[1].p(1) = l_p2;
-                    xd_[1].p(2) = l_p3;
-                    xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(0, M_PI/2, 0));
-
-                    ex_.setZero();
-                    ex_temp_ = diff(xd_[0], x_[0]);
-                    ex_(0) = ex_temp_(3);
-                    ex_(1) = ex_temp_(4);
-                    ex_(2) = ex_temp_(5);
-                    ex_(3) = ex_temp_(0);
-                    ex_(4) = ex_temp_(1);
-                    ex_(5) = ex_temp_(2);
-
-                    ex_temp_ = diff(xd_[1], x_[1]);
-                    ex_(6) = ex_temp_(3);
-                    ex_(7) = ex_temp_(4);
-                    ex_(8) = ex_temp_(5);
-                    ex_(9) = ex_temp_(0);
-                    ex_(10) = ex_temp_(1);
-                    ex_(11) = ex_temp_(2);
-                }
-                else if (ctr_obj_ == 2)
-                {
-                    if (ik_mode_ == 1)
-                    {
-                        xd_[0].p(0) =
-                        xd_[0].p(1) = b2;
-                        xd_[0].p(2) = b3;
-                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, -M_PI/2, 0));
-
-                        xd_dot_.setZero();
-                        xd_dot_(2+1) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                        xd_[1].p(0) = l_p1;
-                        xd_[1].p(1) = l_p2;
-                        xd_[1].p(2) = l_p3;
-                        xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(M_PI/2, 0 , 0));
-
-                        x_[0].p(0) = ForwardPos[0](0);
-                        x_[0].p(1) = ForwardPos[0](1);
-                        x_[0].p(2) = ForwardPos[0](2);
-                        x_[0].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[0](0), ForwardOri[0](1), ForwardOri[0](2)));
-
-                        x_[1].p(0) = ForwardPos[1](0);
-                        x_[1].p(1) = ForwardPos[1](1);
-                        x_[1].p(2) = ForwardPos[1](2);
-                        x_[1].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[1](0), ForwardOri[1](1), ForwardOri[1](2)));
-
-                        ex_.setZero();
-                        ex_temp_ = diff(xd_[0], x_[0]);
-                        ex_(0) = ex_temp_(3);
-                        ex_(1) = ex_temp_(4);
-                        ex_(2) = ex_temp_(5);
-                        ex_(3) = ex_temp_(0);
-                        ex_(4) = ex_temp_(1);
-                        ex_(5) = ex_temp_(2);
-
-                        ex_temp_ = diff(xd_[1], x_[1]);
-                        ex_(6) = ex_temp_(3);
-                        ex_(7) = ex_temp_(4);
-                        ex_(8) = ex_temp_(5);
-                        ex_(9) = ex_temp_(0);
-                        ex_(10) = ex_temp_(1);
-                        ex_(11) = ex_temp_(2);
-                        ex_.tail(6).setZero();
-                    }
-                    else if (ik_mode_ == 2)
-                    {
-                        dx(0) = 0;
-                        dx(1) = -M_PI_2;
-                        dx(2) = 0;
-                        dx(3) = b1;
-                        dx(4) = A * sin(f * M_PI * (t - InitTime)) + b2;
-                        dx(5) = b3;
-
-                        dx(6) = 0;
-                        dx(7) = -M_PI_2;
-                        dx(8) = 0; //M_PI/2;
-                        dx(9) = l_p1;
-                        dx(10) = l_p2;
-                        dx(11) = l_p3;
-
-                        xd_dot_.setZero();
-                        xd_dot_(4) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                        //xd_dot_(11) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                        dSE3.block<3,1>(0,3) = dx.segment(3,3);
-                        cManipulator->pKin->RollPitchYawtoSO3(dx(0), dx(1), dx(2), dSO3);
-                        dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=9;
-                        aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                        eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-                        cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
-                        ex_(0) = eAxis(0);
-                        ex_(1) = eAxis(1);
-                        ex_(2) = eAxis(2);
-                        ex_(3) = eSE3(0,3);
-                        ex_(4) = eSE3(1,3);
-                        ex_(5) = eSE3(2,3);
-
-                        dSE3.block<3,1>(0,3) = dx.segment(9,3);
-                        cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
-                        dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=16;
-                        aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                        eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-                        cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
-                        ex_(6) = eAxis(0);
-                        ex_(7) = eAxis(1);
-                        ex_(8) = eAxis(2);
-                        ex_(9) = eSE3(0,3);
-                        ex_(10) = eSE3(1,3);
-                        ex_(11) = eSE3(2,3);
-                    }
-                    else if (ik_mode_ == 3)
-                    {
-                        dx(0) = 0;
-                        dx(1) = -M_PI_2;
-                        dx(2) = 0;
-                        dx(3) = b1;
-                        dx(4) = b2;
-                        dx(5) = A * sin(f * M_PI * (t - InitTime)) + b3;
-
-                        dx(6) = 0;
-                        dx(7) = -M_PI_2;
-                        dx(8) = 0; //M_PI/2;
-                        dx(9) = l_p1;
-                        dx(10) = l_p2;
-                        dx(11) = l_p3;
-
-                        xd_dot_.setZero();
-                        xd_dot_(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                        //xd_dot_(11) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                        dSE3.block<3,1>(0,3) = dx.segment(3,3);
-                        cManipulator->pKin->RollPitchYawtoSO3(dx(0), dx(1), dx(2), dSO3);
-                        dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=9;
-                        aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                        eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-                        cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
-                        ex_(0) = eAxis(0);
-                        ex_(1) = eAxis(1);
-                        ex_(2) = eAxis(2);
-                        ex_(3) = eSE3(0,3);
-                        ex_(4) = eSE3(1,3);
-                        ex_(5) = eSE3(2,3);
-
-                        dSE3.block<3,1>(0,3) = dx.segment(9,3);
-                        cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
-                        dSE3.block<3,3>(0,0) = dSO3;
-                        EndNum=16;
-                        aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                        eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-                        cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
-                        ex_(6) = eAxis(0);
-                        ex_(7) = eAxis(1);
-                        ex_(8) = eAxis(2);
-                        ex_(9) = eSE3(0,3);
-                        ex_(10) = eSE3(1,3);
-                        ex_(11) = eSE3(2,3);
-                        //ex_.tail(6).setZero();
-                    }
-                }
-                else if( ctr_obj_ == 3 )
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = b1;
-                    dx(4) = b2;
-                    dx(5) = b3;
-
-                    dx(6) = 0;
-                    dx(7) = -M_PI_2;
-                    dx(8) = 0; //M_PI/2;
-                    dx(9) = l_p1;
-                    dx(10) = l_p2;
-                    dx(11) = l_p3;
-
-                    xd_dot_.setZero();
-                    //xd_dot_(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    //xd_dot_(11) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                    dSE3.block<3,1>(0,3) = dx.segment(3,3);
-                    cManipulator->pKin->RollPitchYawtoSO3(dx(0), dx(1), dx(2), dSO3);
-                    dSE3.block<3,3>(0,0) = dSO3;
-                    EndNum=9;
-                    aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                    eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-                    cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
-                    ex_(0) = eAxis(0);
-                    ex_(1) = eAxis(1);
-                    ex_(2) = eAxis(2);
-                    ex_(3) = eSE3(0,3);
-                    ex_(4) = eSE3(1,3);
-                    ex_(5) = eSE3(2,3);
-
-                    dSE3.block<3,1>(0,3) = dx.segment(9,3);
-                    cManipulator->pKin->RollPitchYawtoSO3(dx(6), dx(7), dx(8), dSO3);
-                    dSE3.block<3,3>(0,0) = dSO3;
-                    EndNum=16;
-                    aSE3 = cManipulator->pKin->GetForwardKinematicsSE3(EndNum);
-                    eSE3 = cManipulator->pKin->inverse_SE3(dSE3)*aSE3;
-                    cManipulator->pKin->SO3toRollPitchYaw(eSE3.block(0,0,3,3), eAxis);
-                    ex_(6) = eAxis(0);
-                    ex_(7) = eAxis(1);
-                    ex_(8) = eAxis(2);
-                    ex_(9) = eSE3(0,3);
-                    ex_(10) = eSE3(1,3);
-                    ex_(11) = eSE3(2,3);
-                    //ex_.tail(6).setZero();
-                }
-            }
 
             q1_.data = q_.data.head(9);
             q1dot_.data = qdot_.data.head(9);
@@ -667,26 +374,50 @@ namespace dualarm_controller
             id_solver1_->JntToGravity(q2_, G1_kdl_);
             fk_pos_solver1_->JntToCart(q2_, x_[1]);
 
-            if( ctr_obj_ == 3)
-            {
-                Control->TaskInvDynController(ex_, ex_dot_, q_.data, qdot_.data, torque, dt);
-            }
-            else
-            {
-                double alpha = 0.001;
-                q0dot = alpha*(q_.data.cwiseInverse()*cManipulator->pKin->GetManipulabilityMeasure());
-                //qd_dot_.data = pInvJac * (xd_dot_ - CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
-                qd_dot_.data = AJac.transpose() * (xd_dot_ - CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
-                //qd_dot_.data = ScaledTransJac * (xd_dot_ - CLIK_GAIN * ex_);
+            InitTime=5.0;
 
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+            if( t <= InitTime )
+            {
+                qd_.data.setZero();
+
+                qd_.data(0) = -0.0*D2R;
+                qd_.data(1) = -0.0*D2R;
+
+                qd_.data(2) = 0.0*D2R;
+                qd_.data(3) = -0.0*D2R;
+                qd_.data(4) = -0.0*D2R;
+                qd_.data(5) = -0.0*D2R;
+                qd_.data(6) = -70.0*D2R;
+                qd_.data(7) = 0.0*D2R;
+                qd_.data(8) = 0.0*D2R;
+
+                qd_.data(9) = 0.0*D2R;
+                qd_.data(10) = 0.0*D2R;
+                qd_.data(11) = 0.0*D2R;
+                qd_.data(12) = -0.0*D2R;
+                qd_.data(13) = 70.0*D2R;
+                qd_.data(14) = -0.0*D2R;
+                qd_.data(15) = -0.0*D2R;
             }
+            else if(event == 1)
+            {
+                qd_.data = dq;
+                event = 0;
+            }
+
+            qd_ddot_.data.setZero();
+            qd_dot_.data.setZero();
+
+            Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
 
             for (int i = 0; i < n_joints_; i++)
             {
-                joints_[i].setCommand(torque[i]);
+                if(torque(i) >= 300)
+                    torque(i) = 300;
+                else if(torque(i) <= -300)
+                    torque(i) = -300;
+
+                joints_[i].setCommand(torque(i));
                 //joints_[i].setCommand(0.0);
             }
 
@@ -699,6 +430,7 @@ namespace dualarm_controller
 
         void stopping(const ros::Time &time) override
         {
+            ROS_INFO("Stop Task space Controller");
             delete Control;
             delete cManipulator;
         }
@@ -709,9 +441,6 @@ namespace dualarm_controller
             msg_qd_.data.clear();
             msg_e_.data.clear();
             msg_qddot_.data.clear();
-            msg_x_.data.clear();
-            msg_xd_.data.clear();
-            msg_ex_.data.clear();
 
             for(int i=0; i < n_joints_; i++)
             {
@@ -720,18 +449,9 @@ namespace dualarm_controller
                 msg_e_.data.push_back(qd_(i) - q_(i));
             }
 
-            for(int j=0; j<2*num_taskspace; j++)
-            {
-                msg_xd_.data.push_back(dx(j));
-                msg_ex_.data.push_back(ex_(j));
-            }
-
             pub_q_.publish(msg_q_);
             pub_qd_.publish(msg_qd_);
             pub_e_.publish(msg_e_);
-
-            pub_xd_.publish(msg_xd_);
-            pub_ex_.publish(msg_ex_);
         }
 
         void print_state()
@@ -764,7 +484,7 @@ namespace dualarm_controller
                     printf("dq: %0.3lf, ", qd_.data(i) * R2D);
                     printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
                     printf("dqdot: %0.3lf, ", qd_dot_.data(i) * R2D);
-                    printf("tau: %0.3f, %0.3f", torque[i], G(i));
+                    printf("tau: %0.3f, %0.3f", torque(i), G(i));
                     printf("\n");
                 }
 
@@ -772,16 +492,18 @@ namespace dualarm_controller
                 for(int j=0; j<NumChain; j++)
                 {
                     printf("no.%d, PoE: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
-                           ForwardPos[j](0), ForwardPos[j](1),ForwardPos[j](2), ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
+                           ForwardPos[j](0), ForwardPos[j](1),ForwardPos[j](2),
+                           ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
                     double a, b, g;
                     x_[j].M.GetEulerZYX(a, b, g);
-                    printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
-                    printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n", j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
+                    printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
+                           j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
+                    printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n",
+                           j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
 
 
                 }
-                printf("Right e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",ex_(0)*RADtoDEG, ex_(1)*RADtoDEG, ex_(2)*RADtoDEG, ex_(3), ex_(4), ex_(5));
-                printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",ex_(6)*RADtoDEG, ex_(7)*RADtoDEG, ex_(8)*RADtoDEG, ex_(9), ex_(10), ex_(11));
+
                 printf("\n*********************************************************\n");
                 count = 0;
 
@@ -799,7 +521,37 @@ namespace dualarm_controller
 
                 //std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
                 //std::cout << M1_kdl_.data << "\n"<< std::endl;
+                //M_mat_collect.resize(16,16);
+                //M_mat_collect.setZero();
+                //M_mat_collect.block(0,0,2,2) = M_kdl_.data.block(0,0,2,2) + M1_kdl_.data.block(0,0,2,2);
+                //M_mat_collect.block(0,2,2,7) = M_kdl_.data.block(0,2,2,7);
+                //M_mat_collect.block(0,9,2,7) = M1_kdl_.data.block(0,2,2,7);
+                //M_mat_collect.block(2,0,7,2) = M_kdl_.data.block(2,0,7,2);
+                //M_mat_collect.block(9,0,7,2) = M1_kdl_.data.block(2,0,7,2);
+                //M_mat_collect.block(2,2,7,7) = M_kdl_.data.block(2,2,7,7);
+                //M_mat_collect.block(9,9,7,7) = M1_kdl_.data.block(2,2,7,7);
+                //std::cout << "KDL Inertia Matrix" << std::endl;
+                //std::cout << M_mat_collect << "\n"<< std::endl;
+                //std::cout << "My Inertia Matrix" << std::endl;
                 //std::cout << M << "\n"<< std::endl;
+
+                //std::cout << "\n" << G_kdl_.data << "\n"<< std::endl;
+                //std::cout << G1_kdl_.data << "\n"<< std::endl;
+                //g_vec_collect.resize(16);
+                //g_vec_collect.setZero();
+                //g_vec_collect.head(2) = G_kdl_.data.head(2) + G1_kdl_.data.head(2);
+                //g_vec_collect.segment(2, 7) = G_kdl_.data.tail(7);
+                //g_vec_collect.segment(9, 7) = G1_kdl_.data.tail(7);
+                //g_mat_collect.resize(16,2);
+                //g_mat_collect.setZero();
+                //g_mat_collect.col(0) = g_vec_collect;
+                //g_mat_collect.col(1) = G;
+                //std::cout << "KDL Gravity Vector: \t My Gravity Vector:" << std::endl;
+                //std::cout << g_mat_collect << "\n"<< std::endl;
+                //std::cout << "KDL Gravity Vector" << std::endl;
+                //std::cout << g_vec_collect << "\n"<< std::endl;
+                //std::cout << "My Gravity Vector" << std::endl;
+                //std::cout << G << "\n"<< std::endl;
                 //usleep(100000);
             }
             count++;
@@ -834,6 +586,9 @@ namespace dualarm_controller
         KDL::JntArray C_kdl_, C1_kdl_;
         KDL::JntArray G_kdl_, G1_kdl_;
         KDL::Vector g_kdl_;
+        Eigen::VectorXd g_vec_collect;
+        Eigen::MatrixXd g_mat_collect;
+        Eigen::MatrixXd M_mat_collect;
 
         KDL::Jacobian J1_kdl_, J2_kdl_;
         KDL::Jacobian J1_inv_kdl_, J2_inv_kdl_;
@@ -846,6 +601,7 @@ namespace dualarm_controller
 
         MatrixXd M;
         VectorXd G;
+        VectorXd C;
 
         Vector3d ForwardPos[2];
         Vector3d ForwardOri[2];
@@ -871,6 +627,7 @@ namespace dualarm_controller
 
         double q[16];
         double qdot[16];
+        VectorXd dq;
         VectorXd torque;
 
         // Task Space State
@@ -918,4 +675,4 @@ namespace dualarm_controller
     };
 }
 
-PLUGINLIB_EXPORT_CLASS(dualarm_controller::Taskspace_Control_CY,controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(dualarm_controller::JointSpace_Control,controller_interface::ControllerBase)

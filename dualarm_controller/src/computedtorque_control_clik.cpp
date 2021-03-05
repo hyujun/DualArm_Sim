@@ -308,6 +308,7 @@ namespace  dualarm_controller
 
             dx.setZero();
             dxdot.setZero();
+            torque.setZero(16);
         }
 
       void update(const ros::Time &time, const ros::Duration &period) override
@@ -325,11 +326,8 @@ namespace  dualarm_controller
           //torque_(i) = joints_[i].getEffort();
         }
 
-        Map<VectorXd>(q, n_joints_) = q_.data;
-        Map<VectorXd>(qdot, n_joints_) = qdot_.data;
-
-        cManipulator->pKin->PrepareJacobian(q);
-        cManipulator->pDyn->PrepareDynamics(q, qdot);
+        cManipulator->pKin->PrepareJacobian(q_.data);
+        cManipulator->pDyn->PrepareDynamics(q_.data, qdot_.data);
 
         cManipulator->pDyn->G_Matrix(G);
 
@@ -711,7 +709,7 @@ namespace  dualarm_controller
 
         double q[16];
         double qdot[16];
-        double torque[16];
+        VectorXd torque;
 
         // Task Space State
         // ver. 01

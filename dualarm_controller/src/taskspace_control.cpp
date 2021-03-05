@@ -360,6 +360,7 @@ namespace dualarm_controller
 
             dx.setZero();
             dxdot.setZero();
+            torque.setZero(16);
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -377,12 +378,11 @@ namespace dualarm_controller
                 //torque_(i) = joints_[i].getEffort();
             }
 
-            Map<VectorXd>(q, n_joints_) = q_.data;
-            Map<VectorXd>(qdot, n_joints_) = qdot_.data;
-
-            cManipulator->pKin->PrepareJacobian(q);
-            cManipulator->pDyn->PrepareDynamics(q, qdot);
-
+            //----------------------
+            // dynamics calculation
+            //----------------------
+            cManipulator->pKin->PrepareJacobian(q_.data);
+            cManipulator->pDyn->PrepareDynamics(q_.data, qdot_.data);
             cManipulator->pDyn->MG_Mat_Joint(M, G);
 
             cManipulator->pKin->GetSpaceJacobian(spaceJac);
@@ -392,6 +392,26 @@ namespace dualarm_controller
             cManipulator->pKin->GetScaledTransJacobian(ScaledTransJac);
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
+
+            q1_.data = q_.data.head(9);
+            q1dot_.data = qdot_.data.head(9);
+            jnt_to_jac_solver_->JntToJac(q1_, J1_kdl_);
+            id_solver_->JntToMass(q1_, M_kdl_);
+            id_solver_->JntToCoriolis(q1_, q1dot_, C_kdl_);
+            id_solver_->JntToGravity(q1_, G_kdl_);
+            fk_pos_solver_->JntToCart(q1_, x_[0]);
+
+            q2_.resize(9);
+            q2dot_.resize(9);
+            q2_.data.tail(7) = q_.data.tail(7);
+            q2_.data.head(2) = q_.data.head(2);
+            q2dot_.data = qdot_.data.tail(7);
+            q2dot_.data.head(2) = qdot_.data.head(2);
+            jnt_to_jac_solver1_->JntToJac(q2_, J2_kdl_);
+            id_solver1_->JntToMass(q2_, M1_kdl_);
+            id_solver1_->JntToCoriolis(q2_, q2dot_, C1_kdl_);
+            id_solver1_->JntToGravity(q2_, G1_kdl_);
+            fk_pos_solver1_->JntToCart(q2_, x_[1]);
 
             xd_dot_.setZero();
             ex_.setZero(12);
@@ -651,26 +671,6 @@ namespace dualarm_controller
                 }
             }
 
-            q1_.data = q_.data.head(9);
-            q1dot_.data = qdot_.data.head(9);
-            jnt_to_jac_solver_->JntToJac(q1_, J1_kdl_);
-            id_solver_->JntToMass(q1_, M_kdl_);
-            id_solver_->JntToCoriolis(q1_, q1dot_, C_kdl_);
-            id_solver_->JntToGravity(q1_, G_kdl_);
-            fk_pos_solver_->JntToCart(q1_, x_[0]);
-
-            q2_.resize(9);
-            q2dot_.resize(9);
-            q2_.data.tail(7) = q_.data.tail(7);
-            q2_.data.head(2) = q_.data.head(2);
-            q2dot_.data = qdot_.data.tail(7);
-            q2dot_.data.head(2) = qdot_.data.head(2);
-            jnt_to_jac_solver1_->JntToJac(q2_, J2_kdl_);
-            id_solver1_->JntToMass(q2_, M1_kdl_);
-            id_solver1_->JntToCoriolis(q2_, q2dot_, C1_kdl_);
-            id_solver1_->JntToGravity(q2_, G1_kdl_);
-            fk_pos_solver1_->JntToCart(q2_, x_[1]);
-
             if( ctr_obj_ == 3)
             {
                 Control->TaskInvDynController(ex_, ex_dot_, q_.data, qdot_.data, torque, dt);
@@ -683,14 +683,16 @@ namespace dualarm_controller
                 qd_dot_.data = AJac.transpose() * (xd_dot_ - CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
                 //qd_dot_.data = ScaledTransJac * (xd_dot_ - CLIK_GAIN * ex_);
 
+                qd_ddot_.data.setZero();
                 qd_.data = qd_old_.data + qd_dot_.data * dt;
                 qd_old_.data = qd_.data;
+
                 Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
             }
 
             for (int i = 0; i < n_joints_; i++)
             {
-                joints_[i].setCommand(torque[i]);
+                joints_[i].setCommand(torque(i));
                 //joints_[i].setCommand(0.0);
             }
 
@@ -769,7 +771,7 @@ namespace dualarm_controller
                     printf("dq: %0.3lf, ", qd_.data(i) * R2D);
                     printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
                     printf("dqdot: %0.3lf, ", qd_dot_.data(i) * R2D);
-                    printf("tau: %0.3f, %0.3f", torque[i], G(i));
+                    printf("tau: %0.3f, %0.3f", torque(i), G(i));
                     printf("\n");
                 }
 
@@ -807,14 +809,40 @@ namespace dualarm_controller
                 //std::cout << q0dot << "\n"<< std::endl;
                 //usleep(100000);
 
-                std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
-                std::cout << M1_kdl_.data << "\n"<< std::endl;
-                std::cout << M << "\n"<< std::endl;
+                //std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
+                //std::cout << M1_kdl_.data << "\n"<< std::endl;
+                //M_mat_collect.resize(16,16);
+                //M_mat_collect.setZero();
+                //M_mat_collect.block(0,0,2,2) = M_kdl_.data.block(0,0,2,2) + M1_kdl_.data.block(0,0,2,2);
+                //M_mat_collect.block(0,2,2,7) = M_kdl_.data.block(0,2,2,7);
+                //M_mat_collect.block(0,9,2,7) = M1_kdl_.data.block(0,2,2,7);
+                //M_mat_collect.block(2,0,7,2) = M_kdl_.data.block(2,0,7,2);
+                //M_mat_collect.block(9,0,7,2) = M1_kdl_.data.block(2,0,7,2);
+                //M_mat_collect.block(2,2,7,7) = M_kdl_.data.block(2,2,7,7);
+                //M_mat_collect.block(9,9,7,7) = M1_kdl_.data.block(2,2,7,7);
+                //std::cout << "KDL Inertia Matrix" << std::endl;
+                //std::cout << M_mat_collect << "\n"<< std::endl;
+                //std::cout << "My Inertia Matrix" << std::endl;
+                //std::cout << M << "\n"<< std::endl;
 
                 //std::cout << "\n" << G_kdl_.data << "\n"<< std::endl;
                 //std::cout << G1_kdl_.data << "\n"<< std::endl;
+                //g_vec_collect.resize(16);
+                //g_vec_collect.setZero();
+                //g_vec_collect.head(2) = G_kdl_.data.head(2) + G1_kdl_.data.head(2);
+                //g_vec_collect.segment(2, 7) = G_kdl_.data.tail(7);
+                //g_vec_collect.segment(9, 7) = G1_kdl_.data.tail(7);
+                //g_mat_collect.resize(16,2);
+                //g_mat_collect.setZero();
+                //g_mat_collect.col(0) = g_vec_collect;
+                //g_mat_collect.col(1) = G;
+                //std::cout << "KDL Gravity Vector: \t My Gravity Vector:" << std::endl;
+                //std::cout << g_mat_collect << "\n"<< std::endl;
+                //std::cout << "KDL Gravity Vector" << std::endl;
+                //std::cout << g_vec_collect << "\n"<< std::endl;
+                //std::cout << "My Gravity Vector" << std::endl;
                 //std::cout << G << "\n"<< std::endl;
-                usleep(100000);
+                //usleep(100000);
             }
             count++;
         }
@@ -848,6 +876,9 @@ namespace dualarm_controller
         KDL::JntArray C_kdl_, C1_kdl_;
         KDL::JntArray G_kdl_, G1_kdl_;
         KDL::Vector g_kdl_;
+        Eigen::VectorXd g_vec_collect;
+        Eigen::MatrixXd g_mat_collect;
+        Eigen::MatrixXd M_mat_collect;
 
         KDL::Jacobian J1_kdl_, J2_kdl_;
         KDL::Jacobian J1_inv_kdl_, J2_inv_kdl_;
@@ -860,6 +891,7 @@ namespace dualarm_controller
 
         MatrixXd M;
         VectorXd G;
+        VectorXd C;
 
         Vector3d ForwardPos[2];
         Vector3d ForwardOri[2];
@@ -885,7 +917,7 @@ namespace dualarm_controller
 
         double q[16];
         double qdot[16];
-        double torque[16];
+        VectorXd torque;
 
         // Task Space State
         // ver. 01

@@ -7,7 +7,7 @@
     <arg name="recording" default="false"/>
     <arg name="headless" default="false"/>
     <arg name="physics" default="ode"/>
-    <arg name="verbose" default="false"/>
+    <arg name="verbose" default="true"/>
     <arg name="extra_gazebo_args" default=""/>
 
     <param name="robot_description" command="$(find xacro)/xacro '$(find dualarm_description)/urdf/dual_arm.xacro'"/>

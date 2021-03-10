@@ -22,7 +22,7 @@ Controller::Controller(SerialManipulator *pManipulator)
 {
 	this->pManipulator = pManipulator;
 
-	m_Jnum = pManipulator->GetTotalDoF();
+	m_Jnum = this->pManipulator->GetTotalDoF();
 	m_KpBase = KpBase;
 	m_KdBase = KdBase;
 	m_KiBase = KiBase;
@@ -37,9 +37,9 @@ Controller::Controller(SerialManipulator *pManipulator)
 	K_Hinf.resize(m_Jnum);
 	K_Hinf.setConstant(m_HinfBase);
 
-	KpTask.resize(6*pManipulator->pKin->GetNumChain());
-	KdTask.resize(6*pManipulator->pKin->GetNumChain());
-	KiTask.resize(6*pManipulator->pKin->GetNumChain());
+	KpTask.resize(6*this->pManipulator->pKin->GetNumChain());
+	KdTask.resize(6*this->pManipulator->pKin->GetNumChain());
+	KiTask.resize(6*this->pManipulator->pKin->GetNumChain());
 
 	e.resize(m_Jnum);
 	e.setZero();
@@ -50,10 +50,10 @@ Controller::Controller(SerialManipulator *pManipulator)
 	e_int.resize(m_Jnum);
 	e_int_sat.resize(m_Jnum);
 
-	edotTask.resize(6*pManipulator->GetTotalChain());
-	eTask.resize(6*pManipulator->GetTotalChain());
+	edotTask.resize(6*this->pManipulator->GetTotalChain());
+	eTask.resize(6*this->pManipulator->GetTotalChain());
 
-	edotTmp.resize(6*pManipulator->GetTotalChain(), 6*pManipulator->GetTotalChain());
+	edotTmp.resize(6*this->pManipulator->GetTotalChain(), 6*this->pManipulator->GetTotalChain());
 
 	ToqOut.resize(m_Jnum);
 	ToqOut.setZero();
@@ -149,9 +149,9 @@ Controller::Controller(SerialManipulator *pManipulator)
 }
 
 Controller::~Controller() {
-
+    if(this->pManipulator != nullptr)
+        delete this->pManipulator;
 }
-
 
 void Controller::ClearError(void)
 {
@@ -247,7 +247,7 @@ void Controller::InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq,
 	//_Toq = M.diagonal().cwiseProduct(dqddot) + Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
 	//_Toq = G + FrictionTorque;
 
-    _Toq =  M*( dqddot + K_Hinf.cwiseProduct(Kd).cwiseProduct(e_dev) + K_Hinf.cwiseProduct(Kp).cwiseProduct(e) ) + G ;
+    _Toq =  M*( dqddot + K_Hinf.asDiagonal()*Kd.cwiseProduct(e_dev) + K_Hinf.asDiagonal()*Kp.cwiseProduct(e) ) + G ;
     //_Toq =  M.diagonal()*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + G ;
 
 	return;

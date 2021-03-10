@@ -7,6 +7,4 @@
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
           output="screen" ns="/dualarm" args="joint_state_controller jointspace_control"/>
 
-
-
 </launch>

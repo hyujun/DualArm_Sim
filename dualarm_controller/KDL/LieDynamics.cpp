@@ -10,31 +10,28 @@ namespace HYUMotionDynamics{
 
     Liedynamics::Liedynamics():isFirstRun(0)
     {
-        pLink = NULL;
-        pCoM = NULL;
-
+        pCoM = nullptr;
         m_NumChain = 1;
         m_DoF = 6;
 
-        this->Iner_mat.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
-        this->Gamma_mat.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
-        this->L_mat.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
-        this->ad_Aqd.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
-        this->ad_V.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
+        this->Iner_mat.setZero(6*this->m_DoF, 6*this->m_DoF);
+        this->Gamma_mat.setZero(6*this->m_DoF, 6*this->m_DoF);
+        this->L_mat.setZero(6*this->m_DoF, 6*this->m_DoF);
+        this->ad_Aqd.setZero(6*this->m_DoF, 6*this->m_DoF);
+        this->ad_V.setZero(6*this->m_DoF, 6*this->m_DoF);
 
-        this->A_mat.conservativeResize(6*this->m_DoF, this->m_DoF);
-        this->LA_mat.conservativeResize(6*this->m_DoF, this->m_DoF);
+        this->A_mat.setZero(6*this->m_DoF, this->m_DoF);
+        this->LA_mat.setZero(6*this->m_DoF, this->m_DoF);
 
-        this->V.conservativeResize(6*this->m_DoF);
-        this->VdotBase.conservativeResize(6*this->m_DoF);
+        this->V.setZero(6*this->m_DoF);
+        this->VdotBase.setZero(6*this->m_DoF);
 
-        grav.resize(6);
+        grav.setZero(6);
         grav << 0, 0, 0, 0, 0, 9.8;
     }
 
-    Liedynamics::Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoEKinematics &_PoEKin, HYUMotionKinematics::PoEKinematics &_CoMKin ):isFirstRun(0)
+    Liedynamics::Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoEKinematics &_CoMKin ):isFirstRun(0)
     {
-        pLink = &_PoEKin;
         pCoM = &_CoMKin;
 
         this->ChainMatrix = _ChainMatrix;
@@ -42,20 +39,19 @@ namespace HYUMotionDynamics{
         this->m_NumChain = ChainMatrix.rows();
         this->m_DoF = ChainMatrix.cols();
 
-        this->Iner_mat.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
-        this->Gamma_mat.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
-        this->L_mat.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
-        this->ad_Aqd.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
-        this->ad_V.conservativeResize(6*this->m_DoF, 6*this->m_DoF);
+        this->Iner_mat.setZero(6*this->m_DoF, 6*this->m_DoF);
+        this->Gamma_mat.setZero(6*this->m_DoF, 6*this->m_DoF);
+        this->L_mat.setZero(6*this->m_DoF, 6*this->m_DoF);
+        this->ad_Aqd.setZero(6*this->m_DoF, 6*this->m_DoF);
+        this->ad_V.setZero(6*this->m_DoF, 6*this->m_DoF);
 
-        this->A_mat.conservativeResize(6*this->m_DoF, this->m_DoF);
-        this->LA_mat.conservativeResize(6*this->m_DoF, this->m_DoF);
+        this->A_mat.setZero(6*this->m_DoF, this->m_DoF);
+        this->LA_mat.setZero(6*this->m_DoF, this->m_DoF);
 
-        this->V.conservativeResize(6*this->m_DoF);
-        this->VdotBase.conservativeResize(6*this->m_DoF);
+        this->V.setZero(6*this->m_DoF);
+        this->VdotBase.setZero(6*this->m_DoF);
 
-        grav.resize(6);
-        grav.setZero();
+        grav.setZero(6);
         grav << 0, 0, 0, 0, 0, 9.8;
 
         Eigen::initParallel();
@@ -63,13 +59,14 @@ namespace HYUMotionDynamics{
 
     Liedynamics::~Liedynamics()
     {
-
+        if(pCoM != nullptr)
+            delete pCoM;
     }
 
     void Liedynamics::UpdateDynamicInfo( Matrix3d _Inertia, double _Mass, Vector3d _CoM, int _LinkNum )
     {
         GeneralizedInertia(_Inertia, _Mass, this->GIner[_LinkNum]);
-        this->A[_LinkNum] = AdjointMatrix(inverse_SE3(pCoM->GetMMat(_LinkNum)))*pLink->GetTwist(_LinkNum);
+        this->A[_LinkNum] = AdjointMatrix(inverse_SE3(pCoM->GetMMat(_LinkNum)))*pCoM->GetTwist(_LinkNum);
     }
 
     void Liedynamics::GeneralizedInertia(const Matrix3d &_Inertia, const double &_Mass, Matrix6d &GIner)
@@ -96,7 +93,8 @@ namespace HYUMotionDynamics{
         this->Gamma_mat.setZero();
         for (int i = 1; i < this->m_DoF; ++i)
         {
-            this->Gamma_mat.block<6, 6>(6 * i, 6 * (i - 1)) = LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(i, i+1)));
+            this->Gamma_mat.block<6, 6>(6 * i, 6 * (i - 1))
+                    = LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(i, i+1)));
             //LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pPoEKinematics->GetTMat(i, i + 1)), this->Gamma_mat.block<6, 6>(6 * i, 6 * (i - 1)));
         }
         return;
@@ -115,7 +113,8 @@ namespace HYUMotionDynamics{
                     {
                         if(ChainMatrix(k,j) == 1)
                         {
-                            this->L_mat.block(6*j, 6*i, 6, 6) = LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(i+1,j+1)));
+                            this->L_mat.block(6*j, 6*i, 6, 6)
+                            = LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(i+1,j+1)));
                             //LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pPoEKinematics->GetTMat(i + 1, j + 1)), this->L_mat.block(6 * j, 6 * i, 6, 6));
                         }
                     }
@@ -162,7 +161,8 @@ namespace HYUMotionDynamics{
     void Liedynamics::Vdot_base( void )
     {
         VdotBase.setZero();
-        this->VdotBase.segment(0, 6).noalias() += LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(0, 1)))*grav;
+        this->VdotBase.segment(0, 6).noalias() +=
+                LieOperator::AdjointMatrix(LieOperator::inverse_SE3(pCoM->GetTMat(0, 1)))*grav;
         return;
     }
 
@@ -172,7 +172,6 @@ namespace HYUMotionDynamics{
         {
             Inertia_Link();
             A_Link();
-            Gamma_Link();
             isFirstRun = 1;
         }
 
@@ -180,45 +179,52 @@ namespace HYUMotionDynamics{
 
         L_link();
         Vdot_base();
+        Gamma_Link();
 
         LA_mat.setZero();
         LA_mat.noalias() += L_mat*A_mat;
-        ad_Aqdot_Link(_qdot);
-        ad_V_Link(_qdot);
+        //ad_Aqdot_Link(_qdot);
+        //ad_V_Link(_qdot);
     }
 
     void Liedynamics::C_Matrix( MatrixXd &_C )
     {
-        _C.resize(this->m_DoF, this->m_DoF);
-        _C.setZero();
+        _C.setZero(this->m_DoF, this->m_DoF);
         _C = -LA_mat.transpose()*(Iner_mat*L_mat*ad_Aqd*Gamma_mat - ad_V.transpose()*Iner_mat)*LA_mat;
         return;
     }
 
     void Liedynamics::C_Vector( VectorXd &_C, VectorXd &_qdot )
     {
-        _C.resize(this->m_DoF);
-        _C.setZero();
+        _C.setZero(this->m_DoF);
         _C.noalias() += (-LA_mat.transpose()*((Iner_mat*L_mat*ad_Aqd*Gamma_mat - ad_V.transpose()*Iner_mat)*(LA_mat*_qdot)));
         return;
     }
 
     void Liedynamics::G_Matrix( VectorXd &_G )
     {
-        _G.resize(this->m_DoF);
-        _G.setZero();
+        if(_G.rows() != this->m_DoF)
+            _G.setZero(this->m_DoF);
+        else
+            _G.setZero();
+
         _G.noalias() += (LA_mat.transpose()*(Iner_mat*(L_mat*VdotBase)));
         return;
     }
 
     void Liedynamics::MG_Mat_Joint( MatrixXd &_M, VectorXd&_G )
     {
-        _M.resize(this->m_DoF,this->m_DoF);
-        _M.setZero();
-        _G.resize(this->m_DoF);
-        _G.setZero();
+        if(_M.rows() != this->m_DoF && _M.cols() != this->m_DoF)
+            _M.setZero(this->m_DoF,this->m_DoF);
+        else
+            _M.setZero();
 
-        _M.noalias() += LA_mat.transpose()*Iner_mat*L_mat*A_mat;
+        if(_G.rows() != this->m_DoF)
+            _G.setZero(this->m_DoF);
+        else
+            _G.setZero();
+
+        _M.noalias() += LA_mat.transpose()*Iner_mat*LA_mat;
         _G.noalias() += (LA_mat.transpose()*(Iner_mat*(L_mat*VdotBase)));
 
         return;
@@ -226,24 +232,21 @@ namespace HYUMotionDynamics{
 
     void Liedynamics::MG_Mat_Task(const MatrixXd &_M, const VectorXd &_G, MatrixXd &_Mx, VectorXd &_Gx)
     {
-        pLink->GetAnalyticJacobian(this->Jacobian_mat);
-        pLink->GetpinvJacobian(this->pinvJacobian_mat);
+        //pLink->GetAnalyticJacobian(this->Jacobian_mat);
+        //pLink->GetpinvJacobian(this->pinvJacobian_mat);
         //pLink->->GetScaledTransJacobian(this->pinvJacobian_mat);
 
-        _Mx.resize(6*this->m_NumChain, 6*this->m_NumChain);
-        _Mx.setZero();
-        _Mx.noalias() += pinvJacobian_mat.transpose()*_M*pinvJacobian_mat;
+        //_Mx.setZero(6*this->m_NumChain, 6*this->m_NumChain);
+        //_Mx.noalias() += pinvJacobian_mat.transpose()*_M*pinvJacobian_mat;
 
-        _Gx.resize(6*this->m_NumChain);
-        _Gx.setZero();
-        _Gx.noalias() += pinvJacobian_mat.transpose()*_G;
+        //_Gx.setZero(6*this->m_NumChain);
+        //_Gx.noalias() += pinvJacobian_mat.transpose()*_G;
         return;
     }
 
     void Liedynamics::Mdot_Matrix( MatrixXd &_Mdot )
     {
-        _Mdot.resize(m_DoF, m_DoF);
-        _Mdot.setZero();
+        _Mdot.setZero(m_DoF, m_DoF);
         _Mdot.noalias() += -LA_mat.transpose()*Gamma_mat.transpose()*ad_Aqd.transpose()*L_mat.transpose()*Iner_mat*LA_mat;
         _Mdot.noalias() += -LA_mat.transpose()*Iner_mat*L_mat*ad_Aqd*Gamma_mat*LA_mat;
         return;

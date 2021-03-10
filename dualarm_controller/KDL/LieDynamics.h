@@ -41,7 +41,7 @@ namespace HYUMotionDynamics{
          * @param[in] _ChainMatrix
          * @param[in] _PoEKin
          */
-        Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoEKinematics &_PoEKin, HYUMotionKinematics::PoEKinematics &_CoMKin );
+        Liedynamics( const MatrixXi &_ChainMatrix, HYUMotionKinematics::PoEKinematics &_CoMKin );
         ~Liedynamics();
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -69,7 +69,6 @@ namespace HYUMotionDynamics{
 
         MatrixXi ChainMatrix;
 
-        HYUMotionKinematics::PoEKinematics *pLink;
         HYUMotionKinematics::PoEKinematics *pCoM;
         MatrixXd Jacobian_mat;
         MatrixXd pinvJacobian_mat;

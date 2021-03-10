@@ -53,6 +53,17 @@ namespace dualarm_controller
     class JointSpace_Control : public controller_interface::Controller<hardware_interface::EffortJointInterface>
     {
     public:
+        virtual ~JointSpace_Control()
+        {
+            if(Control != nullptr)
+            {
+                delete Control;
+            }
+            if(cManipulator != nullptr)
+            {
+                delete cManipulator;
+            }
+        }
         bool init(hardware_interface::EffortJointInterface *hw, ros::NodeHandle &n)
         {
             // ********* 1. Get joint name / gain from the parameter server *********
@@ -314,8 +325,25 @@ namespace dualarm_controller
             t = 0.0;
             ROS_INFO("Starting Task space Controller");
 
-            cManipulator = new SerialManipulator;
-            Control = new HYUControl::Controller(cManipulator);
+            if(cManipulator != nullptr)
+            {
+                delete cManipulator;
+                cManipulator = new SerialManipulator;
+            }
+            else
+            {
+                cManipulator = new SerialManipulator;
+            }
+
+            if(Control != nullptr)
+            {
+                delete Control;
+                Control = new HYUControl::Controller(cManipulator);
+            }
+            else
+            {
+                Control = new HYUControl::Controller(cManipulator);
+            }
 
             cManipulator->UpdateManipulatorParam();
 
@@ -431,8 +459,6 @@ namespace dualarm_controller
         void stopping(const ros::Time &time) override
         {
             ROS_INFO("Stop Task space Controller");
-            delete Control;
-            delete cManipulator;
         }
 
         void publish_data()
@@ -500,8 +526,6 @@ namespace dualarm_controller
                            j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
                     printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n",
                            j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
-
-
                 }
 
                 printf("\n*********************************************************\n");
@@ -521,19 +545,19 @@ namespace dualarm_controller
 
                 //std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
                 //std::cout << M1_kdl_.data << "\n"<< std::endl;
-                //M_mat_collect.resize(16,16);
-                //M_mat_collect.setZero();
-                //M_mat_collect.block(0,0,2,2) = M_kdl_.data.block(0,0,2,2) + M1_kdl_.data.block(0,0,2,2);
-                //M_mat_collect.block(0,2,2,7) = M_kdl_.data.block(0,2,2,7);
-                //M_mat_collect.block(0,9,2,7) = M1_kdl_.data.block(0,2,2,7);
-                //M_mat_collect.block(2,0,7,2) = M_kdl_.data.block(2,0,7,2);
-                //M_mat_collect.block(9,0,7,2) = M1_kdl_.data.block(2,0,7,2);
-                //M_mat_collect.block(2,2,7,7) = M_kdl_.data.block(2,2,7,7);
-                //M_mat_collect.block(9,9,7,7) = M1_kdl_.data.block(2,2,7,7);
-                //std::cout << "KDL Inertia Matrix" << std::endl;
-                //std::cout << M_mat_collect << "\n"<< std::endl;
-                //std::cout << "My Inertia Matrix" << std::endl;
-                //std::cout << M << "\n"<< std::endl;
+                M_mat_collect.resize(16,16);
+                M_mat_collect.setZero();
+                M_mat_collect.block(0,0,2,2) = M_kdl_.data.block(0,0,2,2) + M1_kdl_.data.block(0,0,2,2);
+                M_mat_collect.block(0,2,2,7) = M_kdl_.data.block(0,2,2,7);
+                M_mat_collect.block(0,9,2,7) = M1_kdl_.data.block(0,2,2,7);
+                M_mat_collect.block(2,0,7,2) = M_kdl_.data.block(2,0,7,2);
+                M_mat_collect.block(9,0,7,2) = M1_kdl_.data.block(2,0,7,2);
+                M_mat_collect.block(2,2,7,7) = M_kdl_.data.block(2,2,7,7);
+                M_mat_collect.block(9,9,7,7) = M1_kdl_.data.block(2,2,7,7);
+                std::cout << "KDL Inertia Matrix" << std::endl;
+                std::cout << M_mat_collect << "\n"<< std::endl;
+                std::cout << "My Inertia Matrix" << std::endl;
+                std::cout << M << "\n"<< std::endl;
 
                 //std::cout << "\n" << G_kdl_.data << "\n"<< std::endl;
                 //std::cout << G1_kdl_.data << "\n"<< std::endl;
@@ -670,8 +694,6 @@ namespace dualarm_controller
 
         SerialManipulator *cManipulator;
         HYUControl::Controller *Control;
-
-
     };
 }
 

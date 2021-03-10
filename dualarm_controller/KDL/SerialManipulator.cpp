@@ -6,25 +6,29 @@ SerialManipulator::SerialManipulator()
 	mChainMat << 1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,
 				1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1;
 
-	//mChainMat.resize(2,10);
-	//mChainMat << 1,1,1,1,1,1,1,1,0,0,
-	//			 1,1,0,0,0,0,0,0,1,1;
-
 	this->mDoF_Total = mChainMat.cols();
 	this->mChain_Total = mChainMat.rows();
 
-
 	pKin = new HYUMotionKinematics::PoEKinematics(mChainMat);
 	pCoMKin = new HYUMotionKinematics::PoEKinematics(mChainMat);
-	pDyn = new HYUMotionDynamics::Liedynamics(mChainMat, *pKin, *pCoMKin);
+	pDyn = new HYUMotionDynamics::Liedynamics(mChainMat, *pCoMKin);
 
 }
 
 SerialManipulator::~SerialManipulator()
 {
-	delete pDyn;
-	delete pCoMKin;
-	delete pKin;
+    if(pDyn != nullptr)
+    {
+        delete pDyn;
+    }
+    if(pCoMKin != nullptr)
+    {
+        delete pCoMKin;
+    }
+    if(pKin != nullptr)
+    {
+        delete pKin;
+    }
 }
 
 void SerialManipulator::StateMachine( double *_q, double *_qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord )

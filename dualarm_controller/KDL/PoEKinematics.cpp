@@ -123,7 +123,7 @@ namespace HYUMotionKinematics {
         SpaceJacobian();
         SpaceToBodyJacobian();
         AnalyticJacobian();
-        ScaledTransJacobian();
+        //ScaledTransJacobian();
         return;
     }
 

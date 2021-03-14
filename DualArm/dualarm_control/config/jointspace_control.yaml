@@ -25,39 +25,39 @@ dualarm:
 
     gains:
       dualarm_joint1:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint2:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
 
       dualarm_joint3:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint4:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint5:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint6:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint7:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint8:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint9:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
 
       dualarm_joint10:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint11:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint12:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint13:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint14:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint15:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint16:
-        pid: {p: 20.0, i: 100.0, d: 0.9, h: 0.7}
+        pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
 
     root_link: world
     tip_link1: dualarm_R_end_frame

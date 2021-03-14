@@ -299,8 +299,9 @@ namespace  dualarm_controller
             t = 0.0;
             ROS_INFO("Starting Computed Torque Controller with Closed-Loop Inverse Kinematics");
 
-            cManipulator = new SerialManipulator;
-            Control = new HYUControl::Controller(cManipulator);
+            cManipulator = std::make_shared<SerialManipulator>();
+
+            Control = std::make_unique<HYUControl::Controller>(cManipulator);
 
             cManipulator->UpdateManipulatorParam();
 
@@ -603,8 +604,7 @@ namespace  dualarm_controller
 
         void stopping(const ros::Time &time) override
         {
-            delete Control;
-            delete cManipulator;
+
         }
 
         static void save_data()
@@ -746,8 +746,8 @@ namespace  dualarm_controller
         std_msgs::Float64MultiArray msg_xd_, msg_x_, msg_ex_;
         std_msgs::Float64MultiArray msg_SaveData_;
 
-        SerialManipulator *cManipulator;
-        HYUControl::Controller *Control;
+        std::shared_ptr<SerialManipulator> cManipulator;
+        std::unique_ptr<HYUControl::Controller> Control;
 
 
     };

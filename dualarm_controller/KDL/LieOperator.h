@@ -117,9 +117,7 @@ namespace HYUMotionBase {
         adjoint adjointRes;
         Matrix3d Mat3dRes;
         Matrix4d Mat4dRes;
-
         AngleAxisd mLogSO3;
-
     };
 
 } /* namespace HYUMotion */

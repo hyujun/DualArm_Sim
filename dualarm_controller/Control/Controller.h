@@ -39,7 +39,7 @@ public:
 	 * @brief Controller constructor
 	 * @param[in] JointNum number of joint
 	 */
-	Controller(SerialManipulator *pManipulator);
+	Controller(std::shared_ptr<SerialManipulator> pManipulator);
 	virtual ~Controller();
 
 	/**
@@ -68,15 +68,15 @@ public:
 	 */
 	void PDController( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_Toq, float &_dt );
 	void PDGravController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_Toq );
-	void InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, double &_dt );
-	void TaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd &_q, VectorXd &_qdot, VectorXd &_Toq, double &_dt);
+    void InvDynController(const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, const VectorXd &_dqddot, VectorXd &_Toq, const double &_dt );
+	void TaskInvDynController(const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_q, const VectorXd &_qdot, VectorXd &_Toq, const double &_dt);
 
 	void TaskError(double *_dx, double*_dxdot, double *_q, double *_qdot, double *p_Toq);
 
 	void CLIKTaskController( double *_q, double *_qdot, double *_dq, double *_dqdot, const VectorXd *_dx, const VectorXd *_dxdot, const VectorXd &_dqdotNull, double *p_Toq, float &_dt );
 
 	void FrictionIdentification( double *p_q, double *p_qdot, double *p_dq, double *p_dqdot, double *p_dqddot, double *p_Toq, double &gt );
-	void FrictionCompensator( VectorXd &_qdot, VectorXd &_dqdot );
+	void FrictionCompensator( const VectorXd &_qdot, const VectorXd &_dqdot );
 	/**
 	 * @brief joint input torque saturator
 	 * @param[in] p_toq joint input torque as control input
@@ -123,7 +123,7 @@ private:
 	double m_KpBase, m_KdBase, m_KiBase, m_HinfBase;
 	double InitTime=0;
 
-	SerialManipulator *pManipulator;
+    std::shared_ptr<SerialManipulator> pManipulator;
 };
 
 } /* namespace HYUCtrl */

@@ -11,14 +11,14 @@ namespace HYUControl {
 
 Controller::Controller():m_Jnum(6)
 {
-	this->pManipulator = NULL;
+	this->pManipulator = nullptr;
     m_KpBase = KpBase;
     m_KdBase = KdBase;
     m_KiBase = KiBase;
     m_HinfBase = HinfBase;
 }
 
-Controller::Controller(SerialManipulator *pManipulator)
+Controller::Controller(std::shared_ptr<SerialManipulator> pManipulator)
 {
 	this->pManipulator = pManipulator;
 
@@ -64,7 +64,7 @@ Controller::Controller(SerialManipulator *pManipulator)
 	GainWeightFactor.resize(m_Jnum);
 #if defined(__SIMULATION__)
     GainWeightFactor.resize(m_Jnum);
-    GainWeightFactor.setConstant(0.3);
+    GainWeightFactor.setConstant(7.0);
 
     Kp = GainWeightFactor*m_KpBase;
     Kd = GainWeightFactor*m_KdBase;
@@ -149,8 +149,7 @@ Controller::Controller(SerialManipulator *pManipulator)
 }
 
 Controller::~Controller() {
-    if(this->pManipulator != nullptr)
-        delete this->pManipulator;
+
 }
 
 void Controller::ClearError(void)
@@ -172,9 +171,9 @@ void Controller::SetPIDGain(double &_Kp, double &_Kd, double &_Hinf, int &_Joint
 void Controller::SetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki, VectorXd &_Kinf)
 {
     K_Hinf = _Kinf;
-    Kp = _Kp;
-    Kd = _Kd;
-    Ki = _Ki;
+    Kp = _Kinf.asDiagonal()*_Kp;
+    Kd = _Kinf.asDiagonal()*_Kd;
+    Ki = _Kinf.asDiagonal()*_Ki;
 
     return;
 }
@@ -230,7 +229,13 @@ void Controller::PDGravController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq,
 	return;
 }
 
-void Controller::InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, double &_dt )
+void Controller::InvDynController(const VectorXd &_q,
+                                  const VectorXd &_qdot,
+                                  const VectorXd &_dq,
+                                  const VectorXd &_dqdot,
+                                  const VectorXd &_dqddot,
+                                  VectorXd &_Toq,
+                                  const double &_dt )
 {
 	pManipulator->pDyn->MG_Mat_Joint(M, G);
 	//pManipulator->pDyn->G_Matrix(G);
@@ -242,19 +247,29 @@ void Controller::InvDynController( VectorXd &_q, VectorXd &_qdot, VectorXd &_dq,
 
 	FrictionCompensator(_qdot, _dqdot);
 
-    _Toq.setZero();
-	//_Toq = M*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + ( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) ) + G + FrictionTorque;
-	//_Toq = M.diagonal().cwiseProduct(dqddot) + Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
-	//_Toq = G + FrictionTorque;
+	if(_Toq.size() != m_Jnum)
+        _Toq.setZero(m_Jnum);
+	else
+	    _Toq.setZero();
 
-    _Toq =  M*( dqddot + K_Hinf.asDiagonal()*Kd.cwiseProduct(e_dev) + K_Hinf.asDiagonal()*Kp.cwiseProduct(e) ) + G ;
-    //_Toq =  M.diagonal()*( dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + G ;
+	//_Toq.noalias() += M*( _dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + ( e_dev + Kd.cwiseProduct(e) + Kp.cwiseProduct(e_int) ) + G + FrictionTorque;
+	//_Toq.noalias() += M.diagonal().cwiseProduct(dqddot) + Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G + FrictionTorque;
+	//_Toq.noalias() += G + FrictionTorque;
+
+	_Toq.noalias() += G;
+    _Toq.noalias() += M*( _dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) );
+    //_Toq.noalias() += M.diagonal()*( _dqddot + Kd.cwiseProduct(e_dev) + Kp.cwiseProduct(e) ) + G ;
 
 	return;
 
 }
 
-void Controller::TaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd &_q, VectorXd &_qdot, VectorXd &_Toq, double &_dt)
+void Controller::TaskInvDynController(const VectorXd &_dx,
+                                      const VectorXd &_dxdot,
+                                      const VectorXd &_q,
+                                      const VectorXd &_qdot,
+                                      VectorXd &_Toq,
+                                      const double &_dt)
 {
     pManipulator->pDyn->MG_Mat_Joint(M, G);
     ToqOut.setZero();
@@ -267,10 +282,10 @@ void Controller::TaskInvDynController(VectorXd &_dx, VectorXd &_dxdot, VectorXd 
     pManipulator->pKin->GetAnalyticJacobian(AJacobian);
     //pManipulator->pKin->GetpinvJacobian(pInvJac);
 
-    _Toq.setZero();
-    _Toq = AJacobian.transpose()*(-KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
-    //_Toq = pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + G;
-    //_Toq = pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+    _Toq.setZero(m_Jnum);
+    _Toq.noalias() += AJacobian.transpose()*(-KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+    //_Toq.noalias() += pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + G;
+    //_Toq.noalias() += pInvJac*(KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
 
     return;
 }
@@ -527,7 +542,7 @@ void Controller::FrictionIdentification( double *p_q, double *p_qdot, double *p_
 
 }
 
-void Controller::FrictionCompensator( VectorXd &_qdot, VectorXd &_dqdot )
+void Controller::FrictionCompensator( const VectorXd &_qdot,  const VectorXd &_dqdot )
 {
 	FrictionTorque.setZero();
 

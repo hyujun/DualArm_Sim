@@ -2,7 +2,7 @@
 
 namespace HYUMotionKinematics {
 
-    PoEKinematics::PoEKinematics():m_NumChain(1),m_DoF(6),isInfoUpdated(0)
+    PoEKinematics::PoEKinematics():m_NumChain(1),m_DoF(6)
     {
         this->mBodyJacobian.resize(6*this->m_NumChain, this->m_DoF);
         this->mSpaceJacobian.resize(6*this->m_NumChain, this->m_DoF);
@@ -10,7 +10,7 @@ namespace HYUMotionKinematics {
         Theta=0;
     }
 
-    PoEKinematics::PoEKinematics( const MatrixXi &_ChainMat ):isInfoUpdated(0)
+    PoEKinematics::PoEKinematics( const MatrixXi &_ChainMat )
     {
         ChainMatrix = _ChainMat;
 
@@ -46,13 +46,11 @@ namespace HYUMotionKinematics {
 
     }
 
-    void PoEKinematics::UpdateKinematicInfo( Vector3d _w, Vector3d _p, Vector3d _l, int _link_num )
+    void PoEKinematics::UpdateKinematicInfo( const Vector3d &_w, const Vector3d &_p, const Vector3d &_l, const int _link_num )
     {
         M[_link_num] = GetM(_l);
 
         v_se3[_link_num] = GetTwist(_w, GetV(_w, _p));
-
-        isInfoUpdated = 1;
     }
 
     Vector3d PoEKinematics::GetV( const Vector3d &_w, const Vector3d &_p )
@@ -67,6 +65,11 @@ namespace HYUMotionKinematics {
         return SE3_Tmp;
     }
 
+    void PoEKinematics::SetTwist( const se3 &_Twist, const int _link_num )
+    {
+        v_se3[_link_num] = _Twist;
+    }
+
     se3 PoEKinematics::GetTwist( const Vector3d &_w, const Vector3d &_v )
     {
         se3_Tmp.segment(0,3) = _w;
@@ -79,7 +82,7 @@ namespace HYUMotionKinematics {
     {
         int TCounter;
 
-        for (int end = 0; end < this->m_DoF; ++end)
+        for (int end=0; end < m_DoF; end++)
         {
             Exp_S[end] = SE3Matrix(v_se3[end], _q(end));
         }

@@ -53,17 +53,6 @@ namespace dualarm_controller
     class JointSpace_Control : public controller_interface::Controller<hardware_interface::EffortJointInterface>
     {
     public:
-        virtual ~JointSpace_Control()
-        {
-            if(Control != nullptr)
-            {
-                delete Control;
-            }
-            if(cManipulator != nullptr)
-            {
-                delete cManipulator;
-            }
-        }
         bool init(hardware_interface::EffortJointInterface *hw, ros::NodeHandle &n)
         {
             // ********* 1. Get joint name / gain from the parameter server *********
@@ -325,31 +314,14 @@ namespace dualarm_controller
             t = 0.0;
             ROS_INFO("Starting Task space Controller");
 
-            if(cManipulator != nullptr)
-            {
-                delete cManipulator;
-                cManipulator = new SerialManipulator;
-            }
-            else
-            {
-                cManipulator = new SerialManipulator;
-            }
-
-            if(Control != nullptr)
-            {
-                delete Control;
-                Control = new HYUControl::Controller(cManipulator);
-            }
-            else
-            {
-                Control = new HYUControl::Controller(cManipulator);
-            }
+            cManipulator = std::make_shared<SerialManipulator>();
+            Control = std::make_unique<HYUControl::Controller>(cManipulator);
 
             cManipulator->UpdateManipulatorParam();
 
             Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
 
-            torque.setZero(16);
+            torque.setZero(n_joints_);
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -450,7 +422,7 @@ namespace dualarm_controller
             }
 
             // ********* 4. data 저장 *********
-            publish_data();
+            //publish_data();
 
             // ********* 5. state 출력 *********
             print_state();
@@ -505,7 +477,7 @@ namespace dualarm_controller
                 for(int i=0; i < n_joints_; i++)
                 {
                     printf("Joint ID:%d \t", i+1);
-                    //printf("Kp;%0.3lf, Kd:%0.3lf, Kinf:%0.3lf, ", Kp_.data(i), Kd_.data(i), Ki_.data(i));
+                    printf("Kp;%0.3lf, Kd:%0.3lf, ", Kp_.data(i), Kd_.data(i));
                     printf("q: %0.3lf, ", q_.data(i) * R2D);
                     printf("dq: %0.3lf, ", qd_.data(i) * R2D);
                     printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
@@ -545,8 +517,9 @@ namespace dualarm_controller
 
                 //std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
                 //std::cout << M1_kdl_.data << "\n"<< std::endl;
-                M_mat_collect.resize(16,16);
-                M_mat_collect.setZero();
+
+                /*
+                M_mat_collect.setZero(16,16);
                 M_mat_collect.block(0,0,2,2) = M_kdl_.data.block(0,0,2,2) + M1_kdl_.data.block(0,0,2,2);
                 M_mat_collect.block(0,2,2,7) = M_kdl_.data.block(0,2,2,7);
                 M_mat_collect.block(0,9,2,7) = M1_kdl_.data.block(0,2,2,7);
@@ -554,24 +527,28 @@ namespace dualarm_controller
                 M_mat_collect.block(9,0,7,2) = M1_kdl_.data.block(2,0,7,2);
                 M_mat_collect.block(2,2,7,7) = M_kdl_.data.block(2,2,7,7);
                 M_mat_collect.block(9,9,7,7) = M1_kdl_.data.block(2,2,7,7);
+
+                std::cout.precision(4);
                 std::cout << "KDL Inertia Matrix" << std::endl;
                 std::cout << M_mat_collect << "\n"<< std::endl;
                 std::cout << "My Inertia Matrix" << std::endl;
                 std::cout << M << "\n"<< std::endl;
+                */
 
                 //std::cout << "\n" << G_kdl_.data << "\n"<< std::endl;
                 //std::cout << G1_kdl_.data << "\n"<< std::endl;
-                //g_vec_collect.resize(16);
-                //g_vec_collect.setZero();
-                //g_vec_collect.head(2) = G_kdl_.data.head(2) + G1_kdl_.data.head(2);
-                //g_vec_collect.segment(2, 7) = G_kdl_.data.tail(7);
-                //g_vec_collect.segment(9, 7) = G1_kdl_.data.tail(7);
-                //g_mat_collect.resize(16,2);
-                //g_mat_collect.setZero();
-                //g_mat_collect.col(0) = g_vec_collect;
-                //g_mat_collect.col(1) = G;
-                //std::cout << "KDL Gravity Vector: \t My Gravity Vector:" << std::endl;
-                //std::cout << g_mat_collect << "\n"<< std::endl;
+                /*
+                g_vec_collect.setZero(16);
+                g_vec_collect.head(2) = G_kdl_.data.head(2) + G1_kdl_.data.head(2);
+                g_vec_collect.segment(2, 7) = G_kdl_.data.tail(7);
+                g_vec_collect.segment(9, 7) = G1_kdl_.data.tail(7);
+                g_mat_collect.resize(16,2);
+                g_mat_collect.setZero();
+                g_mat_collect.col(0) = g_vec_collect;
+                g_mat_collect.col(1) = G;
+                std::cout << "KDL Gravity Vector: \t My Gravity Vector:" << std::endl;
+                std::cout << g_mat_collect << "\n"<< std::endl;
+                 */
                 //std::cout << "KDL Gravity Vector" << std::endl;
                 //std::cout << g_vec_collect << "\n"<< std::endl;
                 //std::cout << "My Gravity Vector" << std::endl;
@@ -692,8 +669,8 @@ namespace dualarm_controller
         std_msgs::Float64MultiArray msg_xd_, msg_x_, msg_ex_;
         std_msgs::Float64MultiArray msg_SaveData_;
 
-        SerialManipulator *cManipulator;
-        HYUControl::Controller *Control;
+        std::shared_ptr<SerialManipulator> cManipulator;
+        std::unique_ptr<HYUControl::Controller> Control;
     };
 }
 

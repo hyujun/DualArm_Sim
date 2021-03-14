@@ -9,26 +9,13 @@ SerialManipulator::SerialManipulator()
 	this->mDoF_Total = mChainMat.cols();
 	this->mChain_Total = mChainMat.rows();
 
-	pKin = new HYUMotionKinematics::PoEKinematics(mChainMat);
-	pCoMKin = new HYUMotionKinematics::PoEKinematics(mChainMat);
-	pDyn = new HYUMotionDynamics::Liedynamics(mChainMat, *pCoMKin);
-
+	pKin = std::make_unique<HYUMotionKinematics::PoEKinematics>(mChainMat);
+	pDyn = std::make_unique<HYUMotionDynamics::Liedynamics>(mChainMat);
 }
 
 SerialManipulator::~SerialManipulator()
 {
-    if(pDyn != nullptr)
-    {
-        delete pDyn;
-    }
-    if(pCoMKin != nullptr)
-    {
-        delete pCoMKin;
-    }
-    if(pKin != nullptr)
-    {
-        delete pKin;
-    }
+
 }
 
 void SerialManipulator::StateMachine( double *_q, double *_qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord )
@@ -54,31 +41,27 @@ void SerialManipulator::StateMachine( double *_q, double *_qdot, VectorXd &_Targ
 
 	mState_pre = mState_now;
 	_StateWord = mState_now;
-
-	return;
 }
 
-void SerialManipulator::UpdateManipulatorParam(void)
+void SerialManipulator::UpdateManipulatorParam()
 {
-    for(int i=0; i < this->mDoF_Total; ++i)
+    for( int i=0; i < mDoF_Total; i++ )
     {
-    	this->w[i] << serial_Kinematic_info[i].w_x, serial_Kinematic_info[i].w_y, serial_Kinematic_info[i].w_z;
-		this->p[i] << serial_Kinematic_info[i].q_x, serial_Kinematic_info[i].q_y, serial_Kinematic_info[i].q_z;
-		this->L[i] << serial_Kinematic_info[i].l_x, serial_Kinematic_info[i].l_y, serial_Kinematic_info[i].l_z;
+    	w[i] << serial_Kinematic_info[i].w_x, serial_Kinematic_info[i].w_y, serial_Kinematic_info[i].w_z;
+		p[i] << serial_Kinematic_info[i].q_x, serial_Kinematic_info[i].q_y, serial_Kinematic_info[i].q_z;
+		L[i] << serial_Kinematic_info[i].l_x, serial_Kinematic_info[i].l_y, serial_Kinematic_info[i].l_z;
 
-		pKin->UpdateKinematicInfo( this->w[i], this->p[i], this->L[i], i );
+		pKin->UpdateKinematicInfo( w[i], p[i], L[i], i );
 
 
     	Iner[i] << serial_Dynamic_info[i].Ixx_kgm2, serial_Dynamic_info[i].Ixy_kgm2, serial_Dynamic_info[i].Izx_kgm2,
     			serial_Dynamic_info[i].Ixy_kgm2, serial_Dynamic_info[i].Iyy_kgm2, serial_Dynamic_info[i].Iyz_kgm2,
 				serial_Dynamic_info[i].Izx_kgm2, serial_Dynamic_info[i].Iyz_kgm2, serial_Dynamic_info[i].Izz_kgm2;
 
-
-    	this->CoM[i] << serial_Dynamic_info[i].CoM_x, serial_Dynamic_info[i].CoM_y, serial_Dynamic_info[i].CoM_z;
+    	CoM[i] << serial_Dynamic_info[i].CoM_x, serial_Dynamic_info[i].CoM_y, serial_Dynamic_info[i].CoM_z;
     	mass[i] = serial_Dynamic_info[i].mass_kg;
 
-    	pCoMKin->UpdateKinematicInfo( this->w[i], this->p[i], this->CoM[i], i );
-    	pDyn->UpdateDynamicInfo( Iner[i], mass[i], CoM[i], i );
+    	pDyn->UpdateDynamicInfo( w[i], p[i], Iner[i], mass[i], CoM[i], i );
     }
 }
 

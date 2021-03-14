@@ -49,7 +49,7 @@ namespace HYUMotionKinematics {
          * @param[in] _l link length
          * @param[in] _link_num number of link attached to base-coordinate
          */
-        void UpdateKinematicInfo( Vector3d _w, Vector3d _p, Vector3d _l, int _link_num );
+        void UpdateKinematicInfo( const Vector3d &_w, const Vector3d &_p, const Vector3d &_l, const int _link_num );
 
         /**
          * @brief Calculate the joint velocity v
@@ -66,6 +66,7 @@ namespace HYUMotionKinematics {
          */
         SE3 GetM( const Vector3d &_link );
 
+        void SetTwist( const se3 &_Twist, const int _link_num );
         /**
          * @brief Calculate the Twist of joint
          * @param[in] _w joint axis with respect to the base coordinate
@@ -140,7 +141,7 @@ namespace HYUMotionKinematics {
 
         void RollPitchYawtoSO3( const double &_Roll_rad, const double &_Pitch_rad, const double &_Yaw_rad, Matrix3d &_RotMat);
 
-        SE3 GetTMat(int _begin, int _end)
+        SE3 GetTMat(const int _begin, const int _end)
         {
             return T[_begin][_end];
         }
@@ -160,7 +161,7 @@ namespace HYUMotionKinematics {
             return M[_pos];
         }
 
-    private:
+    protected:
 
         void SpaceJacobian(void);
 
@@ -205,31 +206,26 @@ namespace HYUMotionKinematics {
         /**
          * @brief SE(3) Homogeneous transform matrix container
          */
-        SE3 T[16][16];
+        SE3 T[17][17];
         //SE3 **T;
 
         /**
          * @brief SE(3) matrix container w.r.t., base coordinate
          */
-        SE3 M[16];
+        SE3 M[17];
         //SE3 *M;
 
         /**
          * @brief SE(3) matrix container
          */
-        SE3 Exp_S[16];
+        SE3 Exp_S[17];
         //SE3 *Exp_S;
 
         /**
          * @brief twist expression for Adjoint/adjoint matrix
          */
-        se3 v_se3[16];
+        se3 v_se3[17];
         //se3 *v_se3;
-
-        /**
-         * @brief Kinematic infomation update flag
-         */
-        volatile int isInfoUpdated;
 
     };
 

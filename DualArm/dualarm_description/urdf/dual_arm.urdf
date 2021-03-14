@@ -45,7 +45,7 @@
     <origin rpy="0 0 0" xyz="0 0 0.3031"/>
     <parent link="robot_base_link"/>
     <child link="link_01"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint1">
     <type>transmission_interface/SimpleTransmission</type>
@@ -76,7 +76,7 @@
     <origin rpy="0 0 0" xyz="0 0 0.1969"/>
     <parent link="link_01"/>
     <child link="link_02"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint2">
     <type>transmission_interface/SimpleTransmission</type>
@@ -110,7 +110,7 @@
     <origin rpy="0 0 0" xyz="0 -0.125 0.18565"/>
     <parent link="link_02"/>
     <child link="link_03"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint3">
     <type>transmission_interface/SimpleTransmission</type>
@@ -141,7 +141,7 @@
     <origin rpy="0 0 0" xyz="0 -0.05265 0.11435"/>
     <parent link="link_03"/>
     <child link="link_04"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint4">
     <type>transmission_interface/SimpleTransmission</type>
@@ -172,7 +172,7 @@
     <origin rpy="0 0 0" xyz="0 -0.14735 0"/>
     <parent link="link_04"/>
     <child link="link_05"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint5">
     <type>transmission_interface/SimpleTransmission</type>
@@ -203,7 +203,7 @@
     <origin rpy="0 0 0" xyz="0 0 -0.21425"/>
     <parent link="link_05"/>
     <child link="link_06"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint6">
     <type>transmission_interface/SimpleTransmission</type>
@@ -234,7 +234,7 @@
     <origin rpy="0 0 0" xyz="-0.0245 0 -0.18575"/>
     <parent link="link_06"/>
     <child link="link_07"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint7">
     <type>transmission_interface/SimpleTransmission</type>
@@ -265,7 +265,7 @@
     <origin rpy="0 0 0" xyz="0.0245 0 -0.14"/>
     <parent link="link_07"/>
     <child link="link_08"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint8">
     <type>transmission_interface/SimpleTransmission</type>
@@ -296,7 +296,7 @@
     <origin rpy="0 0 0" xyz="0 0 -0.091"/>
     <parent link="link_08"/>
     <child link="link_R_hand"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint9">
     <type>transmission_interface/SimpleTransmission</type>
@@ -334,7 +334,7 @@
     <origin rpy="0 0 0" xyz="0 0.125 0.18565"/>
     <parent link="link_02"/>
     <child link="link_10"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint10">
     <type>transmission_interface/SimpleTransmission</type>
@@ -365,7 +365,7 @@
     <origin rpy="0 0 0" xyz="0 0.05265 0.11435"/>
     <parent link="link_10"/>
     <child link="link_11"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint11">
     <type>transmission_interface/SimpleTransmission</type>
@@ -396,7 +396,7 @@
     <origin rpy="0 0 0" xyz="0 0.14735 0"/>
     <parent link="link_11"/>
     <child link="link_12"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint12">
     <type>transmission_interface/SimpleTransmission</type>
@@ -427,7 +427,7 @@
     <origin rpy="0 0 0" xyz="0 0 -0.21425"/>
     <parent link="link_12"/>
     <child link="link_13"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint13">
     <type>transmission_interface/SimpleTransmission</type>
@@ -458,7 +458,7 @@
     <origin rpy="0 0 0" xyz="-0.0245 0 -0.18575"/>
     <parent link="link_13"/>
     <child link="link_14"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint14">
     <type>transmission_interface/SimpleTransmission</type>
@@ -489,7 +489,7 @@
     <origin rpy="0 0 0" xyz="0.0245 0 -0.14"/>
     <parent link="link_14"/>
     <child link="link_15"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint15">
     <type>transmission_interface/SimpleTransmission</type>
@@ -520,7 +520,7 @@
     <origin rpy="0 0 0" xyz="0 0 -0.091"/>
     <parent link="link_15"/>
     <child link="link_L_hand"/>
-    <dynamics damping="0.1" friction="0.1"/>
+    <dynamics damping="0.01" friction="0.01"/>
   </joint>
   <transmission name="trans_dualarm_joint16">
     <type>transmission_interface/SimpleTransmission</type>

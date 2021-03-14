@@ -8,8 +8,8 @@
 #define SERIALMANIPULATOR_H_
 
 #define _USE_MATH_DEFINES
-#include <math.h>
-
+#include <cmath>
+#include <memory>
 #include "LieDynamics.h"
 #include "PoEKinematics.h"
 #include "PropertyDefinition.h"
@@ -61,6 +61,7 @@
  * @date 2017-10-23
  * @version 1.0.0
  */
+
 class SerialManipulator
 {
 public:
@@ -68,16 +69,15 @@ public:
 	SerialManipulator();
 	virtual ~SerialManipulator();
 
-    HYUMotionDynamics::Liedynamics *pDyn;
-    HYUMotionKinematics::PoEKinematics *pKin;
-    HYUMotionKinematics::PoEKinematics *pCoMKin;
+    std::unique_ptr<HYUMotionDynamics::Liedynamics> pDyn;
+    std::unique_ptr<HYUMotionKinematics::PoEKinematics>pKin;
 
     void StateMachine( double *_q, double *_qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord );
 
     /**
      * @brief update robot kinematics & dynamics information
      */
-	void UpdateManipulatorParam(void);
+	void UpdateManipulatorParam();
 
 	/**
 	 * @brief convert encoder inc to generalized coordinate joint position q(rad)
@@ -109,13 +109,12 @@ public:
 
 
 private:
-    Vector3d w[15]; 	/**< kinematic information container */
-    Vector3d p[15]; 	/**< kinematic information container */
-    Vector3d L[15]; 	/**< kinematic information container */
-    Vector3d CoM[15];
-
-    Matrix3d Iner[15];
-    double mass[15];
+    Vector3d w[16]; 	/**< kinematic information container */
+    Vector3d p[16]; 	/**< kinematic information container */
+    Vector3d L[16]; 	/**< kinematic information container */
+    Vector3d CoM[16];
+    Matrix3d Iner[16];
+    double mass[16];
 
     MatrixXi mChainMat;
 
@@ -126,7 +125,8 @@ private:
     uint16_t mState_now=0;
     uint16_t mState_pre=0;
 
-    VectorXd q, qdot;
+    VectorXd q;
+    VectorXd qdot;
 };
 
 #endif /* SERIALMANIPULATOR_H_ */

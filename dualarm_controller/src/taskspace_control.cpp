@@ -34,15 +34,15 @@
 #define num_taskspace 6
 #define SaveDataMax 97
 
-#define A 0.25
-#define b1 0.451
-#define b2 -0.316
-#define b3 0.843
-#define f 0.3
+#define A 0.2
+#define b1 0.5
+#define b2 -0.43
+#define b3 0.45
+#define f 0.2
 
-#define l_p1 0.470
-#define l_p2 0.40
-#define l_p3 0.812
+#define l_p1 0.4
+#define l_p2 0.43
+#define l_p3 0.39
 
 #define Deg_A 70
 #define Deg_f 0.5
@@ -351,8 +351,9 @@ namespace dualarm_controller
             t = 0.0;
             ROS_INFO("Starting Task space Controller");
 
-            cManipulator = new SerialManipulator;
-            Control = new HYUControl::Controller(cManipulator);
+            cManipulator = std::make_shared<SerialManipulator>();
+
+            Control = std::make_unique<HYUControl::Controller>(cManipulator);
 
             cManipulator->UpdateManipulatorParam();
 
@@ -481,10 +482,10 @@ namespace dualarm_controller
                 {
                     if (ik_mode_ == 1)
                     {
-                        xd_[0].p(0) =
+                        xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
                         xd_[0].p(1) = b2;
                         xd_[0].p(2) = b3;
-                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, -M_PI/2, 0));
+                        xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, 0, M_PI/2));
 
                         xd_dot_.setZero();
                         xd_dot_(2+1) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
@@ -492,7 +493,7 @@ namespace dualarm_controller
                         xd_[1].p(0) = l_p1;
                         xd_[1].p(1) = l_p2;
                         xd_[1].p(2) = l_p3;
-                        xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(M_PI/2, 0 , 0));
+                        xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
 
                         x_[0].p(0) = ForwardPos[0](0);
                         x_[0].p(1) = ForwardPos[0](1);
@@ -520,20 +521,20 @@ namespace dualarm_controller
                         ex_(9) = ex_temp_(0);
                         ex_(10) = ex_temp_(1);
                         ex_(11) = ex_temp_(2);
-                        ex_.tail(6).setZero();
+                        //ex_.tail(6).setZero();
                     }
                     else if (ik_mode_ == 2)
                     {
                         dx(0) = 0;
-                        dx(1) = -M_PI_2;
-                        dx(2) = 0;
+                        dx(1) = 0;
+                        dx(2) = M_PI_2;
                         dx(3) = b1;
                         dx(4) = A * sin(f * M_PI * (t - InitTime)) + b2;
                         dx(5) = b3;
 
-                        dx(6) = 0;
-                        dx(7) = -M_PI_2;
-                        dx(8) = 0; //M_PI/2;
+                        dx(6) = -M_PI_2;
+                        dx(7) = 0;
+                        dx(8) = M_PI_2;
                         dx(9) = l_p1;
                         dx(10) = l_p2;
                         dx(11) = l_p3;
@@ -671,22 +672,30 @@ namespace dualarm_controller
                 }
             }
 
-            if( ctr_obj_ == 3)
+            if( ctr_obj_ == 3 && t > InitTime)
             {
                 Control->TaskInvDynController(ex_, ex_dot_, q_.data, qdot_.data, torque, dt);
             }
-            else
+            else if( ctr_obj_ == 2 && t > InitTime )
             {
-                double alpha = 0.001;
+                qd_ddot_.data.setZero();
+                qd_dot_.data.setZero();
+
+                double alpha = 0.1;
                 q0dot = alpha*(q_.data.cwiseInverse()*cManipulator->pKin->GetManipulabilityMeasure());
                 //qd_dot_.data = pInvJac * (xd_dot_ - CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
                 qd_dot_.data = AJac.transpose() * (xd_dot_ - CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
                 //qd_dot_.data = ScaledTransJac * (xd_dot_ - CLIK_GAIN * ex_);
 
-                qd_ddot_.data.setZero();
                 qd_.data = qd_old_.data + qd_dot_.data * dt;
                 qd_old_.data = qd_.data;
 
+                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+            }
+            else
+            {
+                qd_ddot_.data.setZero();
+                qd_dot_.data.setZero();
                 Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
             }
 
@@ -706,8 +715,6 @@ namespace dualarm_controller
         void stopping(const ros::Time &time) override
         {
             ROS_INFO("Stop Task space Controller");
-            delete Control;
-            delete cManipulator;
         }
 
         void publish_data()
@@ -957,8 +964,8 @@ namespace dualarm_controller
         std_msgs::Float64MultiArray msg_xd_, msg_x_, msg_ex_;
         std_msgs::Float64MultiArray msg_SaveData_;
 
-        SerialManipulator *cManipulator;
-        HYUControl::Controller *Control;
+        std::shared_ptr<SerialManipulator> cManipulator;
+        std::unique_ptr<HYUControl::Controller> Control;
 
 
     };

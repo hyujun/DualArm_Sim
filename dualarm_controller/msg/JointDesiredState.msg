@@ -1,2 +1,4 @@
-float64 desired_q
-float64 desired_qdot
+std_msgs/Header header
+
+state[16] dq
+state[16] dqdot

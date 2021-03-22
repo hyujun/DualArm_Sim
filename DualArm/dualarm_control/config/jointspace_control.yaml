@@ -28,7 +28,6 @@ dualarm:
         pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint2:
         pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
-
       dualarm_joint3:
         pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint4:
@@ -43,7 +42,6 @@ dualarm:
         pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint9:
         pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
-
       dualarm_joint10:
         pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
       dualarm_joint11:

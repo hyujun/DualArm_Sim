@@ -20,16 +20,6 @@
             args="-urdf -model dualarm -param robot_description"
     />
 
-    <param name="use_gui" value="true"/>
-    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
-        <rosparam param="source_list">["dualarm/joint_states"]</rosparam>
-    </node>
-
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
-          respawn="false" output="screen" ns="/dualarm">
-        <remap from="/joint_states" to="/dualarm/joint_states"/>
-    </node>
-
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="world_name" value="worlds/empty.world"/>
         <arg name="paused" value="$(arg paused)"/>

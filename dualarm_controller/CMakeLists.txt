@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
         realtime_tools
         urdf
         sensor_msgs
+        message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -56,9 +57,11 @@ find_package(Boost REQUIRED COMPONENTS system)
 
 ## Generate messages in the 'msg' folder
  add_message_files(
+         DIRECTORY msg
          FILES
-         ControllerJointState.msg
+         JointCurrentState.msg
          JointDesiredState.msg
+         state.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -79,6 +82,7 @@ find_package(Boost REQUIRED COMPONENTS system)
  generate_messages(
          DEPENDENCIES
          std_msgs
+         sensor_msgs
  )
 
 ################################################
@@ -113,7 +117,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 catkin_package(
 #  INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS angles control_msgs controller_interface kdl_parser dynamic_reconfigure realtime_tools urdf
+  CATKIN_DEPENDS angles control_msgs controller_interface kdl_parser dynamic_reconfigure realtime_tools urdf message_runtime
 )
 
 ###########

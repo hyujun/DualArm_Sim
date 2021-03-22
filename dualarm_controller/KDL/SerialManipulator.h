@@ -70,7 +70,7 @@ public:
 	virtual ~SerialManipulator();
 
     std::unique_ptr<HYUMotionDynamics::Liedynamics> pDyn;
-    std::unique_ptr<HYUMotionKinematics::PoEKinematics>pKin;
+    std::unique_ptr<HYUMotionKinematics::PoEKinematics> pKin;
 
     void StateMachine( double *_q, double *_qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord );
 

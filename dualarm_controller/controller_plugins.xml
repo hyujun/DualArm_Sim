@@ -1,7 +1,7 @@
 <library path="lib/libdualarm_controller">
 
-    <class name="dualarm_controller/ComputedTorque_Control_CLIK"
-           type="dualarm_controller::ComputedTorque_Control_CLIK"
+    <class name="dualarm_controller/ClosedLoopIK_Control"
+           type="dualarm_controller::ClosedLoopIK_Control"
            base_class_type="controller_interface::ControllerBase">
         <description>
             Computed Torque Controller with Closed Loop Inverse Kinematics
@@ -21,14 +21,6 @@
            base_class_type="controller_interface::ControllerBase">
         <description>
             Direct Task-space Controller
-        </description>
-    </class>
-
-    <class name="dualarm_controller/Taskspace_Control_CY"
-           type="dualarm_controller::Taskspace_Control_CY"
-           base_class_type="controller_interface::ControllerBase">
-        <description>
-            Direct Task-space Controller for Chanryul
         </description>
     </class>
 </library>

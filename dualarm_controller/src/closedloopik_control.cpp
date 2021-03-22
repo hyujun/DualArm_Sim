@@ -8,12 +8,9 @@
 #include <pluginlib/class_list_macros.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <urdf/model.h>
-#include <sensor_msgs/JointState.h>
-#include <robot_state_publisher/robot_state_publisher.h>
 
 // from kdl packages
 #include <kdl/tree.hpp>
-
 #include <kdl/chain.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/chaindynparam.hpp>              // inverse dynamics
@@ -47,9 +44,9 @@
 #define Deg_A 70
 #define Deg_f 0.5
 
-namespace dualarm_controller
+namespace  dualarm_controller
 {
-    class Taskspace_Control : public controller_interface::Controller<hardware_interface::EffortJointInterface>
+    class ClosedLoopIK_Control : public controller_interface::Controller<hardware_interface::EffortJointInterface>
     {
     public:
         bool init(hardware_interface::EffortJointInterface *hw, ros::NodeHandle &n)
@@ -92,51 +89,34 @@ namespace dualarm_controller
 
             // 1.2 Gain
             // 1.2.1 Joint Controller
-            Kp_.resize(n_joints_);
-            Kd_.resize(n_joints_);
-            Ki_.resize(n_joints_);
-            K_inf_.resize(n_joints_);
-            std::vector<double> Kp(n_joints_), Ki(n_joints_), Kd(n_joints_), K_inf(n_joints_);
+            Kp_.data.setZero(n_joints_);
+            Kd_.data.setZero(n_joints_);
+            Ki_.data.setZero(n_joints_);
+            K_inf_.data.setZero(n_joints_);
 
             for (size_t i = 0; i < n_joints_; i++)
             {
                 std::string si = std::to_string(i + 1);
-                if (n.getParam("/dualarm/taskspace_control/gains/dualarm_joint" + si + "/pid/p", Kp[i]))
+                if (!n.getParam("/dualarm/closedloopik_control/gains/dualarm_joint" + si + "/pid/p", Kp_(i)))
                 {
-                    Kp_(i) = Kp[i];
-                }
-                else
-                {
-                    std::cout << "/dualarm/taskspace_control/gains/dualarm_joint" + si + "/pid/p" << std::endl;
+                    std::cout << "/dualarm/closedloopik_control/gains/dualarm_joint" + si + "/pid/p" << std::endl;
                     ROS_ERROR("Cannot find pid/p gain");
                     return false;
                 }
 
-                if (n.getParam("/dualarm/taskspace_control/gains/dualarm_joint" + si + "/pid/i", Ki[i]))
-                {
-                    Ki_(i) = Ki[i];
-                }
-                else
+                if (!n.getParam("/dualarm/closedloopik_control/gains/dualarm_joint" + si + "/pid/i", Ki_(i)))
                 {
                     ROS_ERROR("Cannot find pid/i gain");
                     return false;
                 }
 
-                if (n.getParam("/dualarm/taskspace_control/gains/dualarm_joint" + si + "/pid/d", Kd[i]))
-                {
-                    Kd_(i) = Kd[i];
-                }
-                else
+                if (!n.getParam("/dualarm/closedloopik_control/gains/dualarm_joint" + si + "/pid/d", Kd_(i)))
                 {
                     ROS_ERROR("Cannot find pid/d gain");
                     return false;
                 }
 
-                if (n.getParam("/dualarm/taskspace_control/gains/dualarm_joint" + si + "/pid/h", K_inf[i]))
-                {
-                    K_inf_(i) = K_inf[i];
-                }
-                else
+                if (!n.getParam("/dualarm/closedloopik_control/gains/dualarm_joint" + si + "/pid/h", K_inf_(i)))
                 {
                     ROS_ERROR("Cannot find pid/h gain");
                     return false;
@@ -145,31 +125,17 @@ namespace dualarm_controller
 
             // 1.2.2 Closed-loop Inverse Kinematics Controller
 
-            if (!n.getParam("/dualarm/taskspace_control/clik_gain/K_pos", K_regulation_))
+            if (!n.getParam("/dualarm/closedloopik_control/clik_gain/K_pos", K_trans))
             {
-                ROS_ERROR("Cannot find clik regulation gain");
+                ROS_ERROR("Cannot find clik translation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/clik_gain/K_ori", K_tracking_))
+            if (!n.getParam("/dualarm/closedloopik_control/clik_gain/K_ori", K_rot))
             {
-                ROS_ERROR("Cannot find clik tracking gain");
+                ROS_ERROR("Cannot find clik rotation gain");
                 return false;
             }
-
-            CLIK_GAIN.setZero(6*2, 6*2);
-            CLIK_GAIN(0,0) = K_tracking_;
-            CLIK_GAIN(1,1) = K_tracking_;
-            CLIK_GAIN(2,2) = K_tracking_;
-            CLIK_GAIN(3,3) = K_regulation_;
-            CLIK_GAIN(4,4) = K_regulation_;
-            CLIK_GAIN(5,5) = K_regulation_;
-            CLIK_GAIN(6,6) = K_tracking_;
-            CLIK_GAIN(7,7) = K_tracking_;
-            CLIK_GAIN(8,8) = K_tracking_;
-            CLIK_GAIN(9,9) = K_regulation_;
-            CLIK_GAIN(10,10) = K_regulation_;
-            CLIK_GAIN(11,11) = K_regulation_;
 
             // 2. ********* urdf *********
             urdf::Model urdf;
@@ -235,7 +201,6 @@ namespace dualarm_controller
                 return false;
             }
 
-
             if (!kdl_tree_.getChain(root_name, tip_name1, kdl_chain_))
             {
                 ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
@@ -294,11 +259,9 @@ namespace dualarm_controller
             G1_kdl_.resize(kdl_chain2_.getNrOfJoints());
 
             // ********* 5. 각종 변수 초기화 *********
-
             // 5.1 KDL Vector 초기화 (사이즈 정의 및 값 0)
             x_cmd_.data = Eigen::VectorXd::Zero(12);
             ex_.setZero(12);
-            ex1_.setZero(12);
             ex_dot_.setZero(12);
             dx.setZero(12);
             dxdot.setZero(12);
@@ -318,11 +281,12 @@ namespace dualarm_controller
             // 6.2 subsriber
             sub_x_cmd_ = n.subscribe<std_msgs::Float64MultiArray>(
                     "command",
-                    1, &Taskspace_Control::commandCB,
+                    1, &ClosedLoopIK_Control::commandCB,
                     this);
 
             return true;
         }
+
 
         void commandCB(const std_msgs::Float64MultiArrayConstPtr &msg)
         {
@@ -343,7 +307,7 @@ namespace dualarm_controller
             t = 0.0;
             InitTime=5.0;
 
-            ROS_INFO("Starting Task space Controller");
+            ROS_INFO("Starting Closed-loop Inverse Dynamics Controller");
 
             cManipulator = std::make_shared<SerialManipulator>();
 
@@ -352,6 +316,19 @@ namespace dualarm_controller
             cManipulator->UpdateManipulatorParam();
 
             Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
+            CLIK_GAIN.setZero(12);
+            CLIK_GAIN(0) = K_rot;
+            CLIK_GAIN(1) = K_rot;
+            CLIK_GAIN(2) = K_rot;
+            CLIK_GAIN(3) = K_trans;
+            CLIK_GAIN(4) = K_trans;
+            CLIK_GAIN(5) = K_trans;
+            CLIK_GAIN(6) = K_rot;
+            CLIK_GAIN(7) = K_rot;
+            CLIK_GAIN(8) = K_rot;
+            CLIK_GAIN(9) = K_trans;
+            CLIK_GAIN(10) = K_trans;
+            CLIK_GAIN(11) = K_trans;
 
         }
 
@@ -513,8 +490,8 @@ namespace dualarm_controller
                     dx(11) = A * sin(f * M_PI * (t - InitTime)) + l_p3;
 
                     dxdot.setZero();
-                    //dxdot(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    //dxdot(11) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                    dxdot(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                    dxdot(11) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
 
                     Control->TaskError(dx, dxdot, qdot_.data, ex_, ex_dot_);
                 }
@@ -555,7 +532,7 @@ namespace dualarm_controller
 
                 double alpha = 1.0;
                 cManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-                qd_dot_.data = pInvJac * (dxdot + CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - pInvJac*AJac)*q0dot;
+                qd_dot_.data = pInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_)) + (Eigen::MatrixXd::Identity(16,16) - pInvJac*AJac)*q0dot;
 
                 qd_.data = qd_old_.data + qd_dot_.data * dt;
                 qd_old_.data = qd_.data;
@@ -570,7 +547,7 @@ namespace dualarm_controller
 
                 double alpha = 1.0;
                 cManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-                qd_dot_.data = AJac.transpose() * (dxdot + CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - pInvJac*AJac)*q0dot;
+                qd_dot_.data = AJac.transpose() * (dxdot + CLIK_GAIN.cwiseProduct(ex_)) + (Eigen::MatrixXd::Identity(16,16) - pInvJac*AJac)*q0dot;
 
                 qd_.data = qd_old_.data + qd_dot_.data * dt;
                 qd_old_.data = qd_.data;
@@ -585,7 +562,7 @@ namespace dualarm_controller
 
                 double alpha = 1.0;
                 cManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-                qd_dot_.data = ScaledTransJac * (dxdot + CLIK_GAIN * ex_) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
+                qd_dot_.data = ScaledTransJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_)) + (Eigen::MatrixXd::Identity(16,16) - AJac.transpose()*AJac)*q0dot;
 
                 qd_.data = qd_old_.data + qd_dot_.data * dt;
                 qd_old_.data = qd_.data;
@@ -616,38 +593,12 @@ namespace dualarm_controller
 
         void stopping(const ros::Time &time) override
         {
-            ROS_INFO("Stop Task space Controller");
+            ROS_INFO("Stop Closed-loop Inverse Dynamics Controller");
         }
 
         void publish_data()
         {
-            msg_q_.data.clear();
-            msg_qd_.data.clear();
-            msg_e_.data.clear();
-            msg_qddot_.data.clear();
-            msg_x_.data.clear();
-            msg_xd_.data.clear();
-            msg_ex_.data.clear();
 
-            for(int i=0; i < n_joints_; i++)
-            {
-                msg_q_.data.push_back(q_(i));
-                msg_qd_.data.push_back(qd_(i));
-                msg_e_.data.push_back(qd_(i) - q_(i));
-            }
-
-            for(int j=0; j<2*num_taskspace; j++)
-            {
-                msg_xd_.data.push_back(dx(j));
-                msg_ex_.data.push_back(ex_(j));
-            }
-
-            pub_q_.publish(msg_q_);
-            pub_qd_.publish(msg_qd_);
-            pub_e_.publish(msg_e_);
-
-            pub_xd_.publish(msg_xd_);
-            pub_ex_.publish(msg_ex_);
         }
 
         void print_state()
@@ -661,21 +612,12 @@ namespace dualarm_controller
                 printf("\n");
 
                 printf("*** Command from Subscriber in Task Space (unit: m) ***\n");
-                if (event == 0)
-                {
-                    printf("No Active!!!\n");
-                }
-                else
-                {
-                    printf("Active!!!\n");
-                }
-
                 printf("*** States in Joint Space (unit: deg) ***\n");
                 Control->GetPIDGain(Kp_.data, Kd_.data, Ki_.data);
                 for(int i=0; i < n_joints_; i++)
                 {
                     printf("Joint ID:%d \t", i+1);
-                    //printf("Kp;%0.3lf, Kd:%0.3lf, Kinf:%0.3lf, ", Kp_.data(i), Kd_.data(i), Ki_.data(i));
+                    printf("Kp;%0.3lf, Kd:%0.3lf ", Kp_.data(i), Kd_.data(i));
                     printf("q: %0.3lf, ", q_.data(i) * R2D);
                     printf("dq: %0.3lf, ", qd_.data(i) * R2D);
                     printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
@@ -722,11 +664,10 @@ namespace dualarm_controller
 
     private:
         // others
-        double t;
-        int ctr_obj_;
-        int ik_mode_;
-        int event;
-        double InitTime=0;
+        double t=0.0;
+        int ctr_obj_=0;
+        int ik_mode_=0;
+        double InitTime=0.0;
 
         //Joint handles
         unsigned int n_joints_;
@@ -790,36 +731,27 @@ namespace dualarm_controller
         KDL::Twist ex_temp_;
 
         // KDL::Twist xd_dot_, xd_ddot_;
-        Eigen::VectorXd ex_, ex1_;
+        Eigen::VectorXd ex_;
         Eigen::VectorXd ex_dot_;
-        Eigen::Matrix<double, 12, 1> dx;
-        Eigen::Matrix<double, 12, 1> dxdot;
+        Eigen::VectorXd dx;
+        Eigen::VectorXd dxdot;
 
         // Input
         KDL::JntArray x_cmd_;
 
         // gains
         KDL::JntArray Kp_, Ki_, Kd_, K_inf_;
-        double K_regulation_, K_tracking_;
-        Eigen::MatrixXd CLIK_GAIN;
+        double K_trans, K_rot;
+        Eigen::VectorXd CLIK_GAIN;
 
         // ros subscriber
         ros::Subscriber sub_x_cmd_;
 
         // ros publisher
-        ros::Publisher pub_qd_, pub_q_, pub_e_;
-        ros::Publisher pub_xd_, pub_x_, pub_ex_;
-        ros::Publisher pub_SaveData_;
-
-        // ros message
-        std_msgs::Float64MultiArray msg_qd_, msg_q_, msg_e_;
-        std_msgs::Float64MultiArray msg_qddot_;
-        std_msgs::Float64MultiArray msg_xd_, msg_x_, msg_ex_;
-        std_msgs::Float64MultiArray msg_SaveData_;
 
         std::shared_ptr<SerialManipulator> cManipulator;
         std::unique_ptr<HYUControl::Controller> Control;
     };
 }
 
-PLUGINLIB_EXPORT_CLASS(dualarm_controller::Taskspace_Control,controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(dualarm_controller::ClosedLoopIK_Control,controller_interface::ControllerBase)

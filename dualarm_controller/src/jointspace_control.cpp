@@ -3,18 +3,20 @@
 //
 
 // from ros-control meta packages
+#include <ros/ros.h>
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <pluginlib/class_list_macros.h>
-#include <std_msgs/Float64MultiArray.h>
 #include <urdf/model.h>
 #include <sensor_msgs/JointState.h>
-#include <robot_state_publisher/robot_state_publisher.h>
-#include "dualarm_controller/ControllerJointState.h"
+#include <realtime_tools/realtime_buffer.h>
+#include <realtime_tools/realtime_publisher.h>
+#include "dualarm_controller/JointDesiredState.h"
+#include "dualarm_controller/JointCurrentState.h"
+#include "utils.h"
 
 // from kdl packages
 #include <kdl/tree.hpp>
-
 #include <kdl/chain.hpp>
 #include <kdl_parser/kdl_parser.hpp>
 #include <kdl/chaindynparam.hpp>              // inverse dynamics
@@ -32,8 +34,6 @@
 
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
-#define num_taskspace 6
-#define SaveDataMax 97
 
 #define A 0.25
 #define b1 0.451
@@ -131,7 +131,6 @@ namespace dualarm_controller
                     return false;
                 }
             }
-
 
             // 2. ********* urdf *********
             urdf::Model urdf;
@@ -256,62 +255,53 @@ namespace dualarm_controller
             G1_kdl_.resize(kdl_chain2_.getNrOfJoints());
 
             // ********* 5. 각종 변수 초기화 *********
-
             // 5.1 KDL Vector 초기화 (사이즈 정의 및 값 0)
-            x_cmd_.data = Eigen::VectorXd::Zero(2*num_taskspace);
-
             qd_.data = Eigen::VectorXd::Zero(n_joints_);
             qd_dot_.data = Eigen::VectorXd::Zero(n_joints_);
             qd_ddot_.data = Eigen::VectorXd::Zero(n_joints_);
-            qd_old_.data = Eigen::VectorXd::Zero(n_joints_);
 
             q_.data = Eigen::VectorXd::Zero(n_joints_);
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
             dq.setZero(n_joints_);
 
+            des_torque.setZero(n_joints_);
+            act_torque.setZero(n_joints_);
+
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
-            pub_qd_ = n.advertise<std_msgs::Float64MultiArray>("qd", 1000);
-            pub_q_ = n.advertise<std_msgs::Float64MultiArray>("q", 1000);
-            pub_e_ = n.advertise<std_msgs::Float64MultiArray>("e", 1000);
-
-            pub_xd_ = n.advertise<std_msgs::Float64MultiArray>("xd", 1000);
-            pub_x_ = n.advertise<std_msgs::Float64MultiArray>("x", 1000);
-            pub_ex_ = n.advertise<std_msgs::Float64MultiArray>("ex", 1000);
-
-            pub_SaveData_ = n.advertise<std_msgs::Float64MultiArray>("SaveData", 1000);
+            state_pub_.reset(new realtime_tools::RealtimePublisher<dualarm_controller::JointCurrentState>(n, "states", 10));
+            state_pub_->msg_.header.stamp = ros::Time::now();
+            for(int i=0; i<(n_joints_-1); i++)
+            {
+                state_pub_->msg_.name.push_back(joint_names_[i].c_str()) ;
+                state_pub_->msg_.q.push_back(q_.data(i));
+                state_pub_->msg_.qdot.push_back(qdot_.data(i));
+                state_pub_->msg_.dq.push_back(qd_.data(i));
+                state_pub_->msg_.dqdot.push_back(qd_dot_.data(i));
+                state_pub_->msg_.effort_command.push_back(act_torque(i));
+                state_pub_->msg_.Kp.push_back(Kp_.data(i));
+                state_pub_->msg_.Kd.push_back(Kd_.data(i));
+            }
+            pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
             // 6.2 subsriber
-            sub_x_cmd_ = n.subscribe<std_msgs::Float64MultiArray>(
-                    "command",
-                    1, &JointSpace_Control::commandCB,
-                    this);
-            event = 0;  // subscribe 받기 전: 0
-                        // subscribe 받은 후: 1
+            const auto joint_state_cb = utils::makeCallback<dualarm_controller::JointDesiredState>([&](const auto& msg){
+                for(int i=0; i<n_joints_; i++)
+                {
+                    dq(i) = msg.dq[i].data*D2R;
+                }
+                qd_.data = dq;
+            });
+            sub_x_cmd_ = n.subscribe<dualarm_controller::JointDesiredState>( "command", 5, joint_state_cb);
 
             return true;
-        }
-
-        void commandCB(const std_msgs::Float64MultiArrayConstPtr &msg)
-        {
-            if (msg->data.size() != n_joints_)
-            {
-                ROS_ERROR_STREAM("Dimension of command (" << msg->data.size() << ") does not match DOF of Task Space (" << 2 << ")! Not executing!");
-                return;
-            }
-
-            for (int i = 0; i < n_joints_; i++)
-            {
-                dq(i) = msg->data[i]*D2R;
-            }
-
-            event = 1;  // subscribe 받기 전: 0
-                        // subscribe 받은 후: 1
         }
 
         void starting(const ros::Time &time) override
         {
             t = 0.0;
+            InitTime=5.0;
+
             ROS_INFO("Starting Task space Controller");
 
             cManipulator = std::make_shared<SerialManipulator>();
@@ -320,23 +310,21 @@ namespace dualarm_controller
             cManipulator->UpdateManipulatorParam();
 
             Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
-
-            torque.setZero(n_joints_);
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
         {
+            std::vector<double> &commands = *pub_buffer_.readFromRT();
             // ********* 0. Get states from gazebo *********
             // 0.1 sampling time
             double dt = period.toSec();
-            t = t + 0.001;
 
             // 0.2 joint state
             for (int i = 0; i < n_joints_; i++)
             {
                 q_(i) = joints_[i].getPosition();
                 qdot_(i) = joints_[i].getVelocity();
-                //torque_(i) = joints_[i].getEffort();
+                act_torque(i) = joints_[i].getEffort();
             }
 
             //----------------------
@@ -346,13 +334,9 @@ namespace dualarm_controller
             cManipulator->pDyn->PrepareDynamics(q_.data, qdot_.data);
             cManipulator->pDyn->MG_Mat_Joint(M, G);
 
-            cManipulator->pKin->GetSpaceJacobian(spaceJac);
-            cManipulator->pKin->GetBodyJacobian(bodyJac);
-            cManipulator->pKin->GetpinvJacobian(pInvJac);
-            cManipulator->pKin->GetAnalyticJacobian(AJac);
-            cManipulator->pKin->GetScaledTransJacobian(ScaledTransJac);
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
+            Control->GetPIDGain(Kp_.data, Kd_.data, Ki_.data);
 
             q1_.data = q_.data.head(9);
             q1dot_.data = qdot_.data.head(9);
@@ -373,8 +357,6 @@ namespace dualarm_controller
             id_solver1_->JntToCoriolis(q2_, q2dot_, C1_kdl_);
             id_solver1_->JntToGravity(q2_, G1_kdl_);
             fk_pos_solver1_->JntToCart(q2_, x_[1]);
-
-            InitTime=5.0;
 
             if( t <= InitTime )
             {
@@ -399,33 +381,30 @@ namespace dualarm_controller
                 qd_.data(14) = -0.0*D2R;
                 qd_.data(15) = -0.0*D2R;
             }
-            else if(event == 1)
-            {
-                qd_.data = dq;
-                event = 0;
-            }
 
             qd_ddot_.data.setZero();
             qd_dot_.data.setZero();
 
-            Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+            Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, des_torque, dt);
 
             for (int i = 0; i < n_joints_; i++)
             {
-                if(torque(i) >= 300)
-                    torque(i) = 300;
-                else if(torque(i) <= -300)
-                    torque(i) = -300;
+                if(des_torque(i) >= 300)
+                    des_torque(i) = 300;
+                else if(des_torque(i) <= -300)
+                    des_torque(i) = -300;
 
-                joints_[i].setCommand(torque(i));
+                joints_[i].setCommand(des_torque(i));
                 //joints_[i].setCommand(0.0);
             }
 
             // ********* 4. data 저장 *********
-            //publish_data();
+            publish_data();
 
             // ********* 5. state 출력 *********
             print_state();
+
+            t = t + dt;
         }
 
         void stopping(const ros::Time &time) override
@@ -435,21 +414,27 @@ namespace dualarm_controller
 
         void publish_data()
         {
-            msg_q_.data.clear();
-            msg_qd_.data.clear();
-            msg_e_.data.clear();
-            msg_qddot_.data.clear();
-
-            for(int i=0; i < n_joints_; i++)
+            static int loop_count_ = 0;
+            if(loop_count_ >= 9)
             {
-                msg_q_.data.push_back(q_(i));
-                msg_qd_.data.push_back(qd_(i));
-                msg_e_.data.push_back(qd_(i) - q_(i));
+                if(state_pub_->trylock())
+                {
+                    state_pub_->msg_.header.stamp = ros::Time::now();
+                    for(size_t i=0; i<(n_joints_-1); i++)
+                    {
+                        state_pub_->msg_.q[i] = q_.data(i);
+                        state_pub_->msg_.qdot[i] = qdot_.data(i);
+                        state_pub_->msg_.dq[i] = qd_.data(i);
+                        state_pub_->msg_.dqdot[i] = qd_dot_.data(i);
+                        state_pub_->msg_.effort_command[i] = act_torque(i);
+                        state_pub_->msg_.Kp[i] = Kp_.data(i);
+                        state_pub_->msg_.Kd[i] = Kd_.data(i);
+                    }
+                    state_pub_->unlockAndPublish();
+                }
+                loop_count_=0;
             }
-
-            pub_q_.publish(msg_q_);
-            pub_qd_.publish(msg_qd_);
-            pub_e_.publish(msg_e_);
+            loop_count_++;
         }
 
         void print_state()
@@ -462,18 +447,8 @@ namespace dualarm_controller
                 printf("t = %f\n", t);
                 printf("\n");
 
-                printf("*** Command from Subscriber in Task Space (unit: m) ***\n");
-                if (event == 0)
-                {
-                    printf("No Active!!!\n");
-                }
-                else
-                {
-                    printf("Active!!!\n");
-                }
-
                 printf("*** States in Joint Space (unit: deg) ***\n");
-                Control->GetPIDGain(Kp_.data, Kd_.data, Ki_.data);
+
                 for(int i=0; i < n_joints_; i++)
                 {
                     printf("Joint ID:%d \t", i+1);
@@ -482,7 +457,7 @@ namespace dualarm_controller
                     printf("dq: %0.3lf, ", qd_.data(i) * R2D);
                     printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
                     printf("dqdot: %0.3lf, ", qd_dot_.data(i) * R2D);
-                    printf("tau: %0.3f, %0.3f", torque(i), G(i));
+                    printf("tau: %0.3f, %0.3f", des_torque(i), act_torque(i));
                     printf("\n");
                 }
 
@@ -499,61 +474,8 @@ namespace dualarm_controller
                     printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n",
                            j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
                 }
-
                 printf("\n*********************************************************\n");
                 count = 0;
-
-                //std::cout << "\n" << J1_kdl_.data << "\n"<< std::endl;
-                //std::cout << J2_kdl_.data << "\n"<< std::endl;
-                //std::cout << AJac << "\n"<< std::endl;
-                //std::cout << spaceJac<< "\n"<< std::endl;
-                //std::cout << bodyJac << "\n"<< std::endl;
-                //usleep(100000);
-
-                //std::cout << CLIK_GAIN*ex_ << "\n"<< std::endl;
-                //std::cout << xd_dot_ << "\n"<< std::endl;
-                //std::cout << q0dot << "\n"<< std::endl;
-                //usleep(100000);
-
-                //std::cout << "\n" << M_kdl_.data << "\n"<< std::endl;
-                //std::cout << M1_kdl_.data << "\n"<< std::endl;
-
-                /*
-                M_mat_collect.setZero(16,16);
-                M_mat_collect.block(0,0,2,2) = M_kdl_.data.block(0,0,2,2) + M1_kdl_.data.block(0,0,2,2);
-                M_mat_collect.block(0,2,2,7) = M_kdl_.data.block(0,2,2,7);
-                M_mat_collect.block(0,9,2,7) = M1_kdl_.data.block(0,2,2,7);
-                M_mat_collect.block(2,0,7,2) = M_kdl_.data.block(2,0,7,2);
-                M_mat_collect.block(9,0,7,2) = M1_kdl_.data.block(2,0,7,2);
-                M_mat_collect.block(2,2,7,7) = M_kdl_.data.block(2,2,7,7);
-                M_mat_collect.block(9,9,7,7) = M1_kdl_.data.block(2,2,7,7);
-
-                std::cout.precision(4);
-                std::cout << "KDL Inertia Matrix" << std::endl;
-                std::cout << M_mat_collect << "\n"<< std::endl;
-                std::cout << "My Inertia Matrix" << std::endl;
-                std::cout << M << "\n"<< std::endl;
-                */
-
-                //std::cout << "\n" << G_kdl_.data << "\n"<< std::endl;
-                //std::cout << G1_kdl_.data << "\n"<< std::endl;
-                /*
-                g_vec_collect.setZero(16);
-                g_vec_collect.head(2) = G_kdl_.data.head(2) + G1_kdl_.data.head(2);
-                g_vec_collect.segment(2, 7) = G_kdl_.data.tail(7);
-                g_vec_collect.segment(9, 7) = G1_kdl_.data.tail(7);
-                g_mat_collect.resize(16,2);
-                g_mat_collect.setZero();
-                g_mat_collect.col(0) = g_vec_collect;
-                g_mat_collect.col(1) = G;
-                std::cout << "KDL Gravity Vector: \t My Gravity Vector:" << std::endl;
-                std::cout << g_mat_collect << "\n"<< std::endl;
-                 */
-                //std::cout << "KDL Gravity Vector" << std::endl;
-                //std::cout << g_vec_collect << "\n"<< std::endl;
-                //std::cout << "My Gravity Vector" << std::endl;
-                //std::cout << G << "\n"<< std::endl;
-                //usleep(100000);
             }
             count++;
         }
@@ -561,16 +483,7 @@ namespace dualarm_controller
     private:
         // others
         double t;
-        int ctr_obj_;
-        int ik_mode_;
-        int event;
         double InitTime=0;
-
-        SE3 dSE3, eSE3, aSE3;
-        SO3 dSO3;
-        Vector3d eAxis;
-        double eAngle;
-        int EndNum=0;
 
         //Joint handles
         unsigned int n_joints_;
@@ -592,13 +505,11 @@ namespace dualarm_controller
         Eigen::MatrixXd M_mat_collect;
 
         KDL::Jacobian J1_kdl_, J2_kdl_;
-        KDL::Jacobian J1_inv_kdl_, J2_inv_kdl_;
 
         // kdl solver
-        boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_, fk_pos_solver1_; //Solver to compute the forward kinematics (position)
-        //boost::scoped_ptr<KDL::ChainFkSolverVel_recursive> fk_vel_solver_, fk_vel_solver1_; //Solver to compute the forward kinematics (velocity)
-        boost::scoped_ptr<KDL::ChainJntToJacSolver> jnt_to_jac_solver_, jnt_to_jac_solver1_; //Solver to compute the jacobian
-        boost::scoped_ptr<KDL::ChainDynParam> id_solver_, id_solver1_;               // Solver To compute the inverse dynamics
+        boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_, fk_pos_solver1_;     // Solver to compute the forward kinematics (position)
+        boost::scoped_ptr<KDL::ChainJntToJacSolver> jnt_to_jac_solver_, jnt_to_jac_solver1_;    // Solver to compute the jacobian
+        boost::scoped_ptr<KDL::ChainDynParam> id_solver_, id_solver1_;                          // Solver To compute the inverse dynamics
 
         MatrixXd M;
         VectorXd G;
@@ -610,64 +521,29 @@ namespace dualarm_controller
         Vector3d ForwardAxis[2];
         double ForwardAngle[2];
 
-        // kdl and Eigen Jacobian
-        Eigen::MatrixXd spaceJac, bodyJac;
-        Eigen::MatrixXd pInvJac;
-        Eigen::MatrixXd AJac;
-        Eigen::MatrixXd ScaledTransJac;
-        Eigen::MatrixXd BodyJac;
-
         // Joint Space State
         KDL::JntArray qd_;
         KDL::JntArray qd_dot_;
         KDL::JntArray qd_ddot_;
-        KDL::JntArray qd_old_;
         KDL::JntArray q_, q1_, q2_;
         KDL::JntArray qdot_, q1dot_, q2dot_;
-        Eigen::VectorXd q0dot;
 
-        double q[16];
-        double qdot[16];
         VectorXd dq;
-        VectorXd torque;
+        VectorXd des_torque;
+        VectorXd act_torque;
 
         // Task Space State
-        // ver. 01
-        KDL::Frame xd_[2]; // x.p: frame position(3x1), x.m: frame orientation (3x3)
         KDL::Frame x_[2];
-        KDL::Twist ex_temp_;
-
-        // KDL::Twist xd_dot_, xd_ddot_;
-        Eigen::VectorXd ex_, ex1_;
-        Eigen::VectorXd ex_dot_;
-        Eigen::Matrix<double, 2*num_taskspace, 1> dx;
-        Eigen::Matrix<double, 2*num_taskspace, 1> dxdot;
-        Eigen::Matrix<double, 2*num_taskspace, 1> xd_dot_;
-
-        // Input
-        KDL::JntArray x_cmd_;
 
         // gains
         KDL::JntArray Kp_, Ki_, Kd_, K_inf_;
-        double K_regulation_, K_tracking_;
-        Eigen::MatrixXd CLIK_GAIN;
 
-        // save the data
-        double SaveData_[SaveDataMax];
+        // publisher
+        realtime_tools::RealtimeBuffer<std::vector<double>> pub_buffer_;
+        boost::scoped_ptr<realtime_tools::RealtimePublisher<dualarm_controller::JointCurrentState>> state_pub_;
 
-        // ros subscriber
+        // subscriber
         ros::Subscriber sub_x_cmd_;
-
-        // ros publisher
-        ros::Publisher pub_qd_, pub_q_, pub_e_;
-        ros::Publisher pub_xd_, pub_x_, pub_ex_;
-        ros::Publisher pub_SaveData_;
-
-        // ros message
-        std_msgs::Float64MultiArray msg_qd_, msg_q_, msg_e_;
-        std_msgs::Float64MultiArray msg_qddot_;
-        std_msgs::Float64MultiArray msg_xd_, msg_x_, msg_ex_;
-        std_msgs::Float64MultiArray msg_SaveData_;
 
         std::shared_ptr<SerialManipulator> cManipulator;
         std::unique_ptr<HYUControl::Controller> Control;

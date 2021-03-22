@@ -89,7 +89,6 @@ namespace HYUMotionKinematics {
         void GetSpaceJacobian( MatrixXd &_SpaceJacobian )
         {
             _SpaceJacobian = mSpaceJacobian;
-            return;
         }
 
         /**
@@ -99,7 +98,6 @@ namespace HYUMotionKinematics {
         void GetBodyJacobian( MatrixXd &_BodyJacobian )
         {
             _BodyJacobian = mBodyJacobian;
-            return;
         }
 
         /**
@@ -109,7 +107,6 @@ namespace HYUMotionKinematics {
         void GetAnalyticJacobian( MatrixXd &_AnalyticJacobian )
         {
             _AnalyticJacobian = mAnalyticJacobian;
-            return;
         }
 
         void GetSpaceJacobianDot( MatrixXd  &_sJacobianDot);
@@ -118,15 +115,15 @@ namespace HYUMotionKinematics {
 
         void GetpinvJacobian( MatrixXd &_pinvJacobian );
 
-        void GetpInvJacobianWOOrientation( MatrixXd &_pInvJacobian );
-
         void GetScaledTransJacobian( MatrixXd &_ScaledTransJacobian );
 
         void GetTaskVelocity( double *_qdot, VectorXd *_TaskVelocity, int &_size );
 
-        void GetManipulability( double *_TaskEigen, double *_OrientEigen );
+        void GetInverseConditionNumber( double *_InverseCondNumber );
 
-        double GetManipulabilityMeasure( void );
+        double GetDAManipulabilityMeasure();
+
+        void Getq0dotWithMM( const double &gain, VectorXd &q0dot );
         /**
          * @brief forward kinematics of serial robot
          * @return end-effector position x, y, z. not orientation(Working)
@@ -134,6 +131,8 @@ namespace HYUMotionKinematics {
         void GetForwardKinematics( Vector3d *_Position, Vector3d *_Orientation, int &_NumChain );
 
         SE3 GetForwardKinematicsSE3( const int &_EndPosition ) const;
+
+        SO3 GetForwardKinematicsSO3( const int &_EndPosition ) const;
 
         void GetAngleAxis( Vector3d *_Axis, double *_Angle, int &_NumChain );
 
@@ -146,17 +145,17 @@ namespace HYUMotionKinematics {
             return T[_begin][_end];
         }
 
-        int GetNumChain(void) const
+        int GetNumChain() const
         {
             return m_NumChain;
         }
 
-        se3 GetTwist(int _pos) const
+        se3 GetTwist(const int _pos) const
         {
             return v_se3[_pos];
         }
 
-        SE3 GetMMat(int _pos) const
+        SE3 GetMMat(const int _pos) const
         {
             return M[_pos];
         }

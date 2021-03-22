@@ -1,11 +1,11 @@
 <launch>
 
     <!-- Load joint controller configurations from YAML file to parameter server -->
-    <rosparam file="$(find dualarm_control)/config/taskspace_control.yaml" command="load"/>
+    <rosparam file="$(find dualarm_control)/config/closedloopik_control.yaml" command="load"/>
 
     <!-- load the controllers -->
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
-          output="screen" ns="/dualarm" args="joint_state_controller taskspace_control"/>
+          output="screen" ns="/dualarm" args="joint_state_controller closedloopik_control"/>
 
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
           respawn="false" output="screen" ns="/dualarm">

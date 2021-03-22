@@ -51,27 +51,33 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>angles</build_depend>
   <build_depend>control_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
   <build_depend>controller_interface</build_depend>
   <build_depend>kdl_parser</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>realtime_tools</build_depend>
   <build_depend>urdf</build_depend>
+  <build_depend>message_generation</build_depend>
 
   <build_export_depend>angles</build_export_depend>
   <build_export_depend>control_msgs</build_export_depend>
+  <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>controller_interface</build_export_depend>
   <build_export_depend>kdl_parser</build_export_depend>
   <build_export_depend>dynamic_reconfigure</build_export_depend>
   <build_export_depend>realtime_tools</build_export_depend>
   <build_export_depend>urdf</build_export_depend>
+  <build_export_depend>message_generation</build_export_depend>
 
   <exec_depend>angles</exec_depend>
   <exec_depend>control_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>controller_interface</exec_depend>
   <exec_depend>kdl_parser</exec_depend>
   <exec_depend>dynamic_reconfigure</exec_depend>
   <exec_depend>realtime_tools</exec_depend>
   <exec_depend>urdf</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
 
 
 

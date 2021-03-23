@@ -12,14 +12,16 @@ add_definitions(-D__SIMULATION__)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
         angles
-        control_msgs
         kdl_parser
         controller_interface
         dynamic_reconfigure
         realtime_tools
         urdf
         sensor_msgs
+        control_msgs
+        geometry_msgs
         message_generation
+        manipulability_metrics
 )
 
 ## System dependencies are found with CMake's conventions
@@ -59,6 +61,7 @@ find_package(Boost REQUIRED COMPONENTS system)
  add_message_files(
          DIRECTORY msg
          FILES
+         CLIKCurrentState.msg
          JointCurrentState.msg
          JointDesiredState.msg
          state.msg
@@ -83,6 +86,7 @@ find_package(Boost REQUIRED COMPONENTS system)
          DEPENDENCIES
          std_msgs
          sensor_msgs
+         geometry_msgs
  )
 
 ################################################
@@ -117,7 +121,17 @@ find_package(Boost REQUIRED COMPONENTS system)
 catkin_package(
 #  INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS angles control_msgs controller_interface kdl_parser dynamic_reconfigure realtime_tools urdf message_runtime
+  CATKIN_DEPENDS
+        angles
+        control_msgs
+        sensor_msgs
+        geometry_msgs
+        controller_interface
+        kdl_parser
+        dynamic_reconfigure
+        realtime_tools
+        urdf
+        message_runtime
 )
 
 ###########

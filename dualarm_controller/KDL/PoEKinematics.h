@@ -117,6 +117,12 @@ namespace HYUMotionKinematics {
 
         void GetScaledTransJacobian( MatrixXd &_ScaledTransJacobian );
 
+        void GetDampedpInvJacobian( MatrixXd &_DampedpInvJacobian );
+
+        void GetBlockpInvJacobian( MatrixXd &_BlockpInvJacobian );
+
+        void GetRelativeJacobian( MatrixXd &_RelativeJacobian );
+
         void GetTaskVelocity( double *_qdot, VectorXd *_TaskVelocity, int &_size );
 
         void GetInverseConditionNumber( double *_InverseCondNumber );
@@ -170,10 +176,15 @@ namespace HYUMotionKinematics {
 
         void ScaledTransJacobian(void);
 
+        void pInvJacobian(void);
+
+        void DampedpInvJacobian(const double sigma);
+
+        void RelativeJacobian(const int From, const int To);
+
         MatrixXd mSpaceJacobian;
         MatrixXd mBodyJacobian;
         MatrixXd mAnalyticJacobian;
-        MatrixXd mRelativeJacobian;
         MatrixXd mSpaceJacobianDot;
         MatrixXd mBodyJacobianDot;
 
@@ -192,6 +203,9 @@ namespace HYUMotionKinematics {
 
         VectorXd ScaledFactor;
         MatrixXd mScaledTransJacobian;
+        MatrixXd mpInvJacobin;
+        MatrixXd mDampedpInvJacobian;
+        Eigen::Matrix<double, 6, Dynamic> mRelativeJacobian;
 
         MatrixXd Mat_Tmp;
         VectorXd Vec_Tmp;

@@ -85,6 +85,10 @@ namespace dualarm_controller
             Kd_.resize(n_joints_);
             Ki_.resize(n_joints_);
             K_inf_.resize(n_joints_);
+            aKp_.resize(n_joints_);
+            aKd_.resize(n_joints_);
+            aKi_.resize(n_joints_);
+            aK_inf_.resize(n_joints_);
             std::vector<double> Kp(n_joints_), Ki(n_joints_), Kd(n_joints_), K_inf(n_joints_);
 
             for (size_t i = 0; i < n_joints_; i++)
@@ -289,6 +293,8 @@ namespace dualarm_controller
                 for(int i=0; i<n_joints_; i++)
                 {
                     dq(i) = msg.dq[i].data*D2R;
+                    Kp_.data(i) = msg.Kp[i].data;
+                    Kd_.data(i) = msg.Kd[i].data;
                 }
                 qd_.data = dq;
             });
@@ -309,7 +315,7 @@ namespace dualarm_controller
 
             cManipulator->UpdateManipulatorParam();
 
-            Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
+
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -336,7 +342,8 @@ namespace dualarm_controller
 
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
-            Control->GetPIDGain(Kp_.data, Kd_.data, Ki_.data);
+            Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
+            Control->GetPIDGain(aKp_.data, aKd_.data, aKi_.data);
 
             q1_.data = q_.data.head(9);
             q1dot_.data = qdot_.data.head(9);
@@ -415,7 +422,7 @@ namespace dualarm_controller
         void publish_data()
         {
             static int loop_count_ = 0;
-            if(loop_count_ >= 9)
+            if(loop_count_ > 2)
             {
                 if(state_pub_->trylock())
                 {
@@ -452,7 +459,7 @@ namespace dualarm_controller
                 for(int i=0; i < n_joints_; i++)
                 {
                     printf("Joint ID:%d \t", i+1);
-                    printf("Kp;%0.3lf, Kd:%0.3lf, ", Kp_.data(i), Kd_.data(i));
+                    printf("Kp;%0.3lf, Kd:%0.3lf, ", aKp_.data(i), aKd_.data(i));
                     printf("q: %0.3lf, ", q_.data(i) * R2D);
                     printf("dq: %0.3lf, ", qd_.data(i) * R2D);
                     printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
@@ -537,6 +544,7 @@ namespace dualarm_controller
 
         // gains
         KDL::JntArray Kp_, Ki_, Kd_, K_inf_;
+        KDL::JntArray aKp_, aKi_, aKd_, aK_inf_;
 
         // publisher
         realtime_tools::RealtimeBuffer<std::vector<double>> pub_buffer_;

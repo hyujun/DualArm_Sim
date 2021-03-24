@@ -294,6 +294,38 @@ void Controller::TaskError(const VectorXd &_dx, const VectorXd &_dxdot, const Ve
     _error_xdot = _dxdot - AnalyticJac*_qdot;
 }
 
+void Controller::TaskRelativeError(const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot)
+{
+    _error_x.setZero(6*2);
+    _error_xdot.setZero(6*2);
+
+    int EndJoint[2] = {9, 16};
+    SE3 aSE3, aSE3_Rel;
+    SO3 dSO3;
+    MatrixXd AnalyticJac, RelativeJac;
+    Vector3d eOrient;
+
+    pManipulator->pKin->RollPitchYawtoSO3(_dx(0), _dx(1), _dx(2), dSO3);
+    aSE3 = pManipulator->pKin->GetForwardKinematicsSE3(EndJoint[0]);
+    pManipulator->pKin->SO3toRollPitchYaw(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient);
+    _error_x.segment(0,3) = eOrient;
+    _error_x.segment(3,3) = _dx.segment(3, 3) - aSE3.block(0,3,3,1);
+
+    pManipulator->pKin->RollPitchYawtoSO3(_dx(6), _dx(7), _dx(8), dSO3);
+    aSE3_Rel.setZero();
+    aSE3_Rel.noalias() += inverse_SE3(aSE3)*pManipulator->pKin->GetForwardKinematicsSE3(EndJoint[1]);
+    pManipulator->pKin->SO3toRollPitchYaw(aSE3_Rel.block(0,0,3,3).transpose()*dSO3, eOrient);
+    _error_x.segment(6,3) = eOrient;
+    _error_x.segment(9,3) = _dx.segment(9, 3) - aSE3_Rel.block(0,3,3,1);
+
+    pManipulator->pKin->GetAnalyticJacobian(AnalyticJac);
+    _error_xdot.head(6) = _dxdot.head(6);
+    _error_xdot.head(6).noalias() += -AnalyticJac.block(0,0,6,16)*_qdot;
+    pManipulator->pKin->GetRelativeJacobian(RelativeJac);
+    _error_xdot.tail(6) = _dxdot.tail(6);
+    _error_xdot.tail(6).noalias() += -RelativeJac*_qdot;
+}
+
 void Controller::CLIKTaskController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx, const VectorXd &_dxdot, VectorXd &_Toq, const double &_dt )
 {
     eTask.setZero(6*pManipulator->GetTotalChain());

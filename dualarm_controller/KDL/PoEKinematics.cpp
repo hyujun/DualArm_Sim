@@ -189,30 +189,36 @@ namespace HYUMotionKinematics {
 
     void PoEKinematics::AnalyticJacobian()
     {
-        //Mat_Tmp.setZero(6*this->m_NumChain, 6*this->m_NumChain);
-        mAnalyticJacobian.setZero();
-
+        mAnalyticJacobian.setZero(6*m_NumChain, m_DoF);
+        int aJac_case=1;
         for(int i=0; i < this->m_NumChain; i++)
         {
-            //LogSO3(T[0][JointEndNum[i]].block(0,0,3,3), Omega, Theta);
-            if(abs(Theta) <= 1e-7)
+            if(aJac_case == 0)
             {
-                //Mat_Tmp.block(6*i,6*i,3,3) = Matrix3d::Identity();
+                Mat_Tmp.setZero(6, 6);
+                LogSO3(GetForwardKinematicsSO3(JointEndNum[i]), Omega, Theta);
+                if(abs(Theta) <= 1e-2)
+                {
+                    Mat_Tmp.block(0,0,3,3) = Matrix3d::Identity();
+                }
+                else
+                {
+                    r = Omega*Theta;
+                    Mat_Tmp.block(0,0,3,3).noalias() += Matrix3d::Identity();
+                    Mat_Tmp.block(0,0,3,3).noalias() += 0.5*LieOperator::SkewMatrix(r);
+                    double tmp = 1.0/r.squaredNorm() - (1.0+cos(r.norm()))/(2.0*r.norm()*sin(r.norm()));
+                    Mat_Tmp.block(0,0,3,3).noalias() += tmp*LieOperator::SkewMatrixSquare(r);
+                }
+                Mat_Tmp.block(0,0,3,3) = GetForwardKinematicsSO3(JointEndNum[i]);
+                Mat_Tmp.block(3,3,3,3) = GetForwardKinematicsSO3(JointEndNum[i]);
+                mAnalyticJacobian.block(6*i,0,6,m_DoF).noalias() += Mat_Tmp*mBodyJacobian.block(6*i,0,6,m_DoF);
             }
             else
             {
-                //Mat_Tmp.block(6*i,6*i,3,3) = Matrix3d::Identity();
-                //Mat_Tmp.block(6*i,6*i,3,3) = LieOperator::SkewMatrix(Omega);
-                //r = Omega*fmod(Theta,M_PI);
-                //r = Omega;
-                //Mat_Tmp.block(6*i,6*i,3,3) = Matrix3d::Identity() -  1/2*LieOperator::SkewMatrix(r) - ((1/r.squaredNorm() + (1+cos(r.norm())/(2*r.norm()*sin(r.norm()))))*LieOperator::SkewMatrixSquare(r));
+                mAnalyticJacobian.block(6*i, 0, 3, this->m_DoF) = mSpaceJacobian.block(6*i, 0, 3, this->m_DoF);
+                mAnalyticJacobian.block(6*i+3, 0, 3, this->m_DoF).noalias() += T[0][JointEndNum[i]].block(0,0,3,3)*mBodyJacobian.block(6*i+3, 0, 3, this->m_DoF);
             }
-            //Mat_Tmp.block((6*i+3),(6*i+3),3,3) = T[0][JointEndNum[i]].block(0,0,3,3);
-
-            mAnalyticJacobian.block(6*i, 0, 3, this->m_DoF) = mSpaceJacobian.block(6*i, 0, 3, this->m_DoF);
-            mAnalyticJacobian.block(6*i+3, 0, 3, this->m_DoF).noalias() += T[0][JointEndNum[i]].block(0,0,3,3)*mBodyJacobian.block(6*i+3, 0, 3, this->m_DoF);
         }
-        //mAnalyticJacobian.noalias() += Mat_Tmp*mBodyJacobian;
     }
 
     void PoEKinematics::pInvJacobian()
@@ -237,7 +243,7 @@ namespace HYUMotionKinematics {
 
         for(int i=0; i<m_DoF; i++)
         {
-            ScaledFactor(i) = 1/mAnalyticJacobian.squaredNorm();
+            ScaledFactor(i) = 1.0/mAnalyticJacobian.squaredNorm();
         }
 
         mScaledTransJacobian.noalias() += ScaledFactor.asDiagonal()*mAnalyticJacobian.transpose();
@@ -278,14 +284,16 @@ namespace HYUMotionKinematics {
         if(From == 0 && To == 1)
         {
             RelJacTmp.block(0, 2, 6, 7).noalias() += -AdjointMatrix(inverse_SE3(T[0][JointEndNum[To]]))*mSpaceJacobian.block(0, 2, 6, 7);
-            RelJacTmp.block(0, 9, 6, 7).noalias() += mBodyJacobian.block(6, 9, 6, 7);
+            RelJacTmp.block(0, 9, 6, 7) = mBodyJacobian.block(6, 9, 6, 7);
             Body2Analyic.block(3,3,3,3).noalias() += GetForwardKinematicsSO3(JointEndNum[From]).transpose()*GetForwardKinematicsSO3(JointEndNum[To]);
+            Body2Analyic.block(0,0,3,3) = Body2Analyic.block(3,3,3,3);
         }
         mRelativeJacobian.noalias() += Body2Analyic*RelJacTmp;
     }
 
     void PoEKinematics::GetRelativeJacobian( MatrixXd &_RelativeJacobian )
     {
+        RelativeJacobian(0,1);
         _RelativeJacobian = mRelativeJacobian;
     }
 
@@ -327,7 +335,7 @@ namespace HYUMotionKinematics {
                 {
                     RowCount[j]++;
                     adTmp.setZero();
-                    adTmp.noalias() -= adjointMatrix(AdjointMatrix(inverse_SE3(M[JointEndNum[j]-1]))*v_se3[Arr[j](RowCount[j])-1]);
+                    adTmp.noalias() += -adjointMatrix(AdjointMatrix(inverse_SE3(M[JointEndNum[j]-1]))*v_se3[Arr[j](RowCount[j])-1]);
                     for(int k=0; k<RowCount[j]; k++)
                     {
                         dJbdq.col(Arr[j](ChainJointCount[j]-(k+1))-1).segment(6*j,6).noalias()

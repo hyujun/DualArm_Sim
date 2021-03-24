@@ -61,15 +61,17 @@ dualarm:
     tip_link1: dualarm_R_end_frame
     tip_link2: dualarm_L_end_frame
 
-    ctr_obj: 1  # 1 : damped Jacobian PseudoInverse
+    ctr_obj: 7  # 1 : damped Jacobian PseudoInverse
                 # 2 : Jacobian Transpose
                 # 3 : Jacobian PseudoInverse
                 # 4 : damped Jacobian PseudoInverse without q0dot
                 # 5 : Jacobian Transpose PseudoInverse without q0dot
                 # 6 : Jacobian PseudoInverse without q0dot
+                # 7 : Jacobian PseudoInver with Relative Jacobian(left-hand)
 
-    ik_mode: 2  # 1 : x-axis
+    ik_mode: 4  # 1 : x-axis
                 # 2 : y-axis
                 # 3 : z-axis
+                # 4 : relative motion (base:right-hand, end:left-hand)
 
     clik_gain: {K_pos: 0.2, K_ori: 0.01}

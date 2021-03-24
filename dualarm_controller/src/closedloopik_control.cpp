@@ -387,18 +387,8 @@ namespace  dualarm_controller
             cManipulator->pKin->GetInverseConditionNumber(InverseConditionNumber);
             DAManipulabilityMeasure = cManipulator->pKin->GetDAManipulabilityMeasure();
 
-
-            //cManipulator->pDyn->MG_Mat_Joint(M, G);
-            //id_solver_->JntToMass(q1_, M_kdl_);
-            //id_solver_->JntToCoriolis(q1_, q1dot_, C_kdl_);
-            //id_solver_->JntToGravity(q1_, G_kdl_);
-            //id_solver1_->JntToMass(q2_, M1_kdl_);
-            //id_solver1_->JntToCoriolis(q2_, q2dot_, C1_kdl_);
-            //id_solver1_->JntToGravity(q2_, G1_kdl_);
-
             q1_.data = q_.data.head(9);
             q1dot_.data = qdot_.data.head(9);
-            jnt_to_jac_solver_->JntToJac(q1_, J1_kdl_);
             fk_pos_solver_->JntToCart(q1_, x_[0]);
 
             q2_.resize(9);
@@ -407,8 +397,18 @@ namespace  dualarm_controller
             q2_.data.head(2) = q_.data.head(2);
             q2dot_.data = qdot_.data.tail(7);
             q2dot_.data.head(2) = qdot_.data.head(2);
-            jnt_to_jac_solver1_->JntToJac(q2_, J2_kdl_);
             fk_pos_solver1_->JntToCart(q2_, x_[1]);
+
+            //jnt_to_jac_solver_->JntToJac(q1_, J1_kdl_);
+            //jnt_to_jac_solver1_->JntToJac(q2_, J2_kdl_);
+
+            //cManipulator->pDyn->MG_Mat_Joint(M, G);
+            //id_solver_->JntToMass(q1_, M_kdl_);
+            //id_solver_->JntToCoriolis(q1_, q1dot_, C_kdl_);
+            //id_solver_->JntToGravity(q1_, G_kdl_);
+            //id_solver1_->JntToMass(q2_, M1_kdl_);
+            //id_solver1_->JntToCoriolis(q2_, q2dot_, C1_kdl_);
+            //id_solver1_->JntToGravity(q2_, G1_kdl_);
 
             if( t <= InitTime )
             {
@@ -501,7 +501,6 @@ namespace  dualarm_controller
                 }
                 else if (ik_mode_ == 3)
                 {
-
                     dx(0) = 0;
                     dx(1) = -M_PI_2;
                     dx(2) = 0;
@@ -522,9 +521,51 @@ namespace  dualarm_controller
 
                     Control->TaskError(dx, dxdot, qdot_.data, ex_, ex_dot_);
                 }
+                else if( ik_mode_ == 4 )
+                {
+                    dx(0) = 0;
+                    dx(1) = -M_PI_2;
+                    dx(2) = 0;
+                    dx(3) = A * sin(f * M_PI * (t - InitTime)) + b1-0.015;
+                    dx(4) = b2+0.1;
+                    dx(5) = b3;
+
+                    dx(6) = 0;
+                    dx(7) = 0;
+                    dx(8) = 0;
+                    dx(9) = 0;
+                    dx(10) = -A * sin(2*f * M_PI * (t - InitTime)) + 0.45;
+                    dx(11) = 0;
+
+                    dxdot.setZero();
+                    dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                    dxdot(10) = -(2*f * M_PI) * A * cos(2*f * M_PI * (t - InitTime));
+
+                    Control->TaskRelativeError(dx, dxdot, qdot_.data, ex_, ex_dot_);
+                }
             }
 
-            if( ctr_obj_ == 6 && t > InitTime)
+            if( ctr_obj_ == 7 && t > InitTime)
+            {
+                qd_ddot_.data.setZero();
+                qd_dot_.data.setZero();
+                MatrixXd reljac;
+                cManipulator->pKin->GetRelativeJacobian(reljac);
+                MatrixXd AJacwithRel;
+                AJacwithRel = AJac;
+                AJacwithRel.block(6,0,6,16) = reljac;
+                MatrixXd pInvJac1;
+                pInvJac1 = AJacwithRel.completeOrthogonalDecomposition().pseudoInverse();
+
+                qd_dot_.data = pInvJac1 * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
+
+                qd_.data = qd_old_.data + qd_dot_.data * dt;
+                qd_old_.data = qd_.data;
+
+                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+
+            }
+            else if( ctr_obj_ == 6 && t > InitTime)
             {
                 qd_ddot_.data.setZero();
                 qd_dot_.data.setZero();
@@ -725,9 +766,9 @@ namespace  dualarm_controller
                 //std::cout << "q0dot:" << std::endl;
                 //std::cout << q0dot << "\n" << std::endl;
 
-                std::cout << "\n" << J1_kdl_.data << "\n"<< std::endl;
-                std::cout << J2_kdl_.data << "\n"<< std::endl;
-                std::cout << AJac << "\n"<< std::endl;
+                //std::cout << "\n" << J1_kdl_.data << "\n"<< std::endl;
+                //std::cout << J2_kdl_.data << "\n"<< std::endl;
+                //std::cout << AJac << "\n"<< std::endl;
                 //std::cout << spaceJac<< "\n"<< std::endl;
                 //std::cout << bodyJac << "\n"<< std::endl;
 

@@ -7,15 +7,16 @@
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
           output="screen" ns="/dualarm" args="joint_state_controller jointspace_control"/>
 
-    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
-        <rosparam param="source_list">["/dualarm/joint_states"]</rosparam>
-    </node>
-    <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui">
-        <rosparam param="source_list">["joint_states"]</rosparam>
-    </node>
-
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
           respawn="false" output="screen" ns="/dualarm">
     </node>
 
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" >
+        <rosparam param="source_list">["/dualarm/joint_states"]</rosparam>
+        <param name="use_gui" value="TRUE"/>
+    </node>
+    <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui">
+        <rosparam param="source_list">["joint_states"]</rosparam>
+    </node>
+    <!--<node name="rviz" pkg="rviz" type="rviz" args="-d $(find dualarm_control)/config/config.rviz"/>-->
 </launch>

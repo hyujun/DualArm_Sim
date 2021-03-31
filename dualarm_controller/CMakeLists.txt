@@ -61,7 +61,7 @@ find_package(Boost REQUIRED COMPONENTS system)
  add_message_files(
          DIRECTORY msg
          FILES
-         CLIKCurrentState.msg
+         TaskCurrentState.msg
          JointCurrentState.msg
          JointDesiredState.msg
          state.msg

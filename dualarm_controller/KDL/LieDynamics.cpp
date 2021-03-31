@@ -290,7 +290,6 @@ namespace HYUMotionDynamics{
             _G.setZero();
 
         _G.noalias() += (LA_mat.transpose()*(Iner_mat*(L_mat*VdotBase)));
-        return;
     }
 
     void Liedynamics::MG_Mat_Joint( MatrixXd &_M, VectorXd&_G )
@@ -307,8 +306,6 @@ namespace HYUMotionDynamics{
 
         _M.noalias() += LA_mat.transpose()*Iner_mat*LA_mat;
         _G.noalias() += (LA_mat.transpose()*(Iner_mat*(L_mat*VdotBase)));
-
-        return;
     }
 
     void Liedynamics::MG_Mat_Task(const MatrixXd &_M, const VectorXd &_G, MatrixXd &_Mx, VectorXd &_Gx)
@@ -322,7 +319,6 @@ namespace HYUMotionDynamics{
 
         //_Gx.setZero(6*this->m_NumChain);
         //_Gx.noalias() += pinvJacobian_mat.transpose()*_G;
-        return;
     }
 
     void Liedynamics::Mdot_Matrix( MatrixXd &_Mdot )
@@ -330,7 +326,6 @@ namespace HYUMotionDynamics{
         _Mdot.setZero(m_DoF, m_DoF);
         _Mdot.noalias() += -LA_mat.transpose()*Gamma_mat.transpose()*ad_Aqd.transpose()*L_mat.transpose()*Iner_mat*LA_mat;
         _Mdot.noalias() += -LA_mat.transpose()*Iner_mat*L_mat*ad_Aqd*Gamma_mat*LA_mat;
-        return;
     }
 
 }

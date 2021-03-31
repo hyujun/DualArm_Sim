@@ -11,7 +11,12 @@
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
 #include "utils.h"
-#include "dualarm_controller/CLIKCurrentState.h"
+#include "dualarm_controller/TaskCurrentState.h"
+
+//manipulability
+#include <manipulability_metrics/util/ellipsoid.h>
+#include <manipulability_metrics/util/similarity.h>
+
 
 // from kdl packages
 #include <kdl/tree.hpp>
@@ -22,7 +27,6 @@
 #include <kdl/chainfksolverpos_recursive.hpp> // forward kinematics
 
 #include <boost/scoped_ptr.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include <cmath>
 #define _USE_MATH_DEFINES
@@ -33,15 +37,14 @@
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
 #define num_taskspace 6
-#define SaveDataMax 97
 
 #define A 0.12
-#define b1 0.6
+#define b1 0.55
 #define b2 -0.43
 #define b3 0.45
 #define f 0.2
 
-#define l_p1 0.4
+#define l_p1 0.45
 #define l_p2 0.43
 #define l_p3 0.39
 
@@ -66,6 +69,12 @@ namespace  dualarm_controller
             if (!n.getParam("ik_mode", ik_mode_))
             {
                 ROS_ERROR("Could not find control objective");
+                return false;
+            }
+
+            if( ctr_obj_ == 8 && ik_mode_ != 4 )
+            {
+                ROS_ERROR("!! If the ctr_obj is 8, ik_mode_ should be 4 !!");
                 return false;
             }
 
@@ -280,34 +289,36 @@ namespace  dualarm_controller
 
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
-            state_pub_.reset(new realtime_tools::RealtimePublisher<dualarm_controller::CLIKCurrentState>(n, "states", 10));
+            state_pub_.reset(new realtime_tools::RealtimePublisher<dualarm_controller::TaskCurrentState>(n, "states", 10));
             state_pub_->msg_.header.stamp = ros::Time::now();
+            state_pub_->msg_.header.frame_id = "dualarm";
+            state_pub_->msg_.header.seq=0;
             for(int i=0; i<(n_joints_-1); i++)
             {
-                state_pub_->msg_.name.push_back(joint_names_[i].c_str()) ;
                 state_pub_->msg_.q.push_back(q_.data(i));
                 state_pub_->msg_.qdot.push_back(qdot_.data(i));
                 state_pub_->msg_.dq.push_back(qd_.data(i));
                 state_pub_->msg_.dqdot.push_back(qd_dot_.data(i));
                 state_pub_->msg_.torque.push_back(torque(i));
-
             }
             for(int j=0; j<2; j++) {
                 state_pub_->msg_.InverseConditionNum.push_back(InverseConditionNumber[j]);
             }
             state_pub_->msg_.x.resize(2);
             state_pub_->msg_.dx.resize(2);
-            state_pub_->msg_.DAMM = DAManipulabilityMeasure;
+            state_pub_->msg_.MM = MM;
+            state_pub_->msg_.DAMM = DAMM;
+            state_pub_->msg_.TODAMM = TODAMM2;
 
             state_pub_->msg_.Kp_R = K_rot;
             state_pub_->msg_.Kp_T = K_trans;
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
             // 6.2 subsriber
-            const auto joint_state_cb = utils::makeCallback<dualarm_controller::CLIKCurrentState>([&](const auto& msg){
+            const auto joint_state_cb = utils::makeCallback<dualarm_controller::TaskCurrentState>([&](const auto& msg){
 
             });
-            sub_x_cmd_ = n.subscribe<dualarm_controller::CLIKCurrentState>( "command", 5, joint_state_cb);
+            sub_x_cmd_ = n.subscribe<dualarm_controller::TaskCurrentState>( "command", 5, joint_state_cb);
 
             return true;
         }
@@ -330,7 +341,7 @@ namespace  dualarm_controller
         void starting(const ros::Time &time) override
         {
             t = 0.0;
-            InitTime=5.0;
+            InitTime=2.0;
 
             ROS_INFO("Starting Closed-loop Inverse Dynamics Controller");
 
@@ -340,7 +351,7 @@ namespace  dualarm_controller
 
             cManipulator->UpdateManipulatorParam();
 
-            Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
+            CLIK_GAIN_DUMY.setZero(12);
             CLIK_GAIN.setZero(12);
             CLIK_GAIN(0) = K_rot;
             CLIK_GAIN(1) = K_rot;
@@ -355,6 +366,9 @@ namespace  dualarm_controller
             CLIK_GAIN(10) = K_trans;
             CLIK_GAIN(11) = K_trans;
 
+            Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
+            Control->SetTaskspaceGain(CLIK_GAIN, CLIK_GAIN_DUMY);
+            alpha = 5.0;
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -363,6 +377,8 @@ namespace  dualarm_controller
             // ********* 0. Get states from gazebo *********
             // 0.1 sampling time
             double dt = period.toSec();
+
+            clock_gettime(CLOCK_MONOTONIC, &begin);
 
             // 0.2 joint state
             for (int i = 0; i < n_joints_; i++)
@@ -377,19 +393,15 @@ namespace  dualarm_controller
             //----------------------
             cManipulator->pKin->PrepareJacobian(q_.data);
             cManipulator->pDyn->PrepareDynamics(q_.data, qdot_.data);
-
             cManipulator->pKin->GetAnalyticJacobian(AJac);
             cManipulator->pKin->GetpinvJacobian(pInvJac);
-            cManipulator->pKin->GetDampedpInvJacobian(dampedpInvJac);
 
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
             cManipulator->pKin->GetInverseConditionNumber(InverseConditionNumber);
-            DAManipulabilityMeasure = cManipulator->pKin->GetDAManipulabilityMeasure();
 
             q1_.data = q_.data.head(9);
             q1dot_.data = qdot_.data.head(9);
-            fk_pos_solver_->JntToCart(q1_, x_[0]);
 
             q2_.resize(9);
             q2dot_.resize(9);
@@ -397,10 +409,15 @@ namespace  dualarm_controller
             q2_.data.head(2) = q_.data.head(2);
             q2dot_.data = qdot_.data.tail(7);
             q2dot_.data.head(2) = qdot_.data.head(2);
+
+            fk_pos_solver_->JntToCart(q1_, x_[0]);
             fk_pos_solver1_->JntToCart(q2_, x_[1]);
 
-            //jnt_to_jac_solver_->JntToJac(q1_, J1_kdl_);
-            //jnt_to_jac_solver1_->JntToJac(q2_, J2_kdl_);
+            jnt_to_jac_solver_->JntToJac(q1_, J1_kdl_);
+            jnt_to_jac_solver1_->JntToJac(q2_, J2_kdl_);
+
+            MM = cManipulator->pKin->GetManipulabilityMeasure();
+            manipulability_data();
 
             //cManipulator->pDyn->MG_Mat_Joint(M, G);
             //id_solver_->JntToMass(q1_, M_kdl_);
@@ -431,11 +448,24 @@ namespace  dualarm_controller
                 qd_.data(14) = -0.0*D2R;
                 qd_.data(15) = -0.0*D2R;
 
+                dx(0) = ForwardOri[0](0);
+                dx(1) = ForwardOri[0](1);
+                dx(2) = ForwardOri[0](2);
+                dx(3) = ForwardPos[0](0);
+                dx(4) = ForwardPos[0](1);
+                dx(5) = ForwardPos[0](2);
+                dx(6) = ForwardOri[1](0);
+                dx(7) = ForwardOri[1](1);
+                dx(8) = ForwardOri[1](2);
+                dx(9) = ForwardPos[1](0);
+                dx(10) = ForwardPos[1](1);
+                dx(11) = ForwardPos[1](2);
+
                 qd_old_ = qd_;
             }
             else
             {
-                if (ik_mode_ == 1)
+                if(ik_mode_ == 0)
                 {
                     xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
                     xd_[0].p(1) = b2;
@@ -477,6 +507,26 @@ namespace  dualarm_controller
                     ex_(10) = ex_temp_(1);
                     ex_(11) = ex_temp_(2);
                 }
+                if (ik_mode_ == 1)
+                {
+                    dx(0) = 0;
+                    dx(1) = -M_PI_2;
+                    dx(2) = 0;
+                    dx(3) = A * sin(f * M_PI * (t - InitTime)) + b1;
+                    dx(4) = b2;
+                    dx(5) = b3;
+
+                    dx(6) = 0;
+                    dx(7) = -M_PI_2;
+                    dx(8) = 0;
+                    dx(9) = -A * sin(f * M_PI * (t - InitTime)) + l_p1;
+                    dx(10) = l_p2;
+                    dx(11) = l_p3;
+
+                    dxdot.setZero();
+                    dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                    dxdot(9) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                }
                 else if (ik_mode_ == 2)
                 {
                     dx(0) = 0;
@@ -496,8 +546,6 @@ namespace  dualarm_controller
                     dxdot.setZero();
                     dxdot(4) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
                     dxdot(10) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                    Control->TaskError(dx, dxdot, qdot_.data, ex_, ex_dot_);
                 }
                 else if (ik_mode_ == 3)
                 {
@@ -518,8 +566,6 @@ namespace  dualarm_controller
                     dxdot.setZero();
                     dxdot(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
                     dxdot(11) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                    Control->TaskError(dx, dxdot, qdot_.data, ex_, ex_dot_);
                 }
                 else if( ik_mode_ == 4 )
                 {
@@ -533,22 +579,26 @@ namespace  dualarm_controller
                     dx(6) = 0;
                     dx(7) = 0;
                     dx(8) = 0;
-                    dx(9) = 0;
+                    dx(9) = -A * cos(2*f * M_PI * (t - InitTime));
                     dx(10) = -A * sin(2*f * M_PI * (t - InitTime)) + 0.45;
                     dx(11) = 0;
 
                     dxdot.setZero();
                     dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
+                    dxdot(9) = (2*f * M_PI) * A * sin(2*f * M_PI * (t - InitTime));
                     dxdot(10) = -(2*f * M_PI) * A * cos(2*f * M_PI * (t - InitTime));
-
-                    Control->TaskRelativeError(dx, dxdot, qdot_.data, ex_, ex_dot_);
                 }
             }
 
-            if( ctr_obj_ == 7 && t > InitTime)
+            if( ctr_obj_ == 9 && t > InitTime)
             {
-                qd_ddot_.data.setZero();
-                qd_dot_.data.setZero();
+                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 6);
+                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
+            }
+            else if( ctr_obj_ == 8 && t > InitTime)
+            {
+                Control->TaskRelativeError(dx, dxdot, qdot_.data, ex_, ex_dot_);
+
                 MatrixXd reljac;
                 cManipulator->pKin->GetRelativeJacobian(reljac);
                 MatrixXd AJacwithRel;
@@ -557,7 +607,27 @@ namespace  dualarm_controller
                 MatrixXd pInvJac1;
                 pInvJac1 = AJacwithRel.completeOrthogonalDecomposition().pseudoInverse();
 
+                qd_dot_.data.setZero(16);
                 qd_dot_.data = pInvJac1 * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
+
+                qd_.data = qd_old_.data + qd_dot_.data * dt;
+                qd_old_.data = qd_.data;
+
+                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+
+            }
+            else if( ctr_obj_ == 7 && t > InitTime)
+            {
+                if(ik_mode_ != 0)
+                {
+                    Control->TaskError(dx, dxdot, qdot_.data, ex_, ex_dot_);
+                }
+
+                cManipulator->pKin->GetDampedpInvJacobian(dampedpInvJac);
+                cManipulator->pKin->Getq0dotWithMM(alpha,DAMM,q0dot);
+
+                qd_dot_.data.setZero(16);
+                qd_dot_.data = dampedpInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
 
                 qd_.data = qd_old_.data + qd_dot_.data * dt;
                 qd_old_.data = qd_.data;
@@ -567,9 +637,12 @@ namespace  dualarm_controller
             }
             else if( ctr_obj_ == 6 && t > InitTime)
             {
-                qd_ddot_.data.setZero();
-                qd_dot_.data.setZero();
+                if(ik_mode_ != 0)
+                {
+                    Control->TaskError(dx, dxdot, qdot_.data, ex_, ex_dot_);
+                }
 
+                qd_dot_.data.setZero(16);
                 qd_dot_.data = pInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
 
                 qd_.data = qd_old_.data + qd_dot_.data * dt;
@@ -579,88 +652,44 @@ namespace  dualarm_controller
             }
             else if( ctr_obj_ == 5 && t > InitTime)
             {
-                qd_ddot_.data.setZero();
-                qd_dot_.data.setZero();
-
-                qd_dot_.data = AJac.transpose() * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
-
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 5);
+                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
             else if( ctr_obj_ == 4 && t > InitTime)
             {
-                qd_ddot_.data.setZero();
-                qd_dot_.data.setZero();
-
-                qd_dot_.data = dampedpInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
-
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 3);
+                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
             else if( ctr_obj_ == 3 && t > InitTime )
             {
-                qd_ddot_.data.setZero();
-                qd_dot_.data.setZero();
-                q0dot.setZero(16);
-
-                double alpha = 20.0;
-                cManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-                qd_dot_.data = pInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_)) + (Eigen::MatrixXd::Identity(16,16) - pInvJac*AJac)*q0dot;
-
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 1);
+                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
             else if( ctr_obj_ == 2 && t > InitTime )
             {
-                qd_ddot_.data.setZero();
-                qd_dot_.data.setZero();
-                q0dot.setZero(16);
-
-                double alpha = 20.0;
-                cManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-                qd_dot_.data = AJac.transpose() * (dxdot + CLIK_GAIN.cwiseProduct(ex_)) + (Eigen::MatrixXd::Identity(16,16) - pInvJac*AJac)*q0dot;
-
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 2);
+                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
             else if( ctr_obj_ == 1 && t > InitTime )
             {
-                qd_ddot_.data.setZero();
-                qd_dot_.data.setZero();
-                q0dot.setZero(16);
-
-                double alpha = 20.0;
-                cManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-                qd_dot_.data = dampedpInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_)) + (Eigen::MatrixXd::Identity(16,16) - pInvJac*AJac)*q0dot;
-
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 4);
+                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
             else
             {
-                qd_ddot_.data.setZero();
-                qd_dot_.data.setZero();
+                qd_dot_.data.setZero(16);
                 Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
             }
 
             for (int i = 0; i < n_joints_; i++)
             {
                 joints_[i].setCommand(torque(i));
-                //joints_[i].setCommand(0.0);
             }
 
+            clock_gettime(CLOCK_MONOTONIC, &end);
             // ********* 4. data 저장 *********
-            publish_data();
+            if(t > InitTime)
+                publish_data();
 
             // ********* 5. state 출력 *********
             print_state();
@@ -673,6 +702,36 @@ namespace  dualarm_controller
             ROS_INFO("Stop Closed-loop Inverse Dynamics Controller");
         }
 
+        void manipulability_data()
+        {
+            const auto desired_manipulability =
+                    manipulability_metrics::Ellipsoid{ { { (Eigen::Matrix<double, 6, 1>{} << 1, 0, 0, 0, 0, 0).finished(), 1.0 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 1, 0, 0, 0, 0).finished(), 1.0 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 1, 0, 0, 0).finished(), 1.0 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 0, 1, 0, 0).finished(), 1.0 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 0, 0, 1, 0).finished(), 1.0 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 0, 0, 0, 1).finished(), 1.0 } } };
+
+            const auto desired_Singelmanipulability =
+                    manipulability_metrics::Ellipsoid{ { { (Eigen::Matrix<double, 6, 1>{} << 1, 0, 0, 0, 0, 0).finished(), 0.2 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 1, 0, 0, 0, 0).finished(), 0.8 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 1, 0, 0, 0).finished(), 0.8 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 0, 1, 0, 0).finished(), 0.9 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 0, 0, 1, 0).finished(), 1.7 },
+                                                               { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 0, 0, 0, 1).finished(), 1.7 } } };
+
+            SingleMM[0] = sqrt((J1_kdl_.data * J1_kdl_.data.transpose()).determinant());
+            SingleMM[1] = sqrt((J2_kdl_.data * J2_kdl_.data.transpose()).determinant());
+            TOMM[0] = manipulability_metrics::inverseShapeDiscrepancy(desired_Singelmanipulability, J1_kdl_.data);
+            TOMM[1] = manipulability_metrics::inverseShapeDiscrepancy(desired_Singelmanipulability, J2_kdl_.data);
+
+            auto left_ellipsoid = manipulability_metrics::ellipsoidFromJacobian(J2_kdl_.data);
+            auto right_ellipsoid = manipulability_metrics::ellipsoidFromJacobian(J1_kdl_.data);
+            DAMM = std::max(manipulability_metrics::volumeIntersection(left_ellipsoid, J1_kdl_.data),
+                                 manipulability_metrics::volumeIntersection(right_ellipsoid, J2_kdl_.data));
+            TODAMM2 = manipulability_metrics::dualInverseShapeDiscrepancy(desired_manipulability, J2_kdl_.data, J1_kdl_.data);
+        }
+
         void publish_data()
         {
             static int loop_count_ = 0;
@@ -681,7 +740,8 @@ namespace  dualarm_controller
                 if(state_pub_->trylock())
                 {
                     state_pub_->msg_.header.stamp = ros::Time::now();
-                    for(size_t i=0; i<(n_joints_-1); i++)
+                    state_pub_->msg_.header.seq++;
+                    for(size_t i=0; i<n_joints_; i++)
                     {
                         state_pub_->msg_.q[i] = q_.data(i);
                         state_pub_->msg_.qdot[i] = qdot_.data(i);
@@ -689,9 +749,9 @@ namespace  dualarm_controller
                         state_pub_->msg_.dqdot[i] = qd_dot_.data(i);
                         state_pub_->msg_.torque[i] = torque(i);
                     }
-                    for(int j=0; j<2; j++) {
-                        state_pub_->msg_.InverseConditionNum[j] = InverseConditionNumber[j];
-                        state_pub_->msg_.x.resize(2);
+
+                    for(int j=0; j<2; j++)
+                    {
                         state_pub_->msg_.dx[j].orientation.x = dx(6*j);
                         state_pub_->msg_.dx[j].orientation.y = dx(6*j+1);
                         state_pub_->msg_.dx[j].orientation.z = dx(6*j+2);
@@ -705,9 +765,14 @@ namespace  dualarm_controller
                         state_pub_->msg_.x[j].position.x = ForwardPos[j](0);
                         state_pub_->msg_.x[j].position.y = ForwardPos[j](1);
                         state_pub_->msg_.x[j].position.z = ForwardPos[j](2);
-                    }
 
-                    state_pub_->msg_.DAMM = DAManipulabilityMeasure;
+                        state_pub_->msg_.InverseConditionNum[j] = InverseConditionNumber[j];
+                    }
+                    state_pub_->msg_.MM = MM;
+                    state_pub_->msg_.DAMM = DAMM;
+                    state_pub_->msg_.TODAMM = TODAMM2;
+                    state_pub_->msg_.Kp_T = K_trans;
+                    state_pub_->msg_.Kp_R = K_rot;
                     state_pub_->unlockAndPublish();
                 }
                 loop_count_=0;
@@ -721,8 +786,11 @@ namespace  dualarm_controller
             if (count > 499)
             {
                 printf("*********************************************************\n\n");
+                printf("*** Calcutaion Time (unit: sec)  ***\n");
+                printf("t_cal = %0.9lf\n", static_cast<double>(end.tv_sec - begin.tv_sec) + static_cast<double>(end.tv_nsec - begin.tv_nsec) / 1000000000.0);
                 printf("*** Simulation Time (unit: sec)  ***\n");
                 printf("t = %0.3lf\n", t);
+                printf("IK mode:%d, CTRL_OBJ:%d\n", ik_mode_, ctr_obj_);
                 printf("\n");
 
                 printf("*** Command from Subscriber in Task Space (unit: m) ***\n");
@@ -755,7 +823,12 @@ namespace  dualarm_controller
 
                     printf("Inverse Condition Number: %0.5lf \n\n", InverseConditionNumber[j]);
                 }
-                printf("Dual-arm Manipulability Measure: %0.5lf\n\n", DAManipulabilityMeasure);
+                printf("SingleMM: Right:%0.5lf, Left:%0.5lf\n", SingleMM[0], SingleMM[1]);
+                printf("TOMM: Right:%0.5lf, Left:%0.5lf\n", TOMM[0], TOMM[1]);
+                printf("MM: %0.5lf\n", MM);
+                printf("DAMM: %0.5lf\n", DAMM);
+                printf("TODAMM: %0.5lf\n\n", TODAMM2);
+
                 printf("Right e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
                        ex_(0)*RADtoDEG, ex_(1)*RADtoDEG, ex_(2)*RADtoDEG, ex_(3), ex_(4), ex_(5));
                 printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
@@ -763,15 +836,15 @@ namespace  dualarm_controller
                 printf("\n*********************************************************\n");
                 count = 0;
 
-                //std::cout << "q0dot:" << std::endl;
-                //std::cout << q0dot << "\n" << std::endl;
-
-                //std::cout << "\n" << J1_kdl_.data << "\n"<< std::endl;
-                //std::cout << J2_kdl_.data << "\n"<< std::endl;
-                //std::cout << AJac << "\n"<< std::endl;
-                //std::cout << spaceJac<< "\n"<< std::endl;
-                //std::cout << bodyJac << "\n"<< std::endl;
-
+                //std::cout << "Weight Damped Jacobian Pseudoinverse:" << std::endl;
+                //std::cout << WdampedpInvJac << "\n" << std::endl;
+                if(ctr_obj_ == 8)
+                {
+                    std::cout << "lambda[right]:" << std::endl;
+                    std::cout << wpInv_lambda[0] << std::endl;
+                    std::cout << "lambda[left]:" << std::endl;
+                    std::cout << wpInv_lambda[1] << std::endl;
+                }
             }
             count++;
         }
@@ -782,7 +855,7 @@ namespace  dualarm_controller
         int ctr_obj_=0;
         int ik_mode_=0;
         double InitTime=0.0;
-
+        struct timespec begin, end;
         //Joint handles
         unsigned int n_joints_;
         std::vector<std::string> joint_names_;
@@ -803,7 +876,6 @@ namespace  dualarm_controller
         Eigen::MatrixXd M_mat_collect;
 
         KDL::Jacobian J1_kdl_, J2_kdl_;
-        KDL::Jacobian J1_inv_kdl_, J2_inv_kdl_;
 
         // kdl solver
         boost::scoped_ptr<KDL::ChainFkSolverPos_recursive> fk_pos_solver_, fk_pos_solver1_; //Solver to compute the forward kinematics (position)
@@ -820,14 +892,20 @@ namespace  dualarm_controller
         Vector3d ForwardAxis[2];
         double ForwardAngle[2];
         double InverseConditionNumber[2];
-        double DAManipulabilityMeasure;
+        double SingleMM[2];
+        double TOMM[2];
+        double MM;
+        double DAMM;
+        double TODAMM2;
 
         // kdl and Eigen Jacobian
-        Eigen::MatrixXd spaceJac, bodyJac;
         Eigen::MatrixXd pInvJac;
         Eigen::MatrixXd AJac;
+        Eigen::MatrixXd BlockpInvJac;
+        Eigen::MatrixXd ScaledJac;
         Eigen::MatrixXd dampedpInvJac;
-        Eigen::MatrixXd ScaledTransJac;
+        Eigen::MatrixXd WdampedpInvJac;
+        VectorXd wpInv_lambda[2];
 
         // Joint Space State
         KDL::JntArray qd_;
@@ -837,6 +915,7 @@ namespace  dualarm_controller
         KDL::JntArray q_, q1_, q2_;
         KDL::JntArray qdot_, q1dot_, q2dot_;
         Eigen::VectorXd q0dot;
+        double alpha;
         Eigen::VectorXd torque;
 
         // Task Space State
@@ -858,11 +937,11 @@ namespace  dualarm_controller
         KDL::JntArray Kp_, Ki_, Kd_, K_inf_;
         Eigen::VectorXd aKp_, aKi_, aKd_, aK_inf_;
         double K_trans, K_rot;
-        Eigen::VectorXd CLIK_GAIN;
+        Eigen::VectorXd CLIK_GAIN, CLIK_GAIN_DUMY;
 
         // publisher
         realtime_tools::RealtimeBuffer<std::vector<double>> pub_buffer_;
-        boost::scoped_ptr<realtime_tools::RealtimePublisher<dualarm_controller::CLIKCurrentState>> state_pub_;
+        boost::scoped_ptr<realtime_tools::RealtimePublisher<dualarm_controller::TaskCurrentState>> state_pub_;
 
         // subscriber
         ros::Subscriber sub_x_cmd_;

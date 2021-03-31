@@ -14,10 +14,6 @@ namespace HYUControl {
 Controller::Controller():m_Jnum(6)
 {
 	this->pManipulator = nullptr;
-    m_KpBase = KpBase;
-    m_KdBase = KdBase;
-    m_KiBase = KiBase;
-    m_HinfBase = HinfBase;
 }
 
 Controller::Controller(std::shared_ptr<SerialManipulator> pManipulator)
@@ -25,86 +21,41 @@ Controller::Controller(std::shared_ptr<SerialManipulator> pManipulator)
 	this->pManipulator = std::move(pManipulator);
 
 	m_Jnum = this->pManipulator->GetTotalDoF();
-	m_KpBase = KpBase;
-	m_KdBase = KdBase;
-	m_KiBase = KiBase;
-	m_HinfBase = HinfBase;
 
 	Kp.resize(m_Jnum);
-	Kp.setConstant(m_KpBase);
+	Kp.setConstant(KpBase*5.0);
 	Kd.resize(m_Jnum);
-	Kd.setConstant(m_KdBase);
+	Kd.setConstant(KdBase*5.0);
     Ki.resize(m_Jnum);
-    Ki.setConstant(m_KiBase);
+    Ki.setConstant(KiBase*5.0);
 	K_Hinf.resize(m_Jnum);
-	K_Hinf.setConstant(m_HinfBase);
+	K_Hinf.setConstant(HinfBase);
 
-	KpTask.resize(6*this->pManipulator->pKin->GetNumChain());
-	KdTask.resize(6*this->pManipulator->pKin->GetNumChain());
-	KiTask.resize(6*this->pManipulator->pKin->GetNumChain());
+	KpTask.resize(6*this->pManipulator->GetTotalChain());
+	KdTask.resize(6*this->pManipulator->GetTotalChain());
+	KiTask.resize(6*this->pManipulator->GetTotalChain());
 
-	e.resize(m_Jnum);
-	e.setZero();
+	e.setZero(m_Jnum);
+	e_dev.setZero(m_Jnum);
+	e_int.setZero(m_Jnum);
+	e_int_sat.setZero(m_Jnum);
 
-	e_dev.resize(m_Jnum);
-	e_dev.setZero();
+    eTask.setZero(6*this->pManipulator->GetTotalChain());
+	edotTask.setZero(6*this->pManipulator->GetTotalChain());
 
-	e_int.resize(m_Jnum);
-	e_int_sat.resize(m_Jnum);
+	edotTmp.setZero(6*this->pManipulator->GetTotalChain(), 6*this->pManipulator->GetTotalChain());
 
-	edotTask.resize(6*this->pManipulator->GetTotalChain());
-	eTask.resize(6*this->pManipulator->GetTotalChain());
+	FrictionTorque.setZero(m_Jnum);
 
-	edotTmp.resize(6*this->pManipulator->GetTotalChain(), 6*this->pManipulator->GetTotalChain());
-
-	FrictionTorque.resize(m_Jnum);
-	FrictionTorque.setZero();
-
-	GainWeightFactor.resize(m_Jnum);
 #if defined(__SIMULATION__)
     GainWeightFactor.resize(m_Jnum);
     GainWeightFactor.setConstant(7.0);
 
-    Kp = GainWeightFactor*m_KpBase;
-    Kd = GainWeightFactor*m_KdBase;
-    Ki = GainWeightFactor*m_KiBase;
-    K_Hinf.setConstant(m_HinfBase);
+    dq.setZero(16);
+    dqdot.setZero(16);
+    dqddot.setZero(16);
+    dq_old.setZero(16);
 
-    dq.resize(m_Jnum);
-    dqdot.resize(m_Jnum);
-    dqddot.resize(m_Jnum);
-
-    KpTask(0,0) = 10.0;
-    KpTask(1,1) = 10.0;
-    KpTask(2,2) = 10.0;
-
-    KpTask(3,3) = 10.0;
-    KpTask(4,4) = 10.0;
-    KpTask(5,5) = 10.0;
-
-    KpTask(6,6) = 10.0;
-    KpTask(7,7) = 10.0;
-    KpTask(8,8) = 10.0;
-
-    KpTask(9,9) = 10.0;
-    KpTask(10,10) = 10.0;
-    KpTask(11,11) = 10.0;
-
-    KdTask(0,0) = 0.0001;
-    KdTask(1,1) = 0.0001;
-    KdTask(2,2) = 0.0001;
-
-    KdTask(3,3) = 0.001;
-    KdTask(4,4) = 0.001;
-    KdTask(5,5) = 0.001;
-
-    KdTask(6,6) = 0.0001;
-    KdTask(7,7) = 0.0001;
-    KdTask(8,8) = 0.0001;
-
-    KdTask(9,9) = 0.001;
-    KdTask(10,10) = 0.001;
-    KdTask(11,11) = 0.001;
 #else
 	GainWeightFactor(0) = 20.0;
 	GainWeightFactor(1) = 23.0;
@@ -144,7 +95,6 @@ Controller::Controller(std::shared_ptr<SerialManipulator> pManipulator)
 
 	KpTask.tail(6) = KpTask.head(6);
 #endif
-
 }
 
 Controller::~Controller() {
@@ -164,17 +114,14 @@ void Controller::SetPIDGain(double &_Kp, double &_Kd, double &_Hinf, int &_Joint
 	Kp(_JointNum-1) = _Kp;
 	Kd(_JointNum-1) = _Kd;
 	K_Hinf(_JointNum-1) = _Hinf;
-	return;
 }
 
-void Controller::SetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki, VectorXd &_Kinf)
+void Controller::SetPIDGain( VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki, VectorXd &_Kinf )
 {
     K_Hinf = _Kinf;
-    Kp = _Kinf.asDiagonal()*_Kp;
-    Kd = _Kinf.asDiagonal()*_Kd;
-    Ki = _Kinf.asDiagonal()*_Ki;
-
-    return;
+    Kp = _Kinf.cwiseProduct(_Kp);
+    Kd = _Kinf.cwiseProduct(_Kd);
+    Ki = _Kinf.cwiseProduct(_Ki);
 }
 
 void Controller::GetPIDGain(double *_Kp, double *_Kd, double *_Hinf, int &_JointNum)
@@ -183,7 +130,6 @@ void Controller::GetPIDGain(double *_Kp, double *_Kd, double *_Hinf, int &_Joint
 	Map<VectorXd>(_Kp, this->m_Jnum) = Kp;
 	Map<VectorXd>(_Kd, this->m_Jnum) = Kd;
 	Map<VectorXd>(_Hinf, this->m_Jnum) = K_Hinf;
-	return;
 }
 
 void Controller::GetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki)
@@ -191,7 +137,30 @@ void Controller::GetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki)
     _Kp = Kp;
     _Kd = Kd;
     _Ki = Ki;
-    return;
+}
+
+void Controller::SetCLIKGain(const double &_Kp_Translation, const double &_Kp_Rotation)
+{
+    for(int i=0; i<pManipulator->GetTotalChain(); i++)
+    {
+        KpTask.segment(6*i,3) = _Kp_Rotation*Vector3d::Ones();
+        KpTask.segment(6*i+3, 3) = _Kp_Translation*Vector3d::Ones();
+    }
+}
+
+void Controller::SetTaskspaceGain(const VectorXd &_KpTask, const VectorXd &_KdTask)
+{
+    KpTask.setZero(12);
+    KdTask.setZero(12);
+    KpTask = _KpTask;
+    KdTask = _KdTask;
+}
+
+void Controller::GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask)
+{
+    _dq = dq;
+    _dqdot = dqdot;
+    _ErrTask = eTask;
 }
 
 void Controller::PDController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq)
@@ -212,9 +181,10 @@ void Controller::PDGravController( const VectorXd &_q, const VectorXd &_qdot, co
 
 	FrictionCompensator(_qdot, _dqdot);
 
-    _Toq.setZero();
-	_Toq.noalias() += Kp.cwiseProduct(e) + Kd.cwiseProduct(e_dev) + G;
-    //_Toq.noalias() += G + FrictionTorque;
+    _Toq = G;
+	_Toq.noalias() += Kp.cwiseProduct(e);
+    _Toq.noalias() += Kd.cwiseProduct(e_dev);
+    //_Toq.noalias() += FrictionTorque;
 }
 
 void Controller::InvDynController(const VectorXd &_q,
@@ -227,7 +197,9 @@ void Controller::InvDynController(const VectorXd &_q,
 {
 	pManipulator->pDyn->MG_Mat_Joint(M, G);
 	//pManipulator->pDyn->G_Matrix(G);
-    VectorXd u0(m_Jnum);
+
+	dq_old = _dq;
+
 	e = _dq - _q;
 	e_dev = _dqdot - _qdot;
 	//e_int += e*_dt*1e-6;
@@ -235,22 +207,19 @@ void Controller::InvDynController(const VectorXd &_q,
 
 	FrictionCompensator(_qdot, _dqdot);
 
-	if(_Toq.size() != m_Jnum)
-        _Toq.setZero(m_Jnum);
-	else
-	    _Toq.setZero();
-
-	u0.setZero();
+    VectorXd u0;
+	u0.setZero(m_Jnum);
 	u0.noalias() += _dqddot;
 	u0.noalias() += Kd.cwiseProduct(e_dev);
 	u0.noalias() += Kp.cwiseProduct(e);
-    _Toq.noalias() += G;
+    _Toq = G;
     _Toq.noalias() += M*u0;
     //_Toq.noalias() += FrictionTorque;
 }
 
 void Controller::TaskInvDynController(const VectorXd &_dx,
                                       const VectorXd &_dxdot,
+                                      const VectorXd &_dxddot,
                                       const VectorXd &_q,
                                       const VectorXd &_qdot,
                                       VectorXd &_Toq,
@@ -258,16 +227,52 @@ void Controller::TaskInvDynController(const VectorXd &_dx,
 {
     pManipulator->pDyn->MG_Mat_Joint(M, G);
 
-    MatrixXd AJacobian;
-    MatrixXd pInvJac;
-    MatrixXd eye = MatrixXd::Identity(m_Jnum,m_Jnum);
-    VectorXd q0dot;
+    auto mode = 1;
 
-    pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-    pManipulator->pKin->GetAnalyticJacobian(AJacobian);
+    if( mode == 1 ) // Regulation
+    {
+        MatrixXd J;
+        pManipulator->pKin->GetAnalyticJacobian(J);
 
-    _Toq.setZero(m_Jnum);
-    _Toq.noalias() += AJacobian.transpose()*(-KpTask*_dx - KdTask*AJacobian*_qdot) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+        //MatrixXd pInvJ;
+        //pManipulator->pKin->GetpinvJacobian(pInvJ);
+
+        TaskError(_dx, _dxddot, _qdot, eTask, edotTask);
+
+        VectorXd u0;
+        u0.setZero(16);
+        u0.noalias() += KpTask.cwiseProduct(eTask);
+        u0.noalias() += -KdTask.cwiseProduct(J*_qdot);
+
+        //MatrixXd mat_tmp = Matrix<double, 16, 16>::Identity();
+        //mat_tmp.noalias() += -J.transpose()*J;
+        //VectorXd q0dot;
+        //pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+
+        _Toq = G;
+        _Toq.noalias() += J.transpose()*u0;
+        //_Toq.noalias() += mat_tmp*q0dot;
+        //_Toq.noalias() += AJacobian.transpose()*(KpTask.cwiseProduct(_dx) - KdTask.cwiseProduct(AJacobian*_qdot)) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
+    }
+    else if( mode == 2 ) //tracking
+    {
+        MatrixXd Jdot, DpInvJ;
+        pManipulator->pKin->GetAnalyticJacobianDot(_qdot, Jdot);
+        pManipulator->pKin->GetDampedpInvJacobian(DpInvJ);
+
+        TaskError(_dx, _dxddot, _qdot, eTask, edotTask);
+
+        Matrix<double, 12, 1> uTask;
+        uTask = _dxddot;
+        uTask.noalias() += -Jdot*_qdot;
+        uTask.noalias() += KdTask.cwiseProduct(edotTask);
+        uTask.noalias() += KpTask.cwiseProduct(eTask);
+
+        MatrixXd u0 = Matrix<double, 16,1>::Zero();
+        u0.noalias() += DpInvJ*uTask;
+        _Toq = G;
+        _Toq.noalias() += M*u0;
+    }
 }
 
 void Controller::TaskError(const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot)
@@ -278,7 +283,6 @@ void Controller::TaskError(const VectorXd &_dx, const VectorXd &_dxdot, const Ve
     int EndJoint[2] = {9, 16};
     SE3 aSE3;
     SO3 dSO3;
-    MatrixXd AnalyticJac;
     Vector3d eOrient;
 
     for(int i=0; i<2; i++)
@@ -290,8 +294,10 @@ void Controller::TaskError(const VectorXd &_dx, const VectorXd &_dxdot, const Ve
         _error_x.segment(6*i+3,3) = _dx.segment(6*i+3, 3) - aSE3.block(0,3,3,1);
     }
 
+    MatrixXd AnalyticJac;
     pManipulator->pKin->GetAnalyticJacobian(AnalyticJac);
-    _error_xdot = _dxdot - AnalyticJac*_qdot;
+    _error_xdot = _dxdot;
+    _error_xdot.noalias() += -AnalyticJac*_qdot;
 }
 
 void Controller::TaskRelativeError(const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot)
@@ -326,33 +332,93 @@ void Controller::TaskRelativeError(const VectorXd &_dx, const VectorXd &_dxdot, 
     _error_xdot.tail(6).noalias() += -RelativeJac*_qdot;
 }
 
-void Controller::CLIKTaskController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx, const VectorXd &_dxdot, VectorXd &_Toq, const double &_dt )
+void Controller::CLIKTaskController( const VectorXd &_q,
+                                     const VectorXd &_qdot,
+                                     const VectorXd &_dx,
+                                     const VectorXd &_dxdot,
+                                     VectorXd &_Toq,
+                                     const double &_dt,
+                                     const int mode )
 {
-    eTask.setZero(6*pManipulator->GetTotalChain());
-	edotTask.setZero(6*pManipulator->GetTotalChain());
-
     TaskError(_dx, _dxdot, _qdot, eTask, edotTask);
 
-	dq.setZero();
-	dqdot.setZero();
-	dqddot.setZero();
+    Vector_temp = _dxdot;
+    Vector_temp.noalias() += KpTask.cwiseProduct(eTask);
 
-	VectorXd q0dot;
-
-    pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-
-    //pManipulator->pKin->GetpinvJacobian(pInvJacobian);
-    //dqdot = pInvJacobian * (_dxdot + KpTask.cwiseProduct(eTask)) + (Eigen::MatrixXd::Identity(16,16) - AnalyticJacobian.transpose()*AnalyticJacobian)*q0dot;
+	dq.setZero(16);
+	dqdot.setZero(16);
+	dqddot.setZero(16);
 
     pManipulator->pKin->GetAnalyticJacobian(AnalyticJacobian);
-    dqdot = AnalyticJacobian.transpose() * (_dxdot + KpTask.cwiseProduct(eTask)) + (Eigen::MatrixXd::Identity(16,16) - AnalyticJacobian.transpose()*AnalyticJacobian)*q0dot;
+    pManipulator->pKin->GetpinvJacobian(pInvJacobian);
 
-    //pManipulator->pKin->GetScaledTransJacobian(ScaledTransJacobian);
-    //dqdot = ScaledTransJacobian * (_dxdot + KpTask.cwiseProduct(eTask)) + (Eigen::MatrixXd::Identity(16,16) - AnalyticJacobian.transpose()*AnalyticJacobian)*q0dot;
+    Matrix_temp = Eigen::MatrixXd::Identity(16,16);
+    Matrix_temp += -pInvJacobian*AnalyticJacobian;
+
+    if(mode == 1) // jacobian pseudoinverse
+    {
+        alpha = 5.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+
+        dqdot.noalias() += pInvJacobian*Vector_temp;
+        dqdot.noalias() += Matrix_temp*q0dot;
+    }
+    else if(mode == 2) // jacobian transpose
+    {
+        alpha = 5.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+
+        dqdot.noalias() += AnalyticJacobian.transpose()*Vector_temp;
+        dqdot.noalias() += Matrix_temp*q0dot;
+    }
+    else if(mode  == 3) // Damped jacobian pseudoinverse
+    {
+        alpha = 5.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        pManipulator->pKin->GetDampedpInvJacobian(DampedpInvJacobian);
+
+        dqdot.noalias() += DampedpInvJacobian*Vector_temp;
+        dqdot.noalias() += Matrix_temp*q0dot;
+    }
+    else if(mode == 4) // scaled jacobian transpose
+    {
+        alpha = 5.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        pManipulator->pKin->GetScaledTransJacobian(ScaledTransJacobian);
+
+        dqdot.noalias() += ScaledTransJacobian*Vector_temp;
+        dqdot.noalias() += Matrix_temp*q0dot;
+    }
+    else if(mode == 5) // block jacobian pseudoinverse
+    {
+        alpha = 5.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        pManipulator->pKin->GetBlockpInvJacobian(BlockpInvJacobian);
+
+        dqdot.noalias() += BlockpInvJacobian*Vector_temp;
+        dqdot.noalias() += Matrix_temp*q0dot;
+    }
+    else if(mode  == 6) // weight damped jacobian pseudoinverse with task priority
+    {
+        alpha = 5.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        pManipulator->pKin->GetWeightDampedpInvJacobian(Vector_temp, WdampedpInvJacobian);
+
+        dqdot.noalias() += WdampedpInvJacobian*Vector_temp;
+        //dqdot.noalias() += Matrix_temp*q0dot;
+    }
+    else
+    {
+        alpha = 5.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        pManipulator->pKin->GetDampedpInvJacobian(DampedpInvJacobian);
+
+        dqdot.noalias() += DampedpInvJacobian*Vector_temp;
+        dqdot.noalias() += Matrix_temp*q0dot;
+    }
 
     dq = dq_old + dqdot * _dt;
     dq_old = dq;
-
     InvDynController(_q, _qdot, dq, dqdot, dqddot, _Toq, _dt);
 }
 
@@ -375,8 +441,8 @@ void Controller::FrictionIdentification( const VectorXd &_q, const VectorXd &_qd
 	GainWeightFactor(12) = 0.8;
 	GainWeightFactor(13) = 1.0;
 
-	Kp = GainWeightFactor*m_KpBase;
-	Kd = GainWeightFactor*m_KdBase;
+	Kp = GainWeightFactor.cwiseProduct(Kp);
+	Kd = GainWeightFactor.cwiseProduct(Kd);
 
 	_dq.setZero();
 	_dqdot.setZero();

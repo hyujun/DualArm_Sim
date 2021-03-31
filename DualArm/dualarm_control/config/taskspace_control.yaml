@@ -24,45 +24,14 @@ dualarm:
       - dualarm_joint16
 
     gains:
-      dualarm_joint1:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint2:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint3:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint4:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint5:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint6:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint7:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint8:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint9:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint10:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint11:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint12:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint13:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint14:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint15:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
-      dualarm_joint16:
-        pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
+      Right_arm:
+        pid: { KpT: 0.7, KpR: 0.02, KdT: 0.05, KdR: 0.001 }
+      Left_arm:
+        pid: { KpT: 0.7, KpR: 0.02, KdT: 0.05, KdR: 0.001 }
 
     root_link: world
     tip_link1: dualarm_R_end_frame
     tip_link2: dualarm_L_end_frame
 
-    ctr_obj: 3
+    target_obj: 2
 
-    ik_mode: 3
-
-    clik_gain: {K_pos: 1.0, K_ori: 0.01}

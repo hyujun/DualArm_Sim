@@ -58,6 +58,10 @@ public:
     void SetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki, VectorXd &_Kinf);
 	void GetPIDGain(double *_Kp, double *_Kd, double *_Ki, int &_JointNum);
 	void GetPIDGain(VectorXd &_Kp, VectorXd &_Kd, VectorXd &_Ki);
+	void SetCLIKGain( const double &_Kp_Translation, const double &_Kp_Rotation );
+	void SetTaskspaceGain( const VectorXd &_KpTask, const VectorXd &_KdTask);
+	void GetTaskspaceGain( const VectorXd &_KpTask, const VectorXd &_KdTask);
+	void GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask);
 	/**
 	 * @brief simple pd controller
 	 * @param[in] q current joint position
@@ -69,12 +73,12 @@ public:
 	void PDController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq);
 	void PDGravController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq );
     void InvDynController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, const VectorXd &_dqddot, VectorXd &_Toq, const double &_dt );
-	void TaskInvDynController( const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_q, const VectorXd &_qdot, VectorXd &_Toq, const double &_dt);
+	void TaskInvDynController( const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_q, const VectorXd &_qdot, VectorXd &_Toq, const double &_dt);
 
 	void TaskError( const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );
 	void TaskRelativeError( const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );
 
-	void CLIKTaskController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx, const VectorXd &_dxdot, VectorXd &_Toq, const double &_dt );
+	void CLIKTaskController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx, const VectorXd &_dxdot, VectorXd &_Toq, const double &_dt, const int mode );
 
 	void FrictionIdentification( const VectorXd &_q, const VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, const double &gt );
 	void FrictionCompensator( const VectorXd &_qdot, const VectorXd &_dqdot );
@@ -97,8 +101,10 @@ private:
 	Eigen::VectorXd FrictionTorque;
 
 	Eigen::VectorXd e, e_dev, e_int, e_int_sat;
+	Eigen::VectorXd Vector_temp;
+	Eigen::MatrixXd Matrix_temp;
 
-	double alpha=1.0;
+	double alpha;
 
 	Eigen::VectorXd eTask, edotTask;
 	Eigen::MatrixXd edotTmp;
@@ -107,14 +113,16 @@ private:
 
 	Eigen::MatrixXd ScaledTransJacobian;
 	Eigen::MatrixXd pInvJacobian;
-	Eigen::MatrixXd BodyJacobian;
+	Eigen::MatrixXd BlockpInvJacobian;
+	Eigen::MatrixXd WdampedpInvJacobian;
+	Eigen::MatrixXd DampedpInvJacobian;
 	Eigen::MatrixXd AnalyticJacobian;
+    VectorXd q0dot;
 
 	Eigen::MatrixXd M, Mx;
 	Eigen::VectorXd G, Gx;
 
 	int m_Jnum;
-	double m_KpBase, m_KdBase, m_KiBase, m_HinfBase;
 	double InitTime=0.0;
 
     std::shared_ptr<SerialManipulator> pManipulator;

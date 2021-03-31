@@ -100,6 +100,8 @@ namespace HYUMotionKinematics {
             _BodyJacobian = mBodyJacobian;
         }
 
+        void GetBodyJacobianDot( MatrixXd &_BodyJacobianDot );
+
         /**
          * @brief calcuate the analytic jacobian
          * @return 6 x n(DoF) jacobian matrix
@@ -109,9 +111,7 @@ namespace HYUMotionKinematics {
             _AnalyticJacobian = mAnalyticJacobian;
         }
 
-        void GetSpaceJacobianDot( MatrixXd  &_sJacobianDot);
-
-        void GetBodyJacobianDot( MatrixXd &_bJacobianDot );
+        void GetAnalyticJacobianDot(const VectorXd &_qdot, MatrixXd &_AnalyticJacobianDot);
 
         void GetpinvJacobian( MatrixXd &_pinvJacobian );
 
@@ -123,13 +123,15 @@ namespace HYUMotionKinematics {
 
         void GetRelativeJacobian( MatrixXd &_RelativeJacobian );
 
-        void GetTaskVelocity( double *_qdot, VectorXd *_TaskVelocity, int &_size );
+        void GetWeightDampedpInvJacobian( const VectorXd &_rdot, MatrixXd &_WDampedpInvJacobian );
+
+        void GetWDampedpInvLambda(VectorXd *lambda);
 
         void GetInverseConditionNumber( double *_InverseCondNumber );
 
-        double GetDAManipulabilityMeasure();
+        double GetManipulabilityMeasure();
 
-        void Getq0dotWithMM( const double &gain, VectorXd &q0dot );
+        void Getq0dotWithMM(const double &gain, const double &Index, VectorXd &q0dot);
         /**
          * @brief forward kinematics of serial robot
          * @return end-effector position x, y, z. not orientation(Working)
@@ -168,31 +170,31 @@ namespace HYUMotionKinematics {
 
     protected:
 
-        void SpaceJacobian(void);
+        void SpaceJacobian();
 
-        void SpaceToBodyJacobian(void);
+        void SpaceToBodyJacobian();
 
-        void AnalyticJacobian(void);
+        void BodyJacobianDot( const VectorXd &_qdot );
 
-        void ScaledTransJacobian(void);
+        void AnalyticJacobian();
 
-        void pInvJacobian(void);
+        void AnalyticJacobianDot( const VectorXd &_qdot );
+
+        void ScaledTransJacobian();
+
+        void pInvJacobian();
 
         void DampedpInvJacobian(const double sigma);
 
         void RelativeJacobian(const int From, const int To);
 
-        MatrixXd mSpaceJacobian;
-        MatrixXd mBodyJacobian;
-        MatrixXd mAnalyticJacobian;
-        MatrixXd mSpaceJacobianDot;
-        MatrixXd mBodyJacobianDot;
+        void BlockpInvJacobian( Matrix<double, 6, Dynamic> &_Jacobian1, Matrix<double, 6, Dynamic> &_Jacobian2 );
+
+        void WeightpInvJacobian( const VectorXd &_rdot );
 
         MatrixXi ChainMatrix;
-
         int m_NumChain;
         int m_DoF;
-
         int ChainJointCount[2];
         int JointEndNum[2];
 
@@ -201,10 +203,17 @@ namespace HYUMotionKinematics {
 
         VectorXi Arr[2];
 
+        MatrixXd mSpaceJacobian;
+        MatrixXd mBodyJacobian;
+        MatrixXd mBodyJacobianDot;
+        MatrixXd mAnalyticJacobian;
+        MatrixXd mAnalyticJacobianDot;
         VectorXd ScaledFactor;
         MatrixXd mScaledTransJacobian;
         MatrixXd mpInvJacobin;
         MatrixXd mDampedpInvJacobian;
+        MatrixXd mBlockpInvJacobian;
+        MatrixXd mWeightDampedpInvJacobian;
         Eigen::Matrix<double, 6, Dynamic> mRelativeJacobian;
 
         MatrixXd Mat_Tmp;
@@ -212,9 +221,10 @@ namespace HYUMotionKinematics {
 
         Quaterniond q;
 
-        Vector3d Omega;
-        Vector3d r;
-        double Theta;
+        double WpInv_epsilon_left;
+        double WpInv_epsilon_right;
+        VectorXd lambda_left;
+        VectorXd lambda_right;
 
         /**
          * @brief SE(3) Homogeneous transform matrix container

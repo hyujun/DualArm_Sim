@@ -13,4 +13,6 @@ float64[] InverseConditionNum
 float64 MM
 float64 DAMM
 float64 TODAMM
+float64[] SingleMM
+
 

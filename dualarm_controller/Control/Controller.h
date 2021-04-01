@@ -73,7 +73,7 @@ public:
 	void PDController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq);
 	void PDGravController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq );
     void InvDynController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, const VectorXd &_dqddot, VectorXd &_Toq, const double &_dt );
-	void TaskInvDynController( const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_q, const VectorXd &_qdot, VectorXd &_Toq, const double &_dt);
+	void TaskInvDynController( const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_q, const VectorXd &_qdot, VectorXd &_Toq, const double &_dt, const int mode);
 
 	void TaskError( const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );
 	void TaskRelativeError( const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );

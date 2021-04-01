@@ -223,19 +223,21 @@ void Controller::TaskInvDynController(const VectorXd &_dx,
                                       const VectorXd &_q,
                                       const VectorXd &_qdot,
                                       VectorXd &_Toq,
-                                      const double &_dt)
+                                      const double &_dt,
+                                      const int mode)
 {
     pManipulator->pDyn->MG_Mat_Joint(M, G);
-
-    auto mode = 1;
 
     if( mode == 1 ) // Regulation
     {
         MatrixXd J;
         pManipulator->pKin->GetAnalyticJacobian(J);
 
-        //MatrixXd pInvJ;
-        //pManipulator->pKin->GetpinvJacobian(pInvJ);
+        MatrixXd ScaledJT;
+        pManipulator->pKin->GetScaledTransJacobian(ScaledJT);
+
+        MatrixXd pInvJ;
+        pManipulator->pKin->GetpinvJacobian(pInvJ);
 
         TaskError(_dx, _dxddot, _qdot, eTask, edotTask);
 
@@ -247,17 +249,23 @@ void Controller::TaskInvDynController(const VectorXd &_dx,
         //MatrixXd mat_tmp = Matrix<double, 16, 16>::Identity();
         //mat_tmp.noalias() += -J.transpose()*J;
         //VectorXd q0dot;
-        //pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        //alpha=5.0;
+        //pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
 
         _Toq = G;
-        _Toq.noalias() += J.transpose()*u0;
+        _Toq.noalias() += ScaledJT*u0;
+        //_Toq.noalias() += pInvJ*u0;
         //_Toq.noalias() += mat_tmp*q0dot;
-        //_Toq.noalias() += AJacobian.transpose()*(KpTask.cwiseProduct(_dx) - KdTask.cwiseProduct(AJacobian*_qdot)) + (eye - AJacobian.transpose()*AJacobian)*q0dot + G;
     }
     else if( mode == 2 ) //tracking
     {
-        MatrixXd Jdot, DpInvJ;
+        MatrixXd ScaledJT;
+        pManipulator->pKin->GetScaledTransJacobian(ScaledJT);
+
+        MatrixXd Jdot;
         pManipulator->pKin->GetAnalyticJacobianDot(_qdot, Jdot);
+
+        MatrixXd DpInvJ;
         pManipulator->pKin->GetDampedpInvJacobian(DpInvJ);
 
         TaskError(_dx, _dxddot, _qdot, eTask, edotTask);
@@ -269,7 +277,8 @@ void Controller::TaskInvDynController(const VectorXd &_dx,
         uTask.noalias() += KpTask.cwiseProduct(eTask);
 
         MatrixXd u0 = Matrix<double, 16,1>::Zero();
-        u0.noalias() += DpInvJ*uTask;
+        //u0.noalias() += DpInvJ*uTask;
+        u0.noalias() += ScaledJT*uTask;
         _Toq = G;
         _Toq.noalias() += M*u0;
     }
@@ -357,24 +366,24 @@ void Controller::CLIKTaskController( const VectorXd &_q,
 
     if(mode == 1) // jacobian pseudoinverse
     {
-        alpha = 5.0;
-        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        alpha = 2.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
 
         dqdot.noalias() += pInvJacobian*Vector_temp;
         dqdot.noalias() += Matrix_temp*q0dot;
     }
     else if(mode == 2) // jacobian transpose
     {
-        alpha = 5.0;
-        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        alpha = 2.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
 
         dqdot.noalias() += AnalyticJacobian.transpose()*Vector_temp;
         dqdot.noalias() += Matrix_temp*q0dot;
     }
     else if(mode  == 3) // Damped jacobian pseudoinverse
     {
-        alpha = 5.0;
-        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        alpha = 2.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
         pManipulator->pKin->GetDampedpInvJacobian(DampedpInvJacobian);
 
         dqdot.noalias() += DampedpInvJacobian*Vector_temp;
@@ -382,8 +391,8 @@ void Controller::CLIKTaskController( const VectorXd &_q,
     }
     else if(mode == 4) // scaled jacobian transpose
     {
-        alpha = 5.0;
-        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        alpha = 2.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
         pManipulator->pKin->GetScaledTransJacobian(ScaledTransJacobian);
 
         dqdot.noalias() += ScaledTransJacobian*Vector_temp;
@@ -391,8 +400,8 @@ void Controller::CLIKTaskController( const VectorXd &_q,
     }
     else if(mode == 5) // block jacobian pseudoinverse
     {
-        alpha = 5.0;
-        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        alpha = 2.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
         pManipulator->pKin->GetBlockpInvJacobian(BlockpInvJacobian);
 
         dqdot.noalias() += BlockpInvJacobian*Vector_temp;
@@ -400,8 +409,8 @@ void Controller::CLIKTaskController( const VectorXd &_q,
     }
     else if(mode  == 6) // weight damped jacobian pseudoinverse with task priority
     {
-        alpha = 5.0;
-        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        alpha = 2.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
         pManipulator->pKin->GetWeightDampedpInvJacobian(Vector_temp, WdampedpInvJacobian);
 
         dqdot.noalias() += WdampedpInvJacobian*Vector_temp;
@@ -409,8 +418,8 @@ void Controller::CLIKTaskController( const VectorXd &_q,
     }
     else
     {
-        alpha = 5.0;
-        pManipulator->pKin->Getq0dotWithMM(alpha, 0.0, q0dot);
+        alpha = 2.0;
+        pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
         pManipulator->pKin->GetDampedpInvJacobian(DampedpInvJacobian);
 
         dqdot.noalias() += DampedpInvJacobian*Vector_temp;

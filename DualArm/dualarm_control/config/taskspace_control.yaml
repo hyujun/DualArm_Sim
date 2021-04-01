@@ -24,14 +24,20 @@ dualarm:
       - dualarm_joint16
 
     gains:
-      Right_arm:
-        pid: { KpT: 0.7, KpR: 0.02, KdT: 0.05, KdR: 0.001 }
-      Left_arm:
-        pid: { KpT: 0.7, KpR: 0.02, KdT: 0.05, KdR: 0.001 }
+      Regulation:
+        pid: { KpT: 0.8, KpR: 0.001, KdT: 0.06, KdR: 0.0001 }
+      Tracking:
+        pid: { KpT: 1.2, KpR: 0.01, KdT: 0.07, KdR: 0.002 }
 
     root_link: world
     tip_link1: dualarm_R_end_frame
     tip_link2: dualarm_L_end_frame
 
-    target_obj: 2
+    target_obj: 2 # 1 : x-axis
+                  # 2 : y-axis
+                  # 3 : z-axis
+                  # 4 : pre-defined
+
+    ctrl_type: 1  # 1 : regulation
+                  # 2 : tracking
 

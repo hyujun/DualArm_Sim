@@ -131,7 +131,7 @@ namespace HYUMotionKinematics {
 
         double GetManipulabilityMeasure();
 
-        void Getq0dotWithMM(const double &gain, const double &Index, VectorXd &q0dot);
+        void Getq0dotWithMM(const double &gain, VectorXd &q0dot);
         /**
          * @brief forward kinematics of serial robot
          * @return end-effector position x, y, z. not orientation(Working)

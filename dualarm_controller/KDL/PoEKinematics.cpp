@@ -467,7 +467,7 @@ namespace HYUMotionKinematics {
         return sqrt((mAnalyticJacobian*mAnalyticJacobian.transpose()).determinant());
     }
 
-    void PoEKinematics::Getq0dotWithMM(const double &gain, const double &Index, VectorXd &q0dot)
+    void PoEKinematics::Getq0dotWithMM(const double &gain, VectorXd &q0dot)
     {
         q0dot.setZero(m_DoF);
         Matrix<double, 12, 16> dJbdq, dJadq;
@@ -514,7 +514,6 @@ namespace HYUMotionKinematics {
             MatTrace.noalias() += dJadq*pInvJacobian;
 
             q0dot(i) = gain*ManipulabilityMeasure*MatTrace.trace();
-            //q0dot(i) = gain*Index*MatTrace.trace();
         }
     }
 

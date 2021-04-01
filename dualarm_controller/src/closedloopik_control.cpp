@@ -6,7 +6,6 @@
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <pluginlib/class_list_macros.h>
-#include <std_msgs/Float64MultiArray.h>
 #include <urdf/model.h>
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
@@ -17,7 +16,6 @@
 #include <manipulability_metrics/util/ellipsoid.h>
 #include <manipulability_metrics/util/similarity.h>
 
-
 // from kdl packages
 #include <kdl/tree.hpp>
 #include <kdl/chain.hpp>
@@ -25,18 +23,16 @@
 #include <kdl/chaindynparam.hpp>              // inverse dynamics
 #include <kdl/chainjnttojacsolver.hpp>        // jacobian
 #include <kdl/chainfksolverpos_recursive.hpp> // forward kinematics
-
 #include <boost/scoped_ptr.hpp>
 
-#include <cmath>
 #define _USE_MATH_DEFINES
+#include <cmath>
 
 #include <SerialManipulator.h>
 #include <Controller.h>
 
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
-#define num_taskspace 6
 
 #define A 0.12
 #define b1 0.55
@@ -303,6 +299,7 @@ namespace  dualarm_controller
             }
             for(int j=0; j<2; j++) {
                 state_pub_->msg_.InverseConditionNum.push_back(InverseConditionNumber[j]);
+                state_pub_->msg_.SingleMM.push_back(SingleMM[j]);
             }
             state_pub_->msg_.x.resize(2);
             state_pub_->msg_.dx.resize(2);
@@ -312,6 +309,7 @@ namespace  dualarm_controller
 
             state_pub_->msg_.Kp_R = K_rot;
             state_pub_->msg_.Kp_T = K_trans;
+
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
             // 6.2 subsriber
@@ -321,21 +319,6 @@ namespace  dualarm_controller
             sub_x_cmd_ = n.subscribe<dualarm_controller::TaskCurrentState>( "command", 5, joint_state_cb);
 
             return true;
-        }
-
-
-        void commandCB(const std_msgs::Float64MultiArrayConstPtr &msg)
-        {
-            if (msg->data.size() != 2*num_taskspace)
-            {
-                ROS_ERROR_STREAM("Dimension of command (" << msg->data.size() << ") does not match DOF of Task Space (" << 2 << ")! Not executing!");
-                return;
-            }
-
-            for (int i = 0; i < 2*num_taskspace; i++)
-            {
-                x_cmd_(i) = msg->data[i];
-            }
         }
 
         void starting(const ros::Time &time) override
@@ -624,7 +607,6 @@ namespace  dualarm_controller
                 }
 
                 cManipulator->pKin->GetDampedpInvJacobian(dampedpInvJac);
-                cManipulator->pKin->Getq0dotWithMM(alpha,DAMM,q0dot);
 
                 qd_dot_.data.setZero(16);
                 qd_dot_.data = dampedpInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
@@ -767,6 +749,7 @@ namespace  dualarm_controller
                         state_pub_->msg_.x[j].position.z = ForwardPos[j](2);
 
                         state_pub_->msg_.InverseConditionNum[j] = InverseConditionNumber[j];
+                        state_pub_->msg_.SingleMM[j] = SingleMM[j];
                     }
                     state_pub_->msg_.MM = MM;
                     state_pub_->msg_.DAMM = DAMM;
@@ -836,8 +819,6 @@ namespace  dualarm_controller
                 printf("\n*********************************************************\n");
                 count = 0;
 
-                //std::cout << "Weight Damped Jacobian Pseudoinverse:" << std::endl;
-                //std::cout << WdampedpInvJac << "\n" << std::endl;
                 if(ctr_obj_ == 8)
                 {
                     std::cout << "lambda[right]:" << std::endl;

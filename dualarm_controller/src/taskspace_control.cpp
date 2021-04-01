@@ -6,7 +6,6 @@
 #include <controller_interface/controller.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <pluginlib/class_list_macros.h>
-#include <std_msgs/Float64MultiArray.h>
 #include <urdf/model.h>
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
@@ -16,7 +15,6 @@
 //manipulability
 #include <manipulability_metrics/util/ellipsoid.h>
 #include <manipulability_metrics/util/similarity.h>
-
 
 // from kdl packages
 #include <kdl/tree.hpp>
@@ -29,24 +27,23 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include <cmath>
 #define _USE_MATH_DEFINES
+#include <cmath>
 
 #include <SerialManipulator.h>
 #include <Controller.h>
 
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
-#define num_taskspace 6
 
-#define A 0.12
-#define b1 0.55
-#define b2 -0.43
+#define A 0.10
+#define b1 0.45
+#define b2 -0.30
 #define b3 0.45
 #define f 0.2
 
-#define l_p1 0.45
-#define l_p2 0.43
+#define l_p1 0.40
+#define l_p2 0.30
 #define l_p3 0.39
 
 #define Deg_A 70
@@ -65,6 +62,15 @@ namespace dualarm_controller
             {
                 ROS_ERROR("Could not find control objective");
                 return false;
+            }
+
+            if (!n.getParam("ctrl_type", ctrl_type))
+            {
+                if(ctrl_type != 1 && ctrl_type != 2)
+                {
+                    ROS_ERROR("Could not find controller mode");
+                    return false;
+                }
             }
 
             // 1.1 Joint Name
@@ -92,49 +98,49 @@ namespace dualarm_controller
             // 1.2 Gain
             // 1.2.1 Task-space Controller
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Right_arm/pid/KpT", Kp_trans_R))
+            if (!n.getParam("/dualarm/taskspace_control/gains/Regulation/pid/KpT", Kp_trans_R))
             {
                 ROS_ERROR("Cannot find Right-arm pid/Kp Translation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Right_arm/pid/KpR", Kp_rot_R))
+            if (!n.getParam("/dualarm/taskspace_control/gains/Regulation/pid/KpR", Kp_rot_R))
             {
                 ROS_ERROR("Cannot find Right-arm pid/Kp Rotation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Right_arm/pid/KdT", Kd_trans_R))
+            if (!n.getParam("/dualarm/taskspace_control/gains/Regulation/pid/KdT", Kd_trans_R))
             {
                 ROS_ERROR("Cannot find Right-arm pid/Kd Translation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Right_arm/pid/KdR", Kd_rot_R))
+            if (!n.getParam("/dualarm/taskspace_control/gains/Regulation/pid/KdR", Kd_rot_R))
             {
                 ROS_ERROR("Cannot find Right-arm pid/Kd Rotation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Left_arm/pid/KpT", Kp_trans_L))
+            if (!n.getParam("/dualarm/taskspace_control/gains/Tracking/pid/KpT", Kp_trans_L))
             {
                 ROS_ERROR("Cannot find Left-arm pid/Kp Translation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Left_arm/pid/KpR", Kp_rot_L))
+            if (!n.getParam("/dualarm/taskspace_control/gains/Tracking/pid/KpR", Kp_rot_L))
             {
                 ROS_ERROR("Cannot find Left-arm pid/Kp Rotation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Left_arm/pid/KdT", Kd_trans_L))
+            if (!n.getParam("/dualarm/taskspace_control/gains/Tracking/pid/KdT", Kd_trans_L))
             {
                 ROS_ERROR("Cannot find Left-arm pid/Kd Translation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Left_arm/pid/KdR", Kd_rot_L))
+            if (!n.getParam("/dualarm/taskspace_control/gains/Tracking/pid/KdR", Kd_rot_L))
             {
                 ROS_ERROR("Cannot find Left-arm pid/Kd Rotation gain");
                 return false;
@@ -292,7 +298,7 @@ namespace dualarm_controller
             // 6.1 publisher
             state_pub_.reset(new realtime_tools::RealtimePublisher<dualarm_controller::TaskCurrentState>(n, "states", 10));
             state_pub_->msg_.header.stamp = ros::Time::now();
-            state_pub_->msg_.header.frame_id = "dualarm";
+            //state_pub_->msg_.header.frame_id = "dualarm";
             state_pub_->msg_.header.seq = 0;
             for(int i=0; i<(n_joints_-1); i++)
             {
@@ -323,21 +329,6 @@ namespace dualarm_controller
             return true;
         }
 
-
-        void commandCB(const std_msgs::Float64MultiArrayConstPtr &msg)
-        {
-            if (msg->data.size() != 2*num_taskspace)
-            {
-                ROS_ERROR_STREAM("Dimension of command (" << msg->data.size() << ") does not match DOF of Task Space (" << 2 << ")! Not executing!");
-                return;
-            }
-
-            for (int i = 0; i < 2*num_taskspace; i++)
-            {
-                x_cmd_(i) = msg->data[i];
-            }
-        }
-
         void starting(const ros::Time &time) override
         {
             t = 0.0;
@@ -351,15 +342,30 @@ namespace dualarm_controller
 
             cManipulator->UpdateManipulatorParam();
 
-            KpTask.segment(0,3) = Kp_rot_R*Matrix<double, 3, 1>::Ones();
-            KpTask.segment(3,3) = Kp_trans_R*Matrix<double, 3, 1>::Ones();
-            KpTask.segment(6,3) = Kp_rot_L*Matrix<double, 3, 1>::Ones();
-            KpTask.segment(9,3) = Kp_trans_L*Matrix<double, 3, 1>::Ones();
+            if(ctrl_type == 1)
+            {
+                KpTask.segment(0,3).setConstant(Kp_rot_R);
+                KpTask.segment(3,3).setConstant(Kp_trans_R);
+                KpTask.segment(6,3).setConstant(Kp_rot_R);
+                KpTask.segment(9,3).setConstant(Kp_trans_R);
 
-            KdTask.segment(0,3) = Kd_rot_R*Matrix<double, 3, 1>::Ones();
-            KdTask.segment(3,3) = Kd_trans_R*Matrix<double, 3, 1>::Ones();
-            KdTask.segment(6,3) = Kd_rot_L*Matrix<double, 3, 1>::Ones();
-            KdTask.segment(9,3) = Kd_trans_L*Matrix<double, 3, 1>::Ones();
+                KdTask.segment(0,3).setConstant(Kd_rot_R);
+                KdTask.segment(3,3).setConstant(Kd_trans_R);
+                KdTask.segment(6,3).setConstant(Kd_rot_R);
+                KdTask.segment(9,3).setConstant(Kd_trans_R);
+            }
+            else if( ctrl_type == 2)
+            {
+                KpTask.segment(0,3).setConstant(Kp_rot_L);
+                KpTask.segment(3,3).setConstant(Kp_trans_L);
+                KpTask.segment(6,3).setConstant(Kp_rot_L);
+                KpTask.segment(9,3).setConstant(Kp_trans_L);
+
+                KdTask.segment(0,3).setConstant(Kd_rot_L);
+                KdTask.segment(3,3).setConstant(Kd_trans_L);
+                KdTask.segment(6,3).setConstant(Kd_rot_L);
+                KdTask.segment(9,3).setConstant(Kd_trans_L);
+            }
 
             Control->SetTaskspaceGain(KpTask, KdTask);
         }
@@ -386,10 +392,6 @@ namespace dualarm_controller
             //----------------------
             cManipulator->pKin->PrepareJacobian(q_.data);
             cManipulator->pDyn->PrepareDynamics(q_.data, qdot_.data);
-            //cManipulator->pKin->GetAnalyticJacobian(AJac);
-            //cManipulator->pKin->GetpinvJacobian(pInvJac);
-            //cManipulator->pKin->GetAnalyticJacobianDot(qdot_.data, AJacDot);
-            //cManipulator->pKin->GetBodyJacobianDot(BodyJacDot);
 
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
@@ -437,19 +439,6 @@ namespace dualarm_controller
                 qd_.data(13) = 70.0*D2R;
                 qd_.data(14) = -0.0*D2R;
                 qd_.data(15) = -0.0*D2R;
-
-                dx(0) = ForwardOri[0](0);
-                dx(1) = ForwardOri[0](1);
-                dx(2) = ForwardOri[0](2);
-                dx(3) = ForwardPos[0](0);
-                dx(4) = ForwardPos[0](1);
-                dx(5) = ForwardPos[0](2);
-                dx(6) = ForwardOri[1](0);
-                dx(7) = ForwardOri[1](1);
-                dx(8) = ForwardOri[1](2);
-                dx(9) = ForwardPos[1](0);
-                dx(10) = ForwardPos[1](1);
-                dx(11) = ForwardPos[1](2);
             }
             else
             {
@@ -517,7 +506,7 @@ namespace dualarm_controller
 
                     dxddot.setZero();
                     dxddot(3) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                    dxdot(9) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
+                    dxddot(9) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
                 }
                 else if (target_obj == 2)
                 {
@@ -541,7 +530,7 @@ namespace dualarm_controller
 
                     dxddot.setZero();
                     dxddot(4) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                    dxdot(10) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
+                    dxddot(10) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
                 }
                 else if (target_obj == 3)
                 {
@@ -565,7 +554,7 @@ namespace dualarm_controller
 
                     dxddot.setZero();
                     dxddot(5) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                    dxdot(11) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
+                    dxddot(11) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
                 }
                 else if( target_obj == 4 )
                 {
@@ -601,10 +590,9 @@ namespace dualarm_controller
             }
             else
             {
-                Control->TaskInvDynController(dx, dxdot, dxddot, q_.data, qdot_.data, torque, dt);
+                Control->TaskInvDynController(dx, dxdot, dxddot, q_.data, qdot_.data, torque, dt, ctrl_type);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
-
 
             for (int i = 0; i < n_joints_; i++)
             {
@@ -793,6 +781,7 @@ namespace dualarm_controller
         // others
         double t=0.0;
         int target_obj=0;
+        int ctrl_type=0;
         double InitTime=0.0;
         struct timespec begin, end;
         //Joint handles

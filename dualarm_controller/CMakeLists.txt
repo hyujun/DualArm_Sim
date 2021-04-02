@@ -18,10 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
         realtime_tools
         urdf
         sensor_msgs
-        control_msgs
         geometry_msgs
         message_generation
-        manipulability_metrics
 )
 
 ## System dependencies are found with CMake's conventions
@@ -123,7 +121,6 @@ catkin_package(
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS
         angles
-        control_msgs
         sensor_msgs
         geometry_msgs
         controller_interface
@@ -140,6 +137,7 @@ catkin_package(
 
 set(CTRL_HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Control)
 set(KDL_HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/KDL)
+set(Utils_HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Utils)
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
@@ -149,10 +147,12 @@ include_directories(
         ${Boost_INCLUDE_DIR}
         ${CTRL_HEADERS_DIR}
         ${KDL_HEADERS_DIR}
+        ${Utils_HEADERS_DIR}
 )
 
 add_subdirectory(Control)
 add_subdirectory(KDL)
+add_subdirectory(Utils)
 
 file(GLOB TARGET_SRC
         #include/*.cpp
@@ -184,8 +184,11 @@ add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME} PUBLIC ${catkin_LIBRARIES}
-        sub::CTRL sub::KDL
+target_link_libraries(${PROJECT_NAME} PUBLIC
+        ${catkin_LIBRARIES}
+        sub::CTRL
+        sub::KDL
+        sub::Utils
         )
 
 

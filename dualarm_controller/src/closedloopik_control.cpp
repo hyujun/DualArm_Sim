@@ -13,8 +13,8 @@
 #include "dualarm_controller/TaskCurrentState.h"
 
 //manipulability
-#include <manipulability_metrics/util/ellipsoid.h>
-#include <manipulability_metrics/util/similarity.h>
+#include <ellipsoid.h>
+#include <similarity.h>
 
 // from kdl packages
 #include <kdl/tree.hpp>

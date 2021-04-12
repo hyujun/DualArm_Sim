@@ -10,11 +10,6 @@
 
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include <iostream>
-
-#include <Eigen/Dense>
-using namespace Eigen;
-
 #include "LieOperator.h"
 #include "PropertyDefinition.h"
 

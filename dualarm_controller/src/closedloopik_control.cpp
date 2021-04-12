@@ -283,6 +283,9 @@ namespace  dualarm_controller
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
             torque.setZero(n_joints_);
 
+            wpInv_lambda[0].setZero(3);
+            wpInv_lambda[1].setZero(3);
+
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
             state_pub_.reset(new realtime_tools::RealtimePublisher<dualarm_controller::TaskCurrentState>(n, "states", 10));
@@ -306,7 +309,8 @@ namespace  dualarm_controller
             state_pub_->msg_.MM = MM;
             state_pub_->msg_.DAMM = DAMM;
             state_pub_->msg_.TODAMM = TODAMM2;
-
+            state_pub_->msg_.lambda1.resize(3);
+            state_pub_->msg_.lambda2.resize(3);
             state_pub_->msg_.Kp_R = K_rot;
             state_pub_->msg_.Kp_T = K_trans;
 
@@ -577,6 +581,7 @@ namespace  dualarm_controller
             {
                 Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 6);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
+                cManipulator->pKin->GetWDampedpInvLambda(wpInv_lambda);
             }
             else if( ctr_obj_ == 8 && t > InitTime)
             {
@@ -750,12 +755,19 @@ namespace  dualarm_controller
 
                         state_pub_->msg_.InverseConditionNum[j] = InverseConditionNumber[j];
                         state_pub_->msg_.SingleMM[j] = SingleMM[j];
+
                     }
                     state_pub_->msg_.MM = MM;
                     state_pub_->msg_.DAMM = DAMM;
                     state_pub_->msg_.TODAMM = TODAMM2;
                     state_pub_->msg_.Kp_T = K_trans;
                     state_pub_->msg_.Kp_R = K_rot;
+                    state_pub_->msg_.lambda1[0] = wpInv_lambda[0](0);
+                    state_pub_->msg_.lambda1[1] = wpInv_lambda[0](1);
+                    state_pub_->msg_.lambda1[2] = wpInv_lambda[0](2);
+                    state_pub_->msg_.lambda2[0] = wpInv_lambda[1](0);
+                    state_pub_->msg_.lambda2[1] = wpInv_lambda[1](1);
+                    state_pub_->msg_.lambda2[2] = wpInv_lambda[1](2);
                     state_pub_->unlockAndPublish();
                 }
                 loop_count_=0;
@@ -819,7 +831,7 @@ namespace  dualarm_controller
                 printf("\n*********************************************************\n");
                 count = 0;
 
-                if(ctr_obj_ == 8)
+                if(ctr_obj_ == 9)
                 {
                     std::cout << "lambda[right]:" << std::endl;
                     std::cout << wpInv_lambda[0] << std::endl;

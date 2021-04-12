@@ -10,7 +10,9 @@
 namespace HYUMotionBase {
 
     LieOperator::LieOperator() {
-
+        Eigen::initParallel();
+        //Eigen::setNbThreads(4);
+        //std::cout << "\n[LieOperator.h] Eigen Multithreading: " << Eigen::nbThreads() << std::endl;
     }
 
     LieOperator::~LieOperator() {

@@ -61,7 +61,7 @@ dualarm:
     tip_link1: dualarm_R_end_frame
     tip_link2: dualarm_L_end_frame
 
-    ctr_obj: 3  # 1 : Scaled Jacobian Transpose
+    ctr_obj: 5  # 1 : Scaled Jacobian Transpose
                 # 2 : Jacobian Transpose
                 # 3 : Jacobian PseudoInverse
                 # 4 : damped Jacobian PseudoInverse
@@ -77,4 +77,4 @@ dualarm:
                 # 3 : z-axis
                 # 4 : relative motion (base:right-hand, end:left-hand)
 
-    clik_gain: { K_pos: 0.3, K_ori: 0.3 }
+    clik_gain: { K_pos: 0.3, K_ori: 0.005 }

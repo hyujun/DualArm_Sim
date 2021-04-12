@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include <similarity.h>
+#include "similarity.h"
 
 #include <Eigen/LU>
 

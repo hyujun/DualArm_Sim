@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.8)
 project(Control LANGUAGES CXX)
 
+set(CMAKE_DEBUG_POSTFIX "d")
+file(GLOB SOURCE_FILES "*.cpp" "*.c")
+
 add_library(${PROJECT_NAME} SHARED STATIC
-        Controller.cpp
-        KistHand.cpp
-        Motion.cpp
-        Trajectory.cpp
-        )
+            ${SOURCE_FILES}
+            )
+
 add_library(sub::CTRL ALIAS ${PROJECT_NAME})
 
 target_include_directories( ${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})

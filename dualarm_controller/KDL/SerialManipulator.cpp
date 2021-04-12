@@ -18,10 +18,10 @@ SerialManipulator::~SerialManipulator()
 
 }
 
-void SerialManipulator::StateMachine( double *_q, double *_qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord )
+void SerialManipulator::StateMachine( const VectorXd _q, const VectorXd _qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord )
 {
-	q = Map<VectorXd>(_q, mDoF_Total);
-	qdot = Map<VectorXd>(_qdot, mDoF_Total);
+	q = _q;
+	qdot = _qdot;
 
 	mState_now = _StateWord;
 
@@ -65,41 +65,40 @@ void SerialManipulator::UpdateManipulatorParam()
     }
 }
 
-void SerialManipulator::ENCtoRAD( int *_enc, double *_rad )
+void SerialManipulator::ENCtoRAD( int *_enc, VectorXd &_rad )
+{
+    _rad.setZero(mDoF_Total);
+	for(int i=0; i < this->mDoF_Total; i++)
+	{
+		_rad(i) = (double)(_enc[i] - serial_Motor_info[i].Offset)/(double)(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size)*(2.0*M_PI);
+	}
+}
+
+
+void SerialManipulator::RADtoENC( int *_enc, VectorXd &_rad )
 {
 	for(int i=0; i < this->mDoF_Total; i++)
 	{
-		_rad[i] = (double)(_enc[i] - serial_Motor_info[i].Offset)/(double)(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size)*(2.0*M_PI);
+		_enc[i] = (int)(_rad(i)/(2*M_PI)*(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size) + serial_Motor_info[i].Offset);
+	}
+}
+
+void SerialManipulator::VelocityConvert( int32_t *_enc_sec, VectorXd &_rad_sec )
+{
+    _rad_sec.setZero(mDoF_Total);
+	for(int i=0; i < this->mDoF_Total; i++)
+	{
+		_rad_sec(i) = ((double)(_enc_sec[i])/(double)(serial_Motor_info[i].motor_harmonic * serial_Motor_info[i].enc_size))*(2.0*M_PI);
 	}
 	return;
 }
 
 
-void SerialManipulator::RADtoENC( int *_enc, double *_rad )
+void SerialManipulator::TorqueConvert( VectorXd &_Torque, short *_pOutput, short &_MaxOutput )
 {
 	for(int i=0; i < this->mDoF_Total; i++)
 	{
-		_enc[i] = (int)(_rad[i]/(2*M_PI)*(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size) + serial_Motor_info[i].Offset);
-	}
-	return;
-}
-
-void SerialManipulator::VelocityConvert( int32_t *_enc_sec, double *_rad_sec )
-{
-	for(int i=0; i < this->mDoF_Total; i++)
-	{
-		_rad_sec[i] = ((double)(_enc_sec[i])/(double)(serial_Motor_info[i].motor_harmonic * serial_Motor_info[i].enc_size))*(2.0*M_PI);
-	}
-	return;
-}
-
-
-void SerialManipulator::TorqueConvert(double *_pTorque, short *_pOutput, short &_MaxOutput)
-{
-
-	for(int i=0; i < this->mDoF_Total; i++)
-	{
-		_pOutput[i] = (short)round(((_pTorque[i]/(double)serial_Motor_info[i].motor_harmonic)/serial_Motor_info[i].torque_const_Nm_A)/serial_Motor_info[i].max_current_A*1000.0*(100.0/70.0));
+		_pOutput[i] = (short)round(((_Torque(i)/(double)serial_Motor_info[i].motor_harmonic)/serial_Motor_info[i].torque_const_Nm_A)/serial_Motor_info[i].max_current_A*1000.0*(100.0/70.0));
 
 		if(_pOutput[i] <= -_MaxOutput)
 			_pOutput[i] = -_MaxOutput;
@@ -107,15 +106,5 @@ void SerialManipulator::TorqueConvert(double *_pTorque, short *_pOutput, short &
 			_pOutput[i] = _MaxOutput;
 	}
 	return;
-}
-
-double SerialManipulator::PowerComsumption(int16_t *_ActCurrent)
-{
-	manipulatorpower = 0;
-	for(int i=0; i < this->mDoF_Total; i++)
-	{
-		manipulatorpower += serial_Motor_info[i].max_current_A*abs(_ActCurrent[i])*48.0/10.0;
-	}
-	return manipulatorpower;
 }
 

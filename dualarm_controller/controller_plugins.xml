@@ -23,4 +23,13 @@
             Direct Task-space Controller
         </description>
     </class>
+
+    <class name="dualarm_controller/Impedance_Control"
+           type="dualarm_controller::Impedance_Control"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            Joint/Task Impedance Controller
+        </description>
+    </class>
+
 </library>

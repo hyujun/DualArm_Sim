@@ -19,7 +19,7 @@
 #ifndef MANIPULABILITY_METRICS_SIMILARITY_H
 #define MANIPULABILITY_METRICS_SIMILARITY_H
 
-#include <ellipsoid.h>
+#include "ellipsoid.h"
 
 namespace manipulability_metrics
 {

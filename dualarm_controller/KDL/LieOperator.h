@@ -6,8 +6,11 @@
 #ifndef LIEOPERATOR_H_
 #define LIEOPERATOR_H_
 
+#include <iostream>
 #include <Eigen/Dense>
 using namespace Eigen;
+#include <omp.h>
+using namespace std;
 
 typedef Matrix<double, 6, 1> se3;		/**<Size definition of se3(vector)*/
 typedef Matrix<double, 4, 4> SE3;		/**<Size definition of SE3(matrix)*/

@@ -20,7 +20,7 @@ Trajectory::~Trajectory() {
 
 }
 
-void Trajectory::SetPoly5th( const double &_CurrentTime, Eigen::VectorXd &_StartPos, Eigen::VectorXd &_StartVel, Eigen::VectorXd &_FinalPos, double &_Duration, int &_NumJoint )
+void Trajectory::SetPoly5th( const double &_CurrentTime, const Eigen::VectorXd &_StartPos, const Eigen::VectorXd &_StartVel, const Eigen::VectorXd &_FinalPos, double &_Duration, int &_NumJoint )
 {
 	TrajDuration = _Duration;
 	TrajInitTime = _CurrentTime;

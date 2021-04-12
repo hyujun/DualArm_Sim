@@ -17,17 +17,15 @@ namespace HYUControl {
 class Motion {
 public:
 	Motion();
-	explicit Motion(SerialManipulator *_pManipulator);
+	explicit Motion(std::shared_ptr<SerialManipulator> Manipulator);
 	virtual ~Motion();
 
-	uint16_t JointMotion(double *_dq, double *_dqdot, double *_dqddot, VectorXd &_Target, double *_q, double *_qdot, double &_Time, uint16_t &_StatusWord, uint16_t &_MotionType);
+	uint16_t JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot, VectorXd &_Target, const VectorXd &q, const VectorXd &qdot, double &_Time, uint16_t &_StatusWord, uint16_t &_MotionType);
 	uint16_t TaskMotion( VectorXd *_dx, VectorXd *_dxdot, VectorXd *_dxddot, double &_Time, uint16_t &_StatusWord, uint16_t &_MotionType );
 
 private:
 
 	Eigen::VectorXd e, edot;
-	Eigen::VectorXd q, qdot;
-	Eigen::VectorXd dq, dqdot, dqddot;
 	Eigen::VectorXd TargetPos;
 
 	Eigen::MatrixXd omega;
@@ -36,7 +34,7 @@ private:
 	Eigen::MatrixXd xdot;
 	Eigen::MatrixXd TargetPosTask;
 
-	SerialManipulator *pManipulator;
+    std::shared_ptr<SerialManipulator> pManipulator;
 
 	Trajectory JointPoly5th;
 	Trajectory TaskPoly5th;

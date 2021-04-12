@@ -36,7 +36,7 @@ public:
 	 * @param[in] _InitTime start time
 	 * @param[in] _Duration trajectory time
 	 */
-	void SetPoly5th( const double &_CurrentTime, Eigen::VectorXd &_StartPos, Eigen::VectorXd &_StartVel, Eigen::VectorXd &_FinalPos, double &_Duration, int &_NumJoint );
+	void SetPoly5th( const double &_CurrentTime, const Eigen::VectorXd &_StartPos, const Eigen::VectorXd &_StartVel, const Eigen::VectorXd &_FinalPos, double &_Duration, int &_NumJoint );
 
 	/**
 	 * @brief generate the trajecotry for q, qdot, qddot

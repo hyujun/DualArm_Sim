@@ -14,5 +14,7 @@ float64 MM
 float64 DAMM
 float64 TODAMM
 float64[] SingleMM
+float64[] lambda1
+float64[] lambda2
 
 

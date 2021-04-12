@@ -15,12 +15,7 @@ using namespace Eigen;
 #include "PropertyDefinition.h"
 #include "PoEKinematics.h"
 
-#include <iostream>
-using namespace std;
-
 typedef Matrix<double, 6, 6> Matrix6d;
-
-#include <omp.h>
 
 /**
  * @brief Newton-Euler Dynamics expressed in Lie Group
@@ -61,6 +56,8 @@ namespace HYUMotionDynamics{
          * @see ModernRobotics book
          */
         void PrepareDynamics( const VectorXd &_q, const VectorXd &_qdot);
+
+        void M_Matrix( MatrixXd &_M );
 
         /**
          * @brief Coriolis matrix in Motion of Equation
@@ -116,6 +113,7 @@ namespace HYUMotionDynamics{
          */
         void A_Link(void);
 
+        void LA_Link(void);
         /**
          * @brief a part of coriolis matrix
          * @return 6n x 6n matrix, where n is DoF

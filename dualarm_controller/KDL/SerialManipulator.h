@@ -72,7 +72,7 @@ public:
     std::unique_ptr<HYUMotionDynamics::Liedynamics> pDyn;
     std::unique_ptr<HYUMotionKinematics::PoEKinematics> pKin;
 
-    void StateMachine( double *_q, double *_qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord );
+    void StateMachine( const VectorXd _q, const VectorXd _qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord );
 
     /**
      * @brief update robot kinematics & dynamics information
@@ -82,19 +82,19 @@ public:
 	/**
 	 * @brief convert encoder inc to generalized coordinate joint position q(rad)
 	 */
-	void ENCtoRAD(int *_enc, double *_rad );
+	void ENCtoRAD( int *_enc, VectorXd &_rad );
 
 	/**
 	 * @brief convert encoder generalized coordinate joint position q(rad) to encoder inc
 	 */
-	void RADtoENC(int *_enc, double *_rad);
+	void RADtoENC( int *_enc, VectorXd &_rad );
 
 	/**
 	 * @brief convert encoder inc/second to generalized coordinate joint velocity q_dot(rad/second)
 	 */
-	void VelocityConvert( int32_t *_enc_sec, double *_rad_sec );
+	void VelocityConvert( int32_t *_enc_sec, VectorXd &_rad_sec );
 
-	void TorqueConvert( double *_pTorque, short *_pOutput, short &_MaxOutput );
+	void TorqueConvert( VectorXd &_Torque, short *_pOutput, short &_MaxOutput );
 
 	int GetTotalDoF(void)
 	{
@@ -105,8 +105,6 @@ public:
 	{
 		return mChainMat.rows();
 	}
-	double PowerComsumption(int16_t *_ActCurrent);
-
 
 private:
     Vector3d w[16]; 	/**< kinematic information container */

@@ -51,7 +51,7 @@
 
 namespace dualarm_controller
 {
-    class Taskspace_Control : public controller_interface::Controller<hardware_interface::EffortJointInterface>
+    class Impedance_Control : public controller_interface::Controller<hardware_interface::EffortJointInterface>
     {
     public:
         bool init(hardware_interface::EffortJointInterface *hw, ros::NodeHandle &n)
@@ -98,49 +98,37 @@ namespace dualarm_controller
             // 1.2 Gain
             // 1.2.1 Task-space Controller
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Regulation/pid/KpT", Kp_trans_R))
+            if (!n.getParam("/dualarm/impedance_control/gains/joint/pid/Kp", Kp_joint))
             {
                 ROS_ERROR("Cannot find Right-arm pid/Kp Translation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Regulation/pid/KpR", Kp_rot_R))
+            if (!n.getParam("/dualarm/impedance_control/gains/joint/pid/Kd", Kd_joint))
             {
                 ROS_ERROR("Cannot find Right-arm pid/Kp Rotation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Regulation/pid/KdT", Kd_trans_R))
-            {
-                ROS_ERROR("Cannot find Right-arm pid/Kd Translation gain");
-                return false;
-            }
-
-            if (!n.getParam("/dualarm/taskspace_control/gains/Regulation/pid/KdR", Kd_rot_R))
-            {
-                ROS_ERROR("Cannot find Right-arm pid/Kd Rotation gain");
-                return false;
-            }
-
-            if (!n.getParam("/dualarm/taskspace_control/gains/Tracking/pid/KpT", Kp_trans_L))
+            if (!n.getParam("/dualarm/impedance_control/gains/task/pid/KpT", Kp_trans))
             {
                 ROS_ERROR("Cannot find Left-arm pid/Kp Translation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Tracking/pid/KpR", Kp_rot_L))
+            if (!n.getParam("/dualarm/impedance_control/gains/task/pid/KpR", Kp_rot))
             {
                 ROS_ERROR("Cannot find Left-arm pid/Kp Rotation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Tracking/pid/KdT", Kd_trans_L))
+            if (!n.getParam("/dualarm/impedance_control/gains/task/pid/KdT", Kd_trans))
             {
                 ROS_ERROR("Cannot find Left-arm pid/Kd Translation gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/taskspace_control/gains/Tracking/pid/KdR", Kd_rot_L))
+            if (!n.getParam("/dualarm/impedance_control/gains/task/pid/KdR", Kd_rot))
             {
                 ROS_ERROR("Cannot find Left-arm pid/Kd Rotation gain");
                 return false;
@@ -316,8 +304,8 @@ namespace dualarm_controller
             state_pub_->msg_.DAMM = DAMM;
             state_pub_->msg_.TODAMM = TODAMM2;
 
-            state_pub_->msg_.Kp_R = Kp_rot_R;
-            state_pub_->msg_.Kp_T = Kp_trans_R;
+            state_pub_->msg_.Kp_R = Kp_rot;
+            state_pub_->msg_.Kp_T = Kp_trans;
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
             // 6.2 subsriber
@@ -334,7 +322,7 @@ namespace dualarm_controller
             t = 0.0;
             InitTime=2.0;
 
-            ROS_INFO("Starting Task-space Controller");
+            ROS_INFO("Starting Impedance Controller");
 
             cManipulator = std::make_shared<SerialManipulator>();
 
@@ -344,30 +332,25 @@ namespace dualarm_controller
 
             if(ctrl_type == 1)
             {
-                KpTask.segment(0,3).setConstant(Kp_rot_R);
-                KpTask.segment(3,3).setConstant(Kp_trans_R);
-                KpTask.segment(6,3).setConstant(Kp_rot_R);
-                KpTask.segment(9,3).setConstant(Kp_trans_R);
-
-                KdTask.segment(0,3).setConstant(Kd_rot_R);
-                KdTask.segment(3,3).setConstant(Kd_trans_R);
-                KdTask.segment(6,3).setConstant(Kd_rot_R);
-                KdTask.segment(9,3).setConstant(Kd_trans_R);
+                double t1,t2;
+                for(int i=1; i<=n_joints_; i++)
+                {
+                    Control->SetPIDGain(Kp_joint, Kd_joint, t1, i);
+                }
             }
             else if( ctrl_type == 2)
             {
-                KpTask.segment(0,3).setConstant(Kp_rot_L);
-                KpTask.segment(3,3).setConstant(Kp_trans_L);
-                KpTask.segment(6,3).setConstant(Kp_rot_L);
-                KpTask.segment(9,3).setConstant(Kp_trans_L);
+                KpTask.segment(0,3).setConstant(Kp_rot);
+                KpTask.segment(3,3).setConstant(Kp_trans);
+                KpTask.segment(6,3).setConstant(Kp_rot);
+                KpTask.segment(9,3).setConstant(Kp_trans);
 
-                KdTask.segment(0,3).setConstant(Kd_rot_L);
-                KdTask.segment(3,3).setConstant(Kd_trans_L);
-                KdTask.segment(6,3).setConstant(Kd_rot_L);
-                KdTask.segment(9,3).setConstant(Kd_trans_L);
+                KdTask.segment(0,3).setConstant(Kd_rot);
+                KdTask.segment(3,3).setConstant(Kd_trans);
+                KdTask.segment(6,3).setConstant(Kd_rot);
+                KdTask.segment(9,3).setConstant(Kd_trans);
+                Control->SetTaskspaceGain(KpTask, KdTask);
             }
-
-            Control->SetTaskspaceGain(KpTask, KdTask);
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -611,7 +594,7 @@ namespace dualarm_controller
 
         void stopping(const ros::Time &time) override
         {
-            ROS_INFO("Stop Task-space Controller");
+            ROS_INFO("Stop Impedance Controller");
         }
 
         void manipulability_data()
@@ -862,8 +845,8 @@ namespace dualarm_controller
         // gains
         Eigen::VectorXd KpTask, KdTask;
         Eigen::VectorXd aKp_, aKi_, aKd_, aK_inf_;
-        double Kp_trans_R, Kp_rot_R, Kp_trans_L, Kp_rot_L;
-        double Kd_trans_R, Kd_rot_R, Kd_trans_L, Kd_rot_L;
+        double Kp_joint, Kd_joint;
+        double Kp_trans, Kp_rot, Kd_trans, Kd_rot;
 
         // publisher
         realtime_tools::RealtimeBuffer<std::vector<double>> pub_buffer_;
@@ -877,4 +860,4 @@ namespace dualarm_controller
     };
 }
 
-PLUGINLIB_EXPORT_CLASS(dualarm_controller::Taskspace_Control,controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS(dualarm_controller::Impedance_Control,controller_interface::ControllerBase)

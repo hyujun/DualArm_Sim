@@ -339,6 +339,7 @@ namespace dualarm_controller
             cManipulator->pKin->PrepareJacobian(q_.data);
             cManipulator->pDyn->PrepareDynamics(q_.data, qdot_.data);
             cManipulator->pDyn->MG_Mat_Joint(M, G);
+            //cManipulator->pDyn->C_Matrix(C);
 
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
@@ -483,6 +484,36 @@ namespace dualarm_controller
                 }
                 printf("\n*********************************************************\n");
                 count = 0;
+
+                M_mat_collect.resize(16,16);
+                M_mat_collect.setZero();
+                M_mat_collect.block(0,0,2,2) = M_kdl_.data.block(0,0,2,2) + M1_kdl_.data.block(0,0,2,2);
+                M_mat_collect.block(0,2,2,7) = M_kdl_.data.block(0,2,2,7);
+                M_mat_collect.block(0,9,2,7) = M1_kdl_.data.block(0,2,2,7);
+                M_mat_collect.block(2,0,7,2) = M_kdl_.data.block(2,0,7,2);
+                M_mat_collect.block(9,0,7,2) = M1_kdl_.data.block(2,0,7,2);
+                M_mat_collect.block(2,2,7,7) = M_kdl_.data.block(2,2,7,2);
+                M_mat_collect.block(9,9,7,7) = M1_kdl_.data.block(2,2,7,2);
+                std::cout << "M_kdl" << std::endl;
+                std::cout << M_mat_collect << std::endl;
+                std::cout << "M_PoE" << std::endl;
+                std::cout << M << std::endl;
+                /*
+                C_mat_collect.resize(16,16);
+                C_mat_collect.setZero();
+                C_mat_collect.block(0,0,2,2) = C_kdl_.data.block(0,0,2,2) + C1_kdl_.data.block(0,0,2,2);
+                C_mat_collect.block(0,2,2,7) = C_kdl_.data.block(0,2,2,7);
+                C_mat_collect.block(0,9,2,7) = C1_kdl_.data.block(0,2,2,7);
+                C_mat_collect.block(2,0,7,2) = C_kdl_.data.block(2,0,7,2);
+                C_mat_collect.block(9,0,7,2) = C1_kdl_.data.block(2,0,7,2);
+                C_mat_collect.block(2,2,7,7) = C_kdl_.data.block(2,2,7,2);
+                C_mat_collect.block(9,9,7,7) = C1_kdl_.data.block(2,2,7,2);
+                std::cout << "C_kdl" << std::endl;
+                std::cout << C_mat_collect << std::endl;
+                std::cout << "C_PoE" << std::endl;
+                std::cout << C << std::endl;
+                */
+
             }
             count++;
         }
@@ -510,6 +541,7 @@ namespace dualarm_controller
         Eigen::VectorXd g_vec_collect;
         Eigen::MatrixXd g_mat_collect;
         Eigen::MatrixXd M_mat_collect;
+        Eigen::MatrixXd C_mat_collect;
 
         KDL::Jacobian J1_kdl_, J2_kdl_;
 
@@ -520,7 +552,7 @@ namespace dualarm_controller
 
         MatrixXd M;
         VectorXd G;
-        VectorXd C;
+        MatrixXd C;
 
         Vector3d ForwardPos[2];
         Vector3d ForwardOri[2];

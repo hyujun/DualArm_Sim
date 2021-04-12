@@ -17,18 +17,14 @@ Motion::Motion() {
 	MotionProcess=0;
 }
 
-Motion::Motion(SerialManipulator *_pManipulator)
+Motion::Motion(std::shared_ptr<SerialManipulator> Manipulator)
 {
-	this->pManipulator = _pManipulator;
+	this->pManipulator = Manipulator;
 
 	TotalDoF = pManipulator->GetTotalDoF();
 	TotalChain = pManipulator->GetTotalChain();
 
 	MotionProcess=0;
-
-	dq.resize(TotalDoF);
-	dqdot.resize(TotalDoF);
-	dqddot.resize(TotalDoF);
 
 	TargetPos.resize(TotalDoF);
 	TargetPosTask.resize(7, TotalChain);
@@ -38,9 +34,13 @@ Motion::~Motion() {
 
 }
 
-uint16_t Motion::JointMotion(double *_dq, double *_dqdot, double *_dqddot, VectorXd &_Target, double *_q, double *_qdot, double &_Time, uint16_t &_StatusWord, uint16_t &_MotionType)
+uint16_t Motion::JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot, VectorXd &_Target, const VectorXd &q, const VectorXd &qdot, double &_Time, uint16_t &_StatusWord, uint16_t &_MotionType)
 {
 	this->MotionCommand = _MotionType;
+
+	dq.setZero(16);
+    dqdot.setZero(16);
+    dqddot.setZero(16);
 
 	if(_Time >= 1.0 && _StatusWord == SYSTEM_BEGIN)
 	{
@@ -212,13 +212,6 @@ uint16_t Motion::JointMotion(double *_dq, double *_dqdot, double *_dqddot, Vecto
 		MotionCommand = MOVE_JOB;
 		_MotionType = MotionCommand;
 	}
-
-	q = Map<VectorXd>(_q, pManipulator->GetTotalDoF());
-	qdot = Map<VectorXd>(_qdot, pManipulator->GetTotalDoF());
-
-	dq = Map<VectorXd>(_dq, pManipulator->GetTotalDoF());
-	dqdot = Map<VectorXd>(_dqdot, pManipulator->GetTotalDoF());
-	dqddot = Map<VectorXd>(_dqddot, pManipulator->GetTotalDoF());
 
 	if( MotionCommand == MOVE_ZERO ) //home posture
 	{
@@ -913,11 +906,6 @@ uint16_t Motion::JointMotion(double *_dq, double *_dqdot, double *_dqddot, Vecto
 	}
 
 	MotionCommand_p = MotionCommand;
-
-	Map<VectorXd>(_dq, pManipulator->GetTotalDoF()) = dq;
-	Map<VectorXd>(_dqdot, pManipulator->GetTotalDoF()) = dqdot;
-	Map<VectorXd>(_dqddot, pManipulator->GetTotalDoF()) = dqddot;
-
 	return MotionProcess;
 }
 

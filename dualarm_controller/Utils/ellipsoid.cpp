@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-#include <ellipsoid.h>
+#include "ellipsoid.h"
 
 #include <Eigen/SVD>
 

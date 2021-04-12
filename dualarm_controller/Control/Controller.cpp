@@ -16,18 +16,18 @@ Controller::Controller():m_Jnum(6)
 	this->pManipulator = nullptr;
 }
 
-Controller::Controller(std::shared_ptr<SerialManipulator> pManipulator)
+Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 {
-	this->pManipulator = std::move(pManipulator);
+	this->pManipulator = Manipulator;
 
 	m_Jnum = this->pManipulator->GetTotalDoF();
 
 	Kp.resize(m_Jnum);
-	Kp.setConstant(KpBase*5.0);
+	Kp.setConstant(KpBase);
 	Kd.resize(m_Jnum);
-	Kd.setConstant(KdBase*5.0);
+	Kd.setConstant(KdBase);
     Ki.resize(m_Jnum);
-    Ki.setConstant(KiBase*5.0);
+    Ki.setConstant(KiBase);
 	K_Hinf.resize(m_Jnum);
 	K_Hinf.setConstant(HinfBase);
 
@@ -57,6 +57,7 @@ Controller::Controller(std::shared_ptr<SerialManipulator> pManipulator)
     dq_old.setZero(16);
 
 #else
+    GainWeightFactor.setZero(m_Jnum);
 	GainWeightFactor(0) = 20.0;
 	GainWeightFactor(1) = 23.0;
 
@@ -76,24 +77,15 @@ Controller::Controller(std::shared_ptr<SerialManipulator> pManipulator)
 	GainWeightFactor(14) = 5.5;
 	GainWeightFactor(15) = 5.5;
 
-	Kp = GainWeightFactor*m_KpBase;
-	Kd = GainWeightFactor*m_KdBase;
-	Ki = GainWeightFactor*m_KiBase;
+	Kp = GainWeightFactor*KpBase;
+	Kd = GainWeightFactor*KdBase;
+	Ki = GainWeightFactor*KiBase;
 	//K_Hinf = m_HinfBase;
 
 	dq.resize(m_Jnum);
 	dqdot.resize(m_Jnum);
 	dqddot.resize(m_Jnum);
-
-	KpTask(0) = 0.00001;
-	KpTask(1) = 0.00001;
-	KpTask(2) = 0.00001;
-
-	KpTask(3) = 0.0001;
-	KpTask(4) = 0.0001;
-	KpTask(5) = 0.0001;
-
-	KpTask.tail(6) = KpTask.head(6);
+	dq_old.setZero(m_Jnum);
 #endif
 }
 
@@ -169,7 +161,8 @@ void Controller::PDController( const VectorXd &_q, const VectorXd &_qdot, const 
 	e_dev = _dqdot - _qdot;
 
     _Toq.setZero(m_Jnum);
-    _Toq.noalias() += e.cwiseProduct(Kp) + e_dev.cwiseProduct(Kd);
+    _Toq.noalias() += Kp.cwiseProduct(e);
+    _Toq.noalias() += Kd.cwiseProduct(e_dev);
 }
 
 void Controller::PDGravController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq )
@@ -197,7 +190,6 @@ void Controller::InvDynController(const VectorXd &_q,
 {
 	pManipulator->pDyn->MG_Mat_Joint(M, G);
 	//pManipulator->pDyn->G_Matrix(G);
-
 	dq_old = _dq;
 
 	e = _dq - _q;

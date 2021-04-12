@@ -39,7 +39,7 @@ public:
 	 * @brief Controller constructor
 	 * @param[in] JointNum number of joint
 	 */
-	Controller(std::shared_ptr<SerialManipulator> pManipulator);
+	Controller(std::shared_ptr<SerialManipulator> Manipulator);
 	virtual ~Controller();
 
 	/**

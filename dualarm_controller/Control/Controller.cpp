@@ -423,6 +423,80 @@ void Controller::CLIKTaskController( const VectorXd &_q,
     InvDynController(_q, _qdot, dq, dqdot, dqddot, _Toq, _dt);
 }
 
+void Controller::InertiaShaping( const VectorXd &_Mass, MatrixXd &_M_Shaped_inv )
+{
+    // ellipsoid volume = 4*M_PI*a*b*c/3
+    const auto a=0.01; // radius(m) of x-axis
+    const auto b=0.01; // radius(m) of y-axis
+    const auto c=0.01; // radius(m) of z-axis
+
+    _M_Shaped_inv.setZero(6*_Mass.size(),6*_Mass.size());
+    _M_Shaped_inv(0,0) = 1.0/(_Mass(0)*(b*b + c*c)/5.0);
+    _M_Shaped_inv(1,1) = 1.0/(_Mass(0)*(a*a + c*c)/5.0);
+    _M_Shaped_inv(2,2) = 1.0/(_Mass(0)*(a*a + b*b)/5.0);
+    _M_Shaped_inv.block(3,3,3,3).noalias() += Matrix<double, 3,3>::Identity()/_Mass(0);
+    _M_Shaped_inv(6,6) = 1.0/(_Mass(1)*(b*b + c*c)/5.0);
+    _M_Shaped_inv(7,7) = 1.0/(_Mass(1)*(a*a + c*c)/5.0);
+    _M_Shaped_inv(8,8) = 1.0/(_Mass(1)*(a*a + b*b)/5.0);
+    _M_Shaped_inv.block(9,9,3,3).noalias() += Matrix<double, 3,3>::Identity()/_Mass(1);
+}
+
+void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx,
+                                         const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor,
+                                         VectorXd &_Toq, const int mode)
+{
+    if(mode == 1) // Mx = Mx_desired
+    {
+        pManipulator->pDyn->MG_Mat_Joint(M, G);
+        pManipulator->pKin->GetAnalyticJacobian(AnalyticJacobian);
+        pManipulator->pKin->GetBlockpInvJacobian(BlockpInvJacobian);
+        pManipulator->pKin->GetAnalyticJacobianDot(_qdot, AnalyticJacobianDot);
+        VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
+        VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
+
+        u01 = _dxddot;
+        u01.noalias() += AnalyticJacobianDot*_qdot;
+
+        TaskError(_dx, _dxdot, _qdot, eTask, edotTask);
+        u02.noalias() += KdTask.cwiseProduct(edotTask);
+        u02.noalias() += KpTask.cwiseProduct(eTask);
+
+        _Toq = G;
+        _Toq.noalias() += M*(BlockpInvJacobian.transpose()*u01);
+        _Toq.noalias() += AnalyticJacobian.transpose()*u02;
+    }
+    else if(mode == 2) // Mx != Mx_desired
+    {
+        VectorXd mass_shaped;
+        mass_shaped << 1.0, 1.0; // kg
+        MatrixXd MxdInv;
+        InertiaShaping(mass_shaped, MxdInv);
+        pManipulator->pDyn->MG_Mat_Task(Mx, Gx);
+        pManipulator->pKin->GetAnalyticJacobian(AnalyticJacobian);
+
+        VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
+        VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
+        VectorXd u03 = VectorXd::Zero(AnalyticJacobian.rows());
+
+        MatrixXd M_Shaped = MatrixXd::Zero(AnalyticJacobian.rows(),AnalyticJacobian.rows());
+        M_Shaped.noalias() += Mx*MxdInv;
+
+        TaskError(_dx, _dxdot, _qdot, eTask, edotTask);
+        u02.noalias() += KdTask.cwiseProduct(edotTask);
+        u02.noalias() += KpTask.cwiseProduct(eTask);
+
+        u03.noalias() += (M_Shaped - MatrixXd::Identity(AnalyticJacobian.rows(),AnalyticJacobian.rows()))*_sensor;
+
+        u01 = Gx;
+        u01.noalias() += Mx*_dxddot;
+        u01.noalias() += M_Shaped*u02;
+        u01.noalias() += u03;
+
+        _Toq.setZero(AnalyticJacobian.cols());
+        _Toq.noalias() += AnalyticJacobian.transpose()*u01;
+    }
+}
+
 void Controller::FrictionIdentification( const VectorXd &_q, const VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, const double &gt )
 {
 	GainWeightFactor(0) = 7.0;

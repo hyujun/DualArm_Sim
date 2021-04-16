@@ -321,17 +321,20 @@ namespace HYUMotionDynamics{
         G_Matrix(_G);
     }
 
-    void Liedynamics::MG_Mat_Task(const MatrixXd &_M, const VectorXd &_G, MatrixXd &_Mx, VectorXd &_Gx)
+    void Liedynamics::MG_Mat_Task(MatrixXd &_Mx, VectorXd &_Gx)
     {
-        //pLink->GetAnalyticJacobian(this->Jacobian_mat);
-        //pLink->GetpinvJacobian(this->pinvJacobian_mat);
-        //pLink->->GetScaledTransJacobian(this->pinvJacobian_mat);
+        MatrixXd M;
+        VectorXd G;
+        M_Matrix(M);
+        G_Matrix(G);
+        GetAnalyticJacobian(this->Jacobian_mat);
+        GetpinvJacobian(this->pinvJacobian_mat);
 
-        //_Mx.setZero(6*this->m_NumChain, 6*this->m_NumChain);
-        //_Mx.noalias() += pinvJacobian_mat.transpose()*_M*pinvJacobian_mat;
+        _Mx.setZero(6*this->m_NumChain, 6*this->m_NumChain);
+        _Mx.noalias() += pinvJacobian_mat.transpose()*M*pinvJacobian_mat;
 
-        //_Gx.setZero(6*this->m_NumChain);
-        //_Gx.noalias() += pinvJacobian_mat.transpose()*_G;
+        _Gx.setZero(6*this->m_NumChain);
+        _Gx.noalias() += pinvJacobian_mat.transpose()*G;
     }
 
     void Liedynamics::Mdot_Matrix( MatrixXd &_Mdot )

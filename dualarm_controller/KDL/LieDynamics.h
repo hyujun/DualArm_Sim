@@ -74,7 +74,7 @@ namespace HYUMotionDynamics{
          */
         void MG_Mat_Joint( MatrixXd &_M, VectorXd &_G );
 
-        void MG_Mat_Task( const MatrixXd &_M, const VectorXd &_G, MatrixXd &_Mx, VectorXd &_Gx );
+        void MG_Mat_Task(MatrixXd &_Mx, VectorXd &_Gx);
     private:
 
         void DynHTransMatrix(const VectorXd &_q );
@@ -139,6 +139,7 @@ namespace HYUMotionDynamics{
 
 
         Matrix6d GIner[16]; 	/**< generalized inertia matrix of each link  */
+        Matrix6d GIner_Shaped[16];
         se3 A[16];
         VectorXd grav;
 

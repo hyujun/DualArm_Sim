@@ -192,23 +192,7 @@ namespace HYUMotionKinematics {
         {
             if(aJac_case == 0)
             {
-                Vector3d Omega;
-                Vector3d r;
-                double Theta;
                 Mat_Tmp.setZero(6, 6);
-                LogSO3(GetForwardKinematicsSO3(JointEndNum[i]), Omega, Theta);
-                if(abs(Theta) <= 1e-2)
-                {
-                    Mat_Tmp.block(0,0,3,3) = Matrix3d::Identity();
-                }
-                else
-                {
-                    r = Omega*Theta;
-                    Mat_Tmp.block(0,0,3,3).noalias() += Matrix3d::Identity();
-                    Mat_Tmp.block(0,0,3,3).noalias() += 0.5*LieOperator::SkewMatrix(r);
-                    double tmp = 1.0/r.squaredNorm() - (1.0+cos(r.norm()))/(2.0*r.norm()*sin(r.norm()));
-                    Mat_Tmp.block(0,0,3,3).noalias() += tmp*LieOperator::SkewMatrixSquare(r);
-                }
                 Mat_Tmp.block(0,0,3,3) = GetForwardKinematicsSO3(JointEndNum[i]);
                 Mat_Tmp.block(3,3,3,3) = GetForwardKinematicsSO3(JointEndNum[i]);
                 mAnalyticJacobian.block(6*i,0,6,m_DoF).noalias() += Mat_Tmp*mBodyJacobian.block(6*i,0,6,m_DoF);
@@ -383,7 +367,8 @@ namespace HYUMotionKinematics {
         J_WpInv_right.block(0,0,16,3).noalias() += Z11*J2.transpose();
         J_WpInv_right.block(0,3,16,3) = Z12;
         lambda_right = -Z21*J2.transpose()*r2_right -Z22*r1_right;
-        WpInv_epsilon_right = lambda_right.norm();
+        //WpInv_epsilon_right = lambda_right.norm();
+        WpInv_epsilon_right = tanh(lambda_right.norm());
         mWeightDampedpInvJacobian.block(0,0,16,6) = J_WpInv_right;
 
         // 1st priority : Translation p 3x1, 2nd priority : Rotation r 3x1 for left-arm
@@ -415,7 +400,8 @@ namespace HYUMotionKinematics {
         J_WpInv_left.block(0,0,16,3).noalias() += Z11*J2.transpose();
         J_WpInv_left.block(0,3,16,3) = Z12;
         lambda_left = -Z21*J2.transpose()*r2_left -Z22*r1_left;
-        WpInv_epsilon_left = lambda_left.norm();
+        //WpInv_epsilon_left = lambda_left.norm();
+        WpInv_epsilon_left = tanh(lambda_left.norm());
         mWeightDampedpInvJacobian.block(0,6,16,6) = J_WpInv_left;
     }
 

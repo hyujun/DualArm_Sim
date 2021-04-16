@@ -516,7 +516,7 @@
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
-				xyz="0 0 -0.091" />
+				xyz="0 0 -0.081" />
 		<parent
 				link="${r_arm_link_06_name}" />
 		<child
@@ -565,7 +565,7 @@
 
 	<joint name="dualarm_R_end" type="fixed">
 		<origin
-				xyz="0 0 -0.04681"
+				xyz="0 0 -0.167"
 				rpy="0 0 0"/>
 		<parent link="${r_arm_link_hand}"/>
 		<child link="dualarm_R_end_frame" />
@@ -920,7 +920,7 @@
 				velocity="${M_PI}" />
 		<origin
 				rpy="0 0 0"
-				xyz="0 0 -0.091" />
+				xyz="0 0 -0.081" />
 		<parent
 				link="${l_arm_link_06_name}" />
 		<child
@@ -961,7 +961,7 @@
 					xyz="0 0 0" />
 			<geometry>
 				<mesh
-						filename="package://dualarm_description/meshes/stl/hand_adapter_L.STL"
+						filename="package://dualarm_description/meshes/stl/l7.STL"
 						scale="0.001 0.001 0.001"/>
 			</geometry>
 		</visual>
@@ -969,7 +969,7 @@
 
 	<joint name="dualarm_L_end" type="fixed">
 		<origin
-				xyz="0 0 -0.04681"
+				xyz="0 0 -0.167"
 				rpy="0 0 0"/>
 		<parent link="${l_arm_link_hand}"/>
 		<child link="dualarm_L_end_frame" />

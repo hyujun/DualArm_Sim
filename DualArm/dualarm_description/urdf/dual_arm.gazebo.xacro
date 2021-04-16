@@ -8,4 +8,28 @@
     <controlPeriod>0.001</controlPeriod>
     </plugin>
   </gazebo>
+
+  <gazebo reference="ft_sensor_joint_R">
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+
+  <gazebo>
+    <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
+      <updateRate>900</updateRate>
+      <topicName>ft_sensor_topic_R</topicName>
+      <jointName>ft_sensor_joint_R</jointName>
+    </plugin>
+  </gazebo>
+
+  <gazebo reference="ft_sensor_joint_L">
+    <provideFeedback>true</provideFeedback>
+  </gazebo>
+
+  <gazebo>
+    <plugin name="ft_sensor" filename="libgazebo_ros_ft_sensor.so">
+      <updateRate>900</updateRate>
+      <topicName>ft_sensor_topic_L</topicName>
+      <jointName>ft_sensor_joint_L</jointName>
+    </plugin>
+  </gazebo>
 </robot>

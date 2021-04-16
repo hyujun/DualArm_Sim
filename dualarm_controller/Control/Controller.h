@@ -80,6 +80,9 @@ public:
 
 	void CLIKTaskController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx, const VectorXd &_dxdot, VectorXd &_Toq, const double &_dt, const int mode );
 
+	void ImpedanceController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, const VectorXd &_dqddot, const VectorXd &_sensor, VectorXd &_Toq, const int mode );
+    void InertiaShaping( const VectorXd &_Mass, MatrixXd &_M_Shaped_inv );
+	void TaskImpedanceController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq, const int mode );
 	void FrictionIdentification( const VectorXd &_q, const VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, const double &gt );
 	void FrictionCompensator( const VectorXd &_qdot, const VectorXd &_dqdot );
 	/**
@@ -117,6 +120,7 @@ private:
 	Eigen::MatrixXd WdampedpInvJacobian;
 	Eigen::MatrixXd DampedpInvJacobian;
 	Eigen::MatrixXd AnalyticJacobian;
+	Eigen::MatrixXd AnalyticJacobianDot;
     VectorXd q0dot;
 
 	Eigen::MatrixXd M, Mx;

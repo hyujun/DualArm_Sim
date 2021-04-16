@@ -29,6 +29,7 @@
         <arg name="debug" value="$(arg debug)" />
         <arg name="recording" value="$(arg recording)"/>
         <arg name="headless" value="$(arg headless)"/>
+        <arg name="verbose" value="$(arg verbose)"/>
     </include>
 
 </launch>

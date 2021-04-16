@@ -9,6 +9,7 @@
 #include <urdf/model.h>
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include "utils.h"
 #include "dualarm_controller/TaskCurrentState.h"
 
@@ -281,6 +282,7 @@ namespace dualarm_controller
             q_.data = Eigen::VectorXd::Zero(n_joints_);
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
             torque.setZero(n_joints_);
+            ft_sensor.setZero(12);
 
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
@@ -313,9 +315,34 @@ namespace dualarm_controller
 
             });
             sub_x_cmd_ = n.subscribe<dualarm_controller::TaskCurrentState>( "command", 5, joint_state_cb);
+            sub_ft_sensor_R = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_R", 5, &Impedance_Control::UpdateFTsensorR, this);
+            sub_ft_sensor_L = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_L", 5, &Impedance_Control::UpdateFTsensorL, this);
 
             return true;
         }
+
+        void UpdateFTsensorR(const geometry_msgs::WrenchStamped::ConstPtr &msg)
+        {
+            geometry_msgs::Wrench ft_measure = msg->wrench;
+            ft_sensor(0) = ft_measure.torque.x;
+            ft_sensor(1) = ft_measure.torque.y;
+            ft_sensor(2) = ft_measure.torque.z;
+            ft_sensor(3) = ft_measure.force.x;
+            ft_sensor(4) = ft_measure.force.y;
+            ft_sensor(5) = ft_measure.force.z;
+        }
+
+        void UpdateFTsensorL(const geometry_msgs::WrenchStamped::ConstPtr &msg)
+        {
+            geometry_msgs::Wrench ft_measure = msg->wrench;
+            ft_sensor(6) = ft_measure.torque.x;
+            ft_sensor(7) = ft_measure.torque.y;
+            ft_sensor(8) = ft_measure.torque.z;
+            ft_sensor(9) = ft_measure.force.x;
+            ft_sensor(10) = ft_measure.force.y;
+            ft_sensor(11) = ft_measure.force.z;
+        }
+
 
         void starting(const ros::Time &time) override
         {
@@ -688,11 +715,10 @@ namespace dualarm_controller
                 printf("*** States in Joint Space (unit: deg) ***\n");
                 for(int i=0; i < n_joints_; i++)
                 {
-                    printf("Joint ID:%d \t", i+1);
-                    printf("q: %0.3lf, ", q_.data(i) * R2D);
-                    printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
-                    printf("tau: %0.3f", torque(i));
-                    printf("\n");
+                    printf("[%s]:  \t", joint_names_[i].c_str());
+                    printf("q: %0.2lf,\t", q_.data(i) * R2D);
+                    printf("qdot: %0.2lf,\t", qdot_.data(i) * R2D);
+                    printf("tau: %0.2f\n", torque(i));
                 }
 
                 printf("\nForward Kinematics:\n");
@@ -701,6 +727,10 @@ namespace dualarm_controller
                     printf("no.%d, Actual: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
                            ForwardPos[j](0), ForwardPos[j](1),ForwardPos[j](2),
                            ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
+                    double a, b, g;
+                    x_[j].M.GetEulerZYX(a, b, g);
+                    printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
+                           j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
                     printf("no.%d, Desired: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
                            dx(6*j+3), dx(6*j+4),dx(6*j+5), dx(6*j), dx(6*j+1), dx(6*j+2));
                     printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n",
@@ -710,6 +740,10 @@ namespace dualarm_controller
                        ex_(0)*RADtoDEG, ex_(1)*RADtoDEG, ex_(2)*RADtoDEG, ex_(3), ex_(4), ex_(5));
                 printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
                        ex_(6)*RADtoDEG, ex_(7)*RADtoDEG, ex_(8)*RADtoDEG, ex_(9), ex_(10), ex_(11));
+                printf("FT Sensor(Right): torque_u:%0.3lf, torque_v:%0.3lf, torque_w:%0.3lf, force_x:%0.3lf, force_y:%0.3lf, force_z:%0.3lf\n",
+                       ft_sensor(0), ft_sensor(1), ft_sensor(2),ft_sensor(3),ft_sensor(4),ft_sensor(5));
+                printf("FT Sensor(Left): torque_u:%0.3lf, torque_v:%0.3lf, torque_w:%0.3lf, force_x:%0.3lf, force_y:%0.3lf, force_z:%0.3lf\n",
+                       ft_sensor(6), ft_sensor(7), ft_sensor(8),ft_sensor(9),ft_sensor(10),ft_sensor(11));
 
                 printf("Inverse Condition Number: Right:%0.5lf, Left:%0.5lf \n", InverseConditionNumber[0], InverseConditionNumber[1]);
                 printf("SingleMM: Right:%0.5lf, Left:%0.5lf\n", SingleMM[0], SingleMM[1]);
@@ -825,6 +859,7 @@ namespace dualarm_controller
         KDL::JntArrayVel q1dot_, q2dot_;
         Eigen::VectorXd q0dot;
         Eigen::VectorXd torque;
+        Eigen::VectorXd ft_sensor;
 
         // Task Space State
         // ver. 01
@@ -854,6 +889,7 @@ namespace dualarm_controller
 
         // subscriber
         ros::Subscriber sub_x_cmd_;
+        ros::Subscriber sub_ft_sensor_R, sub_ft_sensor_L;
 
         std::shared_ptr<SerialManipulator> cManipulator;
         std::unique_ptr<HYUControl::Controller> Control;

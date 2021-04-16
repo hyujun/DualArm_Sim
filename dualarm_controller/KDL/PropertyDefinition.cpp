@@ -68,10 +68,11 @@ robot_kinematic_info serial_Kinematic_info[] = {
 				0.0, -325.0e-3, 260.0e-3},		// 7
 		{0, 0, 1,
 				0.0, -325.0e-3, 260.0e-3,
-                0.0, -325.0e-3, 169.0e-3},		// 8
+                0.0, -325.0e-3, 179.0e-3},		// 8
 		{1, 0, 0,
-				0.0, -325.0e-3, 169.0e-3,
-                0.0, -325.0e-3, 122.19e-3},		// Wrist
+				0.0, -325.0e-3, 179.0e-3,
+//                0.0, -325.0e-3, 122.0e-3},		// Wrist w.o hand
+                0.0, -325.0e-3, 12.0e-3},		// Wrist with hand
 //-----------------------
 //Left-side arm
 //-----------------------
@@ -95,7 +96,8 @@ robot_kinematic_info serial_Kinematic_info[] = {
                 0.0, 325.0e-3, 179.0e-3},	// 14
 		{1, 0, 0,
 				0.0, 325.0e-3, 179.0e-3,
-				0.0, 325.0e-3, 122.19e-3},		// wrist2
+//				0.0, 325.0e-3, 122.0e-3},		// wrist2 w.o hand
+                0.0, 325.0e-3, 12.0e-3},		// wrist2 with hand
 };
 
 //{MASS,
@@ -132,9 +134,9 @@ robot_dynamic_info serial_Dynamic_info[] = {
 		{1.73,
 				0.002, 0.0, -0.0001, 0.0029, 0.0, 0.0021,
 				0.0039, -0.3252, 0.1805},		// right-arm6, Joint8
-		{1.08,
-				0.0071, 0.0003, 0.0002, 0.0082, -0.0003, 0.0022,
-				0.0098, -0.3164, 0.043},			// right-arm7, Joint9, Wrist1, Allegro hand
+		{1.6,
+				0.0112, 0.0005, 0.0011, 0.0130, -0.0003, 0.0032,
+				0.0123, -0.3168, 0.0499},			// right-arm7, Joint9, Wrist1, Allegro hand
 //-----------------------
 //Left-side arm
 //-----------------------
@@ -156,9 +158,9 @@ robot_dynamic_info serial_Dynamic_info[] = {
 		{1.73,
 				0.0002, 0.0, -0.0001, 0.0028, 0.0, 0.0021,
 				0.0039, 0.3248, 0.18},	// left-arm6, Joint15
-		{1.147,
-				0.0057, -0.0002, -0.0007, 0.0072, 0.0006, 0.0027,
-				0.0188, 0.3093, 0.0588},			// left-arm7, Joint16, Wrist2, None
+		{1.15,
+				0.0066, -0.0002, -0.0006, 0.0082, 0.0007, 0.0027,
+				0.0194, 0.3117, 0.0730},			// left-arm7, Joint16, Wrist2, KIST hand
 };
 
 // {HarmonicRatio, EncoderResolution, MaximumContinuousCurrent, TorqueConstant, AbsolutePositionOffset}

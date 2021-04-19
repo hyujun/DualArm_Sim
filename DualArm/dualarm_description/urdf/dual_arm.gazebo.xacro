@@ -11,6 +11,8 @@
 
   <gazebo reference="ft_sensor_joint_R">
     <provideFeedback>true</provideFeedback>
+    <disableFixedJointLumping>true</disableFixedJointLumping>
+    <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
 
   <gazebo>
@@ -23,6 +25,8 @@
 
   <gazebo reference="ft_sensor_joint_L">
     <provideFeedback>true</provideFeedback>
+    <disableFixedJointLumping>true</disableFixedJointLumping>
+    <preserveFixedJoint>true</preserveFixedJoint>
   </gazebo>
 
   <gazebo>

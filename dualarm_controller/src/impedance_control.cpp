@@ -99,39 +99,39 @@ namespace dualarm_controller
             // 1.2 Gain
             // 1.2.1 Task-space Controller
 
-            if (!n.getParam("/dualarm/impedance_control/gains/joint/pid/Kp", Kp_joint))
+            if (!n.getParam("/dualarm/impedance_control/desired/mass/m1", des_m1))
             {
-                ROS_ERROR("Cannot find Right-arm pid/Kp Translation gain");
+                ROS_ERROR("Cannot find Right-arm desired mass");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/impedance_control/gains/joint/pid/Kd", Kd_joint))
+            if (!n.getParam("/dualarm/impedance_control/desired/mass/m2", des_m2))
             {
-                ROS_ERROR("Cannot find Right-arm pid/Kp Rotation gain");
+                ROS_ERROR("Cannot find Left-arm desired mass");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/impedance_control/gains/task/pid/KpT", Kp_trans))
+            if (!n.getParam("/dualarm/impedance_control/gains/mbk/KpT", Kp_trans))
             {
-                ROS_ERROR("Cannot find Left-arm pid/Kp Translation gain");
+                ROS_ERROR("Cannot find Left-arm pid/Kp Translation proportional gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/impedance_control/gains/task/pid/KpR", Kp_rot))
+            if (!n.getParam("/dualarm/impedance_control/gains/mbk/KpR", Kp_rot))
             {
-                ROS_ERROR("Cannot find Left-arm pid/Kp Rotation gain");
+                ROS_ERROR("Cannot find Left-arm pid/Kp Rotation proportional gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/impedance_control/gains/task/pid/KdT", Kd_trans))
+            if (!n.getParam("/dualarm/impedance_control/gains/mbk/KdT", Kd_trans))
             {
-                ROS_ERROR("Cannot find Left-arm pid/Kd Translation gain");
+                ROS_ERROR("Cannot find Left-arm pid/Kd Translation derivative gain");
                 return false;
             }
 
-            if (!n.getParam("/dualarm/impedance_control/gains/task/pid/KdR", Kd_rot))
+            if (!n.getParam("/dualarm/impedance_control/gains/mbk/KdR", Kd_rot))
             {
-                ROS_ERROR("Cannot find Left-arm pid/Kd Rotation gain");
+                ROS_ERROR("Cannot find Left-arm pid/Kd Rotation derivative gain");
                 return false;
             }
 
@@ -199,24 +199,8 @@ namespace dualarm_controller
             {
                 ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
                 ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name1);
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfJoints() << " joints");
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfSegments() << " segments");
-                ROS_ERROR_STREAM("  The segments are:");
-
-                KDL::SegmentMap segment_map = kdl_tree_.getSegments();
-                KDL::SegmentMap::iterator it;
-
-                for (it = segment_map.begin(); it != segment_map.end(); it++)
-                    ROS_ERROR_STREAM("    " << (*it).first);
-
-                return false;
-            }
-            else if(!kdl_tree_.getChain(root_name, tip_name2, kdl_chain2_))
-            {
-                ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
-                ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name2);
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfJoints() << " joints");
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfSegments() << " segments");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain_.getNrOfJoints() << " joints");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain_.getNrOfSegments() << " segments");
                 ROS_ERROR_STREAM("  The segments are:");
 
                 KDL::SegmentMap segment_map = kdl_tree_.getSegments();
@@ -229,7 +213,34 @@ namespace dualarm_controller
             }
             else
             {
-                ROS_INFO("Got kdl chain");
+                ROS_INFO_STREAM("Got kdl first chain");
+                ROS_INFO_STREAM("  " << root_name << " --> " << tip_name1);
+                ROS_INFO_STREAM("  Chain has " << kdl_chain_.getNrOfJoints() << " joints");
+                ROS_INFO_STREAM("  Chain has " << kdl_chain_.getNrOfSegments() << " segments");
+            }
+
+            if(!kdl_tree_.getChain(root_name, tip_name2, kdl_chain2_))
+            {
+                ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
+                ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name2);
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain2_.getNrOfJoints() << " joints");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain2_.getNrOfSegments() << " segments");
+                ROS_ERROR_STREAM("  The segments are:");
+
+                KDL::SegmentMap segment_map = kdl_tree_.getSegments();
+                KDL::SegmentMap::iterator it;
+
+                for (it = segment_map.begin(); it != segment_map.end(); it++)
+                    ROS_ERROR_STREAM("    " << (*it).first);
+
+                return false;
+            }
+            else
+            {
+                ROS_INFO_STREAM("Got kdl second chain");
+                ROS_INFO_STREAM("  " << root_name << " --> " << tip_name2);
+                ROS_INFO_STREAM("  Chain has " << kdl_chain2_.getNrOfJoints() << " joints");
+                ROS_INFO_STREAM("  Chain has " << kdl_chain2_.getNrOfSegments() << " segments");
             }
 
             // 4.3 inverse dynamics solver 초기화
@@ -256,7 +267,7 @@ namespace dualarm_controller
             C1_kdl_.resize(kdl_chain2_.getNrOfJoints());
             G1_kdl_.resize(kdl_chain2_.getNrOfJoints());
 
-            Jdot.setZero(12,16);
+            Jdot.setZero(12,n_joints_);
 
             q1_.resize(9);
             q1dot_.resize(9);
@@ -283,6 +294,7 @@ namespace dualarm_controller
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
             torque.setZero(n_joints_);
             ft_sensor.setZero(12);
+            des_m.setZero(2);
 
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
@@ -344,10 +356,9 @@ namespace dualarm_controller
         }
 
 
-        void starting(const ros::Time &time) override
-        {
+        void starting(const ros::Time &time) override {
             t = 0.0;
-            InitTime=2.0;
+            InitTime = 2.0;
 
             ROS_INFO("Starting Impedance Controller");
 
@@ -357,27 +368,19 @@ namespace dualarm_controller
 
             cManipulator->UpdateManipulatorParam();
 
-            if(ctrl_type == 1)
-            {
-                double t1,t2;
-                for(int i=1; i<=n_joints_; i++)
-                {
-                    Control->SetPIDGain(Kp_joint, Kd_joint, t1, i);
-                }
-            }
-            else if( ctrl_type == 2)
-            {
-                KpTask.segment(0,3).setConstant(Kp_rot);
-                KpTask.segment(3,3).setConstant(Kp_trans);
-                KpTask.segment(6,3).setConstant(Kp_rot);
-                KpTask.segment(9,3).setConstant(Kp_trans);
+            des_m(0) = des_m1;
+            des_m(1) = des_m2;
 
-                KdTask.segment(0,3).setConstant(Kd_rot);
-                KdTask.segment(3,3).setConstant(Kd_trans);
-                KdTask.segment(6,3).setConstant(Kd_rot);
-                KdTask.segment(9,3).setConstant(Kd_trans);
-                Control->SetTaskspaceGain(KpTask, KdTask);
-            }
+            KpTask.segment(0, 3).setConstant(Kp_rot);
+            KpTask.segment(3, 3).setConstant(Kp_trans);
+            KpTask.segment(6, 3).setConstant(Kp_rot);
+            KpTask.segment(9, 3).setConstant(Kp_trans);
+
+            KdTask.segment(0, 3).setConstant(Kd_rot);
+            KdTask.segment(3, 3).setConstant(Kd_trans);
+            KdTask.segment(6, 3).setConstant(Kd_rot);
+            KdTask.segment(9, 3).setConstant(Kd_trans);
+            Control->SetImpedanceGain(KpTask, KdTask, des_m);
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -600,7 +603,7 @@ namespace dualarm_controller
             }
             else
             {
-                Control->TaskInvDynController(dx, dxdot, dxddot, q_.data, qdot_.data, torque, dt, ctrl_type);
+                Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, ctrl_type);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
 
@@ -738,11 +741,12 @@ namespace dualarm_controller
                 }
                 printf("Right e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
                        ex_(0)*RADtoDEG, ex_(1)*RADtoDEG, ex_(2)*RADtoDEG, ex_(3), ex_(4), ex_(5));
-                printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
+                printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n\n",
                        ex_(6)*RADtoDEG, ex_(7)*RADtoDEG, ex_(8)*RADtoDEG, ex_(9), ex_(10), ex_(11));
+
                 printf("FT Sensor(Right): torque_u:%0.3lf, torque_v:%0.3lf, torque_w:%0.3lf, force_x:%0.3lf, force_y:%0.3lf, force_z:%0.3lf\n",
                        ft_sensor(0), ft_sensor(1), ft_sensor(2),ft_sensor(3),ft_sensor(4),ft_sensor(5));
-                printf("FT Sensor(Left): torque_u:%0.3lf, torque_v:%0.3lf, torque_w:%0.3lf, force_x:%0.3lf, force_y:%0.3lf, force_z:%0.3lf\n",
+                printf("FT Sensor(Left): torque_u:%0.3lf, torque_v:%0.3lf, torque_w:%0.3lf, force_x:%0.3lf, force_y:%0.3lf, force_z:%0.3lf\n\n",
                        ft_sensor(6), ft_sensor(7), ft_sensor(8),ft_sensor(9),ft_sensor(10),ft_sensor(11));
 
                 printf("Inverse Condition Number: Right:%0.5lf, Left:%0.5lf \n", InverseConditionNumber[0], InverseConditionNumber[1]);
@@ -750,8 +754,8 @@ namespace dualarm_controller
                 printf("TOMM: Right:%0.5lf, Left:%0.5lf\n", TOMM[0], TOMM[1]);
                 printf("MM: %0.5lf\n", MM);
                 printf("DAMM: %0.5lf\n", DAMM);
-                printf("TODAMM: %0.5lf\n\n", TODAMM2);
-                printf("\n*********************************************************\n");
+                printf("TODAMM: %0.5lf\n", TODAMM2);
+                printf("*********************************************************\n");
                 count = 0;
 
 
@@ -878,9 +882,9 @@ namespace dualarm_controller
         KDL::JntArray x_cmd_;
 
         // gains
-        Eigen::VectorXd KpTask, KdTask;
+        Eigen::VectorXd KpTask, KdTask, des_m;
         Eigen::VectorXd aKp_, aKi_, aKd_, aK_inf_;
-        double Kp_joint, Kd_joint;
+        double des_m1, des_m2;
         double Kp_trans, Kp_rot, Kd_trans, Kd_rot;
 
         // publisher

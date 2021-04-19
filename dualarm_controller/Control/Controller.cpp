@@ -148,6 +148,13 @@ void Controller::SetTaskspaceGain(const VectorXd &_KpTask, const VectorXd &_KdTa
     KdTask = _KdTask;
 }
 
+void Controller::SetImpedanceGain(const VectorXd &_Kp_Imp, const VectorXd &_Kd_Imp, const VectorXd &_des_m)
+{
+    KpImpedance = _Kp_Imp;
+    KdImpedance = _Kd_Imp;
+    mass_shaped = _des_m;
+}
+
 void Controller::GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask)
 {
     _dq = dq;
@@ -467,8 +474,6 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
     }
     else if(mode == 2) // Mx != Mx_desired
     {
-        VectorXd mass_shaped;
-        mass_shaped << 1.0, 1.0; // kg
         MatrixXd MxdInv;
         InertiaShaping(mass_shaped, MxdInv);
         pManipulator->pDyn->MG_Mat_Task(Mx, Gx);
@@ -494,6 +499,26 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
 
         _Toq.setZero(AnalyticJacobian.cols());
         _Toq.noalias() += AnalyticJacobian.transpose()*u01;
+    }
+    else
+    {
+        pManipulator->pDyn->MG_Mat_Joint(M, G);
+        pManipulator->pKin->GetAnalyticJacobian(AnalyticJacobian);
+        pManipulator->pKin->GetBlockpInvJacobian(BlockpInvJacobian);
+        pManipulator->pKin->GetAnalyticJacobianDot(_qdot, AnalyticJacobianDot);
+        VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
+        VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
+
+        u01 = _dxddot;
+        u01.noalias() += AnalyticJacobianDot*_qdot;
+
+        TaskError(_dx, _dxdot, _qdot, eTask, edotTask);
+        u02.noalias() += KdTask.cwiseProduct(edotTask);
+        u02.noalias() += KpTask.cwiseProduct(eTask);
+
+        _Toq = G;
+        _Toq.noalias() += M*(BlockpInvJacobian.transpose()*u01);
+        _Toq.noalias() += AnalyticJacobian.transpose()*u02;
     }
 }
 

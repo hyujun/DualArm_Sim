@@ -563,13 +563,13 @@
 		</visual>
 	</link>
 
-	<joint name="ft_sensor_joint_R" type="revolute">
+	<joint name="ft_sensor_joint_R" type="fixed">
 		<parent link="${r_arm_link_hand_1}"/>
 		<child link="${r_arm_link_hand_2}"/>
 		<origin
 				rpy="0 0 0"
 				xyz="0 0 -0.057"/>
-		<limit effort="100" velocity="100" lower="0" upper="0"/>
+		<limit effort="1000" velocity="100" lower="0" upper="0"/>
 	</joint>
 
 	<link name="${r_arm_link_hand_2}">
@@ -1002,13 +1002,13 @@
 		</visual>
 	</link>
 
-	<joint name="ft_sensor_joint_L" type="revolute">
+	<joint name="ft_sensor_joint_L" type="fixed">
 		<parent link="${l_arm_link_hand_1}"/>
 		<child link="${l_arm_link_hand_2}"/>
 		<origin
 				rpy="0 0 0"
 				xyz="0 0 -0.057"/>
-		<limit effort="100" velocity="100" lower="0" upper="0"/>
+		<limit effort="1000" velocity="100" lower="0" upper="0"/>
 	</joint>
 
 	<link name="${l_arm_link_hand_2}">

@@ -61,6 +61,7 @@ public:
 	void SetCLIKGain( const double &_Kp_Translation, const double &_Kp_Rotation );
 	void SetTaskspaceGain( const VectorXd &_KpTask, const VectorXd &_KdTask);
 	void GetTaskspaceGain( const VectorXd &_KpTask, const VectorXd &_KdTask);
+	void SetImpedanceGain( const VectorXd &_Kp_Imp, const VectorXd &_Kd_Imp, const VectorXd &_des_m );
 	void GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask);
 	/**
 	 * @brief simple pd controller
@@ -98,6 +99,9 @@ private:
 	Eigen::VectorXd Kd, KdTask;
 	Eigen::VectorXd Ki, KiTask;
 	Eigen::VectorXd K_Hinf, K_HinfTask;
+
+	Eigen::VectorXd KpImpedance, KdImpedance;
+	Eigen::VectorXd mass_shaped;
 
 	Eigen::VectorXd dq, dqdot, dqddot;
 	Eigen::VectorXd dq_old;

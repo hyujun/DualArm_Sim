@@ -8,6 +8,7 @@
           output="screen" ns="/dualarm" args="joint_state_controller impedance_control"/>
 
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher"
-          respawn="false" output="screen" ns="/dualarm">
+          respawn="false" output="screen">
+        <remap from="/joint_states" to="/dualarm/joint_states" />
     </node>
 </launch>

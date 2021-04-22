@@ -23,6 +23,10 @@ dualarm:
       - dualarm_joint15
       - dualarm_joint16
 
+    root_link: world
+    tip_link1: dualarm_R_end_frame
+    tip_link2: dualarm_L_end_frame
+
     gains:
       dualarm_joint1:
         pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
@@ -57,6 +61,3 @@ dualarm:
       dualarm_joint16:
         pid: {p: 20.0, i: 100.0, d: 1, h: 4.0}
 
-    root_link: world
-    tip_link1: dualarm_R_end_frame
-    tip_link2: dualarm_L_end_frame

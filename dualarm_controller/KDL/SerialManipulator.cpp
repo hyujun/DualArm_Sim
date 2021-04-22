@@ -79,7 +79,7 @@ void SerialManipulator::RADtoENC( int *_enc, VectorXd &_rad )
 {
 	for(int i=0; i < this->mDoF_Total; i++)
 	{
-		_enc[i] = (int)(_rad(i)/(2*M_PI)*(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size) + serial_Motor_info[i].Offset);
+		_enc[i] = (int)(_rad(i)/(2.0*M_PI)*(serial_Motor_info[i].motor_harmonic*serial_Motor_info[i].enc_size) + serial_Motor_info[i].Offset);
 	}
 }
 
@@ -90,7 +90,6 @@ void SerialManipulator::VelocityConvert( int32_t *_enc_sec, VectorXd &_rad_sec )
 	{
 		_rad_sec(i) = ((double)(_enc_sec[i])/(double)(serial_Motor_info[i].motor_harmonic * serial_Motor_info[i].enc_size))*(2.0*M_PI);
 	}
-	return;
 }
 
 
@@ -105,6 +104,5 @@ void SerialManipulator::TorqueConvert( VectorXd &_Torque, short *_pOutput, short
 		else if(_pOutput[i] >= _MaxOutput)
 			_pOutput[i] = _MaxOutput;
 	}
-	return;
 }
 

@@ -7,7 +7,7 @@
  */
 
 
-//#define _WITH_HAND_
+#define _WITH_HAND_
 
 /**
  * @brief Kinematics Infomation

@@ -155,7 +155,7 @@ namespace dualarm_controller
             }
             else
             {
-                ROS_INFO("Found robot_description");
+                ROS_INFO_STREAM("Found robot_description");
             }
 
             // 3. ********* Get the joint object to use in the realtime loop [Joint Handle, URDF] *********
@@ -210,24 +210,8 @@ namespace dualarm_controller
             {
                 ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
                 ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name1);
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfJoints() << " joints");
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfSegments() << " segments");
-                ROS_ERROR_STREAM("  The segments are:");
-
-                KDL::SegmentMap segment_map = kdl_tree_.getSegments();
-                KDL::SegmentMap::iterator it;
-
-                for (it = segment_map.begin(); it != segment_map.end(); it++)
-                    ROS_ERROR_STREAM("    " << (*it).first);
-
-                return false;
-            }
-            else if(!kdl_tree_.getChain(root_name, tip_name2, kdl_chain2_))
-            {
-                ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
-                ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name2);
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfJoints() << " joints");
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfSegments() << " segments");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain_.getNrOfJoints() << " joints");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain_.getNrOfSegments() << " segments");
                 ROS_ERROR_STREAM("  The segments are:");
 
                 KDL::SegmentMap segment_map = kdl_tree_.getSegments();
@@ -240,7 +224,34 @@ namespace dualarm_controller
             }
             else
             {
-                ROS_INFO("Got kdl chain");
+                ROS_INFO_STREAM("Got kdl first chain");
+                ROS_INFO_STREAM("  " << root_name << " --> " << tip_name1);
+                ROS_INFO_STREAM("  Chain has " << kdl_chain_.getNrOfJoints() << " joints");
+                ROS_INFO_STREAM("  Chain has " << kdl_chain_.getNrOfSegments() << " segments");
+            }
+
+            if(!kdl_tree_.getChain(root_name, tip_name2, kdl_chain2_))
+            {
+                ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
+                ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name2);
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain2_.getNrOfJoints() << " joints");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain2_.getNrOfSegments() << " segments");
+                ROS_ERROR_STREAM("  The segments are:");
+
+                KDL::SegmentMap segment_map = kdl_tree_.getSegments();
+                KDL::SegmentMap::iterator it;
+
+                for (it = segment_map.begin(); it != segment_map.end(); it++)
+                    ROS_ERROR_STREAM("    " << (*it).first);
+
+                return false;
+            }
+            else
+            {
+                ROS_INFO_STREAM("Got kdl second chain");
+                ROS_INFO_STREAM("  " << root_name << " --> " << tip_name2);
+                ROS_INFO_STREAM("  Chain has " << kdl_chain2_.getNrOfJoints() << " joints");
+                ROS_INFO_STREAM("  Chain has " << kdl_chain2_.getNrOfSegments() << " segments");
             }
 
             // 4.3 inverse dynamics solver 초기화
@@ -705,11 +716,10 @@ namespace dualarm_controller
                 printf("*** States in Joint Space (unit: deg) ***\n");
                 for(int i=0; i < n_joints_; i++)
                 {
-                    printf("Joint ID:%d \t", i+1);
-                    printf("q: %0.3lf, ", q_.data(i) * R2D);
-                    printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
-                    printf("tau: %0.3f", torque(i));
-                    printf("\n");
+                    printf("[%s]:  \t", joint_names_[i].c_str());
+                    printf("q: %0.2lf,\t", q_.data(i) * R2D);
+                    printf("qdot: %0.2lf,\t", qdot_.data(i) * R2D);
+                    printf("tau: %0.2f\n", torque(i));
                 }
 
                 printf("\nForward Kinematics:\n");

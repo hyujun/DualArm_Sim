@@ -118,7 +118,6 @@ private:
 
     int mDoF_Total;
     int mChain_Total;
-    double manipulatorpower=0;
 
     uint16_t mState_now=0;
     uint16_t mState_pre=0;

@@ -13,9 +13,9 @@
   <xacro:property name="r_arm_link_04_name" value="link_06" />
   <xacro:property name="r_arm_link_05_name" value="link_07" />
   <xacro:property name="r_arm_link_06_name" value="link_08" />
-  <xacro:property name="r_arm_link_hand" value="link_R_hand" />
-  <xacro:property name="r_arm_link_hand_1" value="link_R_hand_1" />
-  <xacro:property name="r_arm_link_hand_2" value="link_R_hand_2" />
+  <xacro:property name="r_arm_link_hand"    value="link_R_hand" />
+  <xacro:property name="r_arm_link_hand_1"  value="link_R_hand_1" />
+  <xacro:property name="r_arm_link_hand_2"  value="link_R_hand_2" />
 <!--left_arm-->
   <xacro:property name="l_arm_link_01_name" value="link_10" />
   <xacro:property name="l_arm_link_02_name" value="link_11" />
@@ -23,11 +23,11 @@
   <xacro:property name="l_arm_link_04_name" value="link_13" />
   <xacro:property name="l_arm_link_05_name" value="link_14" />
   <xacro:property name="l_arm_link_06_name" value="link_15" />
-  <xacro:property name="l_arm_link_hand" value="link_L_hand" />
-  <xacro:property name="l_arm_link_hand_1" value="link_L_hand_1" />
-  <xacro:property name="l_arm_link_hand_2" value="link_L_hand_2" />
+  <xacro:property name="l_arm_link_hand"    value="link_L_hand" />
+  <xacro:property name="l_arm_link_hand_1"  value="link_L_hand_1" />
+  <xacro:property name="l_arm_link_hand_2"  value="link_L_hand_2" />
 <!-- link_mass -->
-  <xacro:property name="base_link_mass" value="10.0"/>
+  <xacro:property name="base_link_mass"     value="10.0"/>
   <xacro:property name="waist_link_01_mass" value="11.91"/>
   <xacro:property name="waist_link_02_mass" value="10.901"/>
 

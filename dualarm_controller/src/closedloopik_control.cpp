@@ -154,7 +154,7 @@ namespace  dualarm_controller
             }
             else
             {
-                ROS_INFO("Found robot_description");
+                ROS_INFO_STREAM("Found robot_description");
             }
 
             // 3. ********* Get the joint object to use in the realtime loop [Joint Handle, URDF] *********
@@ -188,7 +188,7 @@ namespace  dualarm_controller
             }
             else
             {
-                ROS_INFO("Constructed kdl tree");
+                ROS_INFO_STREAM("Constructed kdl tree");
             }
 
             // 4.2 kdl chain
@@ -213,24 +213,8 @@ namespace  dualarm_controller
             {
                 ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
                 ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name1);
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfJoints() << " joints");
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfSegments() << " segments");
-                ROS_ERROR_STREAM("  The segments are:");
-
-                KDL::SegmentMap segment_map = kdl_tree_.getSegments();
-                KDL::SegmentMap::iterator it;
-
-                for (it = segment_map.begin(); it != segment_map.end(); it++)
-                    ROS_ERROR_STREAM("    " << (*it).first);
-
-                return false;
-            }
-            else if(!kdl_tree_.getChain(root_name, tip_name2, kdl_chain2_))
-            {
-                ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
-                ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name2);
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfJoints() << " joints");
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfSegments() << " segments");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain_.getNrOfJoints() << " joints");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain_.getNrOfSegments() << " segments");
                 ROS_ERROR_STREAM("  The segments are:");
 
                 KDL::SegmentMap segment_map = kdl_tree_.getSegments();
@@ -243,7 +227,34 @@ namespace  dualarm_controller
             }
             else
             {
-                ROS_INFO("Got kdl chain");
+                ROS_INFO_STREAM("Got kdl first chain");
+                ROS_INFO_STREAM("  " << root_name << " --> " << tip_name1);
+                ROS_INFO_STREAM("  Chain has " << kdl_chain_.getNrOfJoints() << " joints");
+                ROS_INFO_STREAM("  Chain has " << kdl_chain_.getNrOfSegments() << " segments");
+            }
+
+            if(!kdl_tree_.getChain(root_name, tip_name2, kdl_chain2_))
+            {
+                ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
+                ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name2);
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain2_.getNrOfJoints() << " joints");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain2_.getNrOfSegments() << " segments");
+                ROS_ERROR_STREAM("  The segments are:");
+
+                KDL::SegmentMap segment_map = kdl_tree_.getSegments();
+                KDL::SegmentMap::iterator it;
+
+                for (it = segment_map.begin(); it != segment_map.end(); it++)
+                    ROS_ERROR_STREAM("    " << (*it).first);
+
+                return false;
+            }
+            else
+            {
+                ROS_INFO_STREAM("Got kdl second chain");
+                ROS_INFO_STREAM("  " << root_name << " --> " << tip_name2);
+                ROS_INFO_STREAM("  Chain has " << kdl_chain2_.getNrOfJoints() << " joints");
+                ROS_INFO_STREAM("  Chain has " << kdl_chain2_.getNrOfSegments() << " segments");
             }
 
             // 4.3 inverse dynamics solver 초기화
@@ -691,7 +702,7 @@ namespace  dualarm_controller
 
         void manipulability_data()
         {
-            const auto desired_manipulability =
+            const auto desired_Dualmanipulability =
                     manipulability_metrics::Ellipsoid{ { { (Eigen::Matrix<double, 6, 1>{} << 1, 0, 0, 0, 0, 0).finished(), 1.0 },
                                                                { (Eigen::Matrix<double, 6, 1>{} << 0, 1, 0, 0, 0, 0).finished(), 1.0 },
                                                                { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 1, 0, 0, 0).finished(), 1.0 },
@@ -709,14 +720,27 @@ namespace  dualarm_controller
 
             SingleMM[0] = sqrt((J1_kdl_.data * J1_kdl_.data.transpose()).determinant());
             SingleMM[1] = sqrt((J2_kdl_.data * J2_kdl_.data.transpose()).determinant());
+
+            SingleMM_1[0] = sqrt((AJac.block(0,0,6,16)*AJac.block(0,0,6,16).transpose()).determinant());
+            SingleMM_1[1] = sqrt((AJac.block(6,0,6,16)*AJac.block(6,0,6,16).transpose()).determinant());
+
             TOMM[0] = manipulability_metrics::inverseShapeDiscrepancy(desired_Singelmanipulability, J1_kdl_.data);
             TOMM[1] = manipulability_metrics::inverseShapeDiscrepancy(desired_Singelmanipulability, J2_kdl_.data);
+
+            TOMM_1[0] = manipulability_metrics::inverseShapeDiscrepancy(desired_Singelmanipulability, AJac.block(0,0,6,16));
+            TOMM_1[1] = manipulability_metrics::inverseShapeDiscrepancy(desired_Singelmanipulability, AJac.block(6,0,6,16));
 
             auto left_ellipsoid = manipulability_metrics::ellipsoidFromJacobian(J2_kdl_.data);
             auto right_ellipsoid = manipulability_metrics::ellipsoidFromJacobian(J1_kdl_.data);
             DAMM = std::max(manipulability_metrics::volumeIntersection(left_ellipsoid, J1_kdl_.data),
                                  manipulability_metrics::volumeIntersection(right_ellipsoid, J2_kdl_.data));
-            TODAMM2 = manipulability_metrics::dualInverseShapeDiscrepancy(desired_manipulability, J2_kdl_.data, J1_kdl_.data);
+            TODAMM2 = manipulability_metrics::dualInverseShapeDiscrepancy(desired_Dualmanipulability, J2_kdl_.data, J1_kdl_.data);
+
+            auto left_ellipsoid_1 = manipulability_metrics::ellipsoidFromJacobian(AJac.block(6,0,6,16));
+            auto right_ellipsoid_1 = manipulability_metrics::ellipsoidFromJacobian(AJac.block(0,0,6,16));
+            DAMM_1 = std::max(manipulability_metrics::volumeIntersection(left_ellipsoid_1, AJac.block(0,0,6,16)),
+                            manipulability_metrics::volumeIntersection(right_ellipsoid_1, AJac.block(6,0,6,16)));
+            TODAMM2_1 = manipulability_metrics::dualInverseShapeDiscrepancy(desired_Dualmanipulability, AJac.block(6,0,6,16), AJac.block(0,0,6,16));
         }
 
         void publish_data()
@@ -793,14 +817,13 @@ namespace  dualarm_controller
                 Control->GetPIDGain(aKp_, aKd_, aKi_);
                 for(int i=0; i < n_joints_; i++)
                 {
-                    printf("Joint ID:%d \t", i+1);
-                    printf("Kp;%0.3lf, Kd:%0.3lf ", aKp_(i), aKd_(i));
-                    printf("q: %0.3lf, ", q_.data(i) * R2D);
-                    printf("dq: %0.3lf, ", qd_.data(i) * R2D);
-                    printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
-                    printf("dqdot: %0.3lf, ", qd_dot_.data(i) * R2D);
-                    printf("tau: %0.3f", torque(i));
-                    printf("\n");
+                    printf("[%s]:  \t", joint_names_[i].c_str());
+                    printf("Kp:%0.3lf, Kd:%0.3lf,\t", aKp_(i), aKd_(i));
+                    printf("q: %0.3lf,\t", q_.data(i) * R2D);
+                    printf("dq: %0.3lf,\t", qd_.data(i) * R2D);
+                    printf("qdot: %0.3lf,\t", qdot_.data(i) * R2D);
+                    printf("dqdot: %0.3lf,\t", qd_dot_.data(i) * R2D);
+                    printf("tau: %0.3f\n", torque(i));
                 }
 
                 printf("\nForward Kinematics:\n");
@@ -818,11 +841,11 @@ namespace  dualarm_controller
 
                     printf("Inverse Condition Number: %0.5lf \n\n", InverseConditionNumber[j]);
                 }
-                printf("SingleMM: Right:%0.5lf, Left:%0.5lf\n", SingleMM[0], SingleMM[1]);
-                printf("TOMM: Right:%0.5lf, Left:%0.5lf\n", TOMM[0], TOMM[1]);
+                printf("SingleMM: Right:%0.5lf, Left:%0.5lf :: Right:%0.5lf, Left:%0.5lf,\n", SingleMM[0], SingleMM[1], SingleMM_1[0], SingleMM_1[1]);
+                printf("TOMM: Right:%0.5lf, Left:%0.5lf :: Right:%0.5lf, Left:%0.5lf\n", TOMM[0], TOMM[1], TOMM_1[0], TOMM_1[1]);
                 printf("MM: %0.5lf\n", MM);
-                printf("DAMM: %0.5lf\n", DAMM);
-                printf("TODAMM: %0.5lf\n\n", TODAMM2);
+                printf("DAMM: %0.5lf :: DAMM: %0.5lf\n", DAMM, DAMM_1);
+                printf("TODAMM: %0.5lf :: TODAMM: %0.5lf\n\n", TODAMM2, TODAMM2_1);
 
                 printf("Right e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
                        ex_(0)*RADtoDEG, ex_(1)*RADtoDEG, ex_(2)*RADtoDEG, ex_(3), ex_(4), ex_(5));
@@ -885,11 +908,11 @@ namespace  dualarm_controller
         Vector3d ForwardAxis[2];
         double ForwardAngle[2];
         double InverseConditionNumber[2];
-        double SingleMM[2];
-        double TOMM[2];
-        double MM;
-        double DAMM;
-        double TODAMM2;
+        double SingleMM[2], SingleMM_1[2];
+        double TOMM[2], TOMM_1[2];
+        double MM, MM_1;
+        double DAMM, DAMM_1;
+        double TODAMM2, TODAMM2_1;
 
         // kdl and Eigen Jacobian
         Eigen::MatrixXd pInvJac;

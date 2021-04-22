@@ -205,24 +205,8 @@ namespace dualarm_controller
             {
                 ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
                 ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name1);
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfJoints() << " joints");
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfSegments() << " segments");
-                ROS_ERROR_STREAM("  The segments are:");
-
-                KDL::SegmentMap segment_map = kdl_tree_.getSegments();
-                KDL::SegmentMap::iterator it;
-
-                for (it = segment_map.begin(); it != segment_map.end(); it++)
-                    ROS_ERROR_STREAM("    " << (*it).first);
-
-                return false;
-            }
-            else if(!kdl_tree_.getChain(root_name, tip_name2, kdl_chain2_))
-            {
-                ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
-                ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name2);
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfJoints() << " joints");
-                ROS_ERROR_STREAM("  Tree has " << kdl_tree_.getNrOfSegments() << " segments");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain_.getNrOfJoints() << " joints");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain_.getNrOfSegments() << " segments");
                 ROS_ERROR_STREAM("  The segments are:");
 
                 KDL::SegmentMap segment_map = kdl_tree_.getSegments();
@@ -235,7 +219,34 @@ namespace dualarm_controller
             }
             else
             {
-                ROS_INFO("Got kdl chain");
+                ROS_INFO_STREAM("Got kdl first chain");
+                ROS_INFO_STREAM("  " << root_name << " --> " << tip_name1);
+                ROS_INFO_STREAM("  Chain has " << kdl_chain_.getNrOfJoints() << " joints");
+                ROS_INFO_STREAM("  Chain has " << kdl_chain_.getNrOfSegments() << " segments");
+            }
+
+            if(!kdl_tree_.getChain(root_name, tip_name2, kdl_chain2_))
+            {
+                ROS_ERROR_STREAM("Failed to get KDL chain from tree: ");
+                ROS_ERROR_STREAM("  " << root_name << " --> " << tip_name2);
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain2_.getNrOfJoints() << " joints");
+                ROS_ERROR_STREAM("  Chain has " << kdl_chain2_.getNrOfSegments() << " segments");
+                ROS_ERROR_STREAM("  The segments are:");
+
+                KDL::SegmentMap segment_map = kdl_tree_.getSegments();
+                KDL::SegmentMap::iterator it;
+
+                for (it = segment_map.begin(); it != segment_map.end(); it++)
+                    ROS_ERROR_STREAM("    " << (*it).first);
+
+                return false;
+            }
+            else
+            {
+                ROS_INFO_STREAM("Got kdl second chain");
+                ROS_INFO_STREAM("  " << root_name << " --> " << tip_name2);
+                ROS_INFO_STREAM("  Chain has " << kdl_chain2_.getNrOfJoints() << " joints");
+                ROS_INFO_STREAM("  Chain has " << kdl_chain2_.getNrOfSegments() << " segments");
             }
 
             // 4.3 inverse dynamics solver 초기화
@@ -308,7 +319,7 @@ namespace dualarm_controller
             t = 0.0;
             InitTime=5.0;
 
-            ROS_INFO("Starting Task space Controller");
+            ROS_INFO_STREAM("Starting Task space Controller");
 
             cManipulator = std::make_shared<SerialManipulator>();
             Control = std::make_unique<HYUControl::Controller>(cManipulator);
@@ -417,7 +428,7 @@ namespace dualarm_controller
 
         void stopping(const ros::Time &time) override
         {
-            ROS_INFO("Stop Task space Controller");
+            ROS_INFO_STREAM("Stop Task space Controller");
         }
 
         void publish_data()
@@ -459,14 +470,13 @@ namespace dualarm_controller
 
                 for(int i=0; i < n_joints_; i++)
                 {
-                    printf("Joint ID:%d \t", i+1);
-                    printf("Kp;%0.3lf, Kd:%0.3lf, ", aKp_.data(i), aKd_.data(i));
-                    printf("q: %0.3lf, ", q_.data(i) * R2D);
-                    printf("dq: %0.3lf, ", qd_.data(i) * R2D);
-                    printf("qdot: %0.3lf, ", qdot_.data(i) * R2D);
-                    printf("dqdot: %0.3lf, ", qd_dot_.data(i) * R2D);
-                    printf("tau: %0.3f, %0.3f", des_torque(i), act_torque(i));
-                    printf("\n");
+                    printf("[%s]:  \t", joint_names_[i].c_str());
+                    printf("Kp:%0.3lf, Kd:%0.3lf,\t", aKp_.data(i), aKd_.data(i));
+                    printf("q: %0.3lf,\t", q_.data(i) * R2D);
+                    printf("dq: %0.3lf,\t", qd_.data(i) * R2D);
+                    printf("qdot: %0.3lf,\t", qdot_.data(i) * R2D);
+                    printf("dqdot: %0.3lf,\t", qd_dot_.data(i) * R2D);
+                    printf("tau: %0.3f\n", des_torque(i));
                 }
 
                 printf("\nForward Kinematics:\n");
@@ -484,7 +494,7 @@ namespace dualarm_controller
                 }
                 printf("\n*********************************************************\n");
                 count = 0;
-
+                /*
                 M_mat_collect.resize(16,16);
                 M_mat_collect.setZero();
                 M_mat_collect.block(0,0,2,2) = M_kdl_.data.block(0,0,2,2) + M1_kdl_.data.block(0,0,2,2);
@@ -498,6 +508,7 @@ namespace dualarm_controller
                 std::cout << M_mat_collect << std::endl;
                 std::cout << "M_PoE" << std::endl;
                 std::cout << M << std::endl;
+                */
                 /*
                 C_mat_collect.resize(16,16);
                 C_mat_collect.setZero();

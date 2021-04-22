@@ -10,7 +10,7 @@
     <arg name="verbose" default="true"/>
     <arg name="extra_gazebo_args" default=""/>
 
-    <param name="robot_description" command="$(find xacro)/xacro '$(find dualarm_description)/urdf/dual_arm1.xacro'"/>
+    <param name="robot_description" command="$(find xacro)/xacro '$(find dualarm_description)/urdf/dual_arm_ft.xacro'"/>
     <node
             name="urdf_spawner"
             pkg="gazebo_ros"

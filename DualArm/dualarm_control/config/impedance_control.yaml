@@ -23,15 +23,14 @@ dualarm:
       - dualarm_joint15
       - dualarm_joint16
 
-    desired:
-      mass: { m1: 0.8, m2: 0.1 } # unit:kg, shape:ellipsoid (for inertia shaping)
-
-    gains:
-      mbk: { KpT: 1.2, KpR: 0.01, KdT: 0.07, KdR: 0.002 } # gains for spring & damper
-
     root_link: world
     tip_link1: dualarm_R_end_frame
     tip_link2: dualarm_L_end_frame
+
+    desired:
+      mass: { m1: 0.8, m2: 0.1 } # unit:kg, shape:ellipsoid (for inertia shaping)
+    gains:
+      mbk: { KpT: 1.2, KpR: 0.01, KdT: 0.07, KdR: 0.002 } # gains for spring & damper
 
     target_obj: 2 # 1 : x-axis
                   # 2 : y-axis

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name = "dualarm" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+<robot name="dualarm" xmlns:xacro="http://www.ros.org/wiki/xacro" >
 
 	<xacro:include filename="$(find dualarm_description)/urdf/link_to_joint.xacro" />
 	<xacro:include filename="$(find dualarm_description)/urdf/robot_parameter.xacro" />
@@ -520,7 +520,7 @@
 		<parent
 				link="${r_arm_link_06_name}" />
 		<child
-				link="${r_arm_link_hand}" />
+				link="${r_arm_link_hand_1}" />
 		<dynamics damping="0.01" friction="0.01"/>
 	</joint>
 	<transmission
@@ -537,19 +537,19 @@
 		</actuator>
 	</transmission>
 
-	<link name="${r_arm_link_hand}">
+	<link name="${r_arm_link_hand_1}">
 		<inertial>
-			<mass value="${r_arm_link_07_mass}" />
+			<mass value="${r_arm_link_07_1_mass}" />
 			<origin
 					rpy="0 0 0"
-					xyz="0.0099 0.0087 -0.126" />
+					xyz="0.0079 0.0 -0.0345" />
 			<inertia
-					ixx="${r_arm_link_07_ixx}"
-					ixy="${r_arm_link_07_ixy}"
-					ixz="${r_arm_link_07_ixz}"
-					iyy="${r_arm_link_07_iyy}"
-					iyz="${r_arm_link_07_iyz}"
-					izz="${r_arm_link_07_izz}" />
+					ixx="${r_arm_link_07_1_ixx}"
+					ixy="${r_arm_link_07_1_ixy}"
+					ixz="${r_arm_link_07_1_ixz}"
+					iyy="${r_arm_link_07_1_iyy}"
+					iyz="${r_arm_link_07_1_iyz}"
+					izz="${r_arm_link_07_1_izz}" />
 		</inertial>
 		<visual>
 			<origin
@@ -557,7 +557,42 @@
 					xyz="0 0 0" />
 			<geometry>
 				<mesh
-						filename="package://dualarm_description/meshes/stl/r7.STL"
+						filename="package://dualarm_description/meshes/stl/wrist_ft_R.STL"
+						scale="0.001 0.001 0.001"/>
+			</geometry>
+		</visual>
+	</link>
+
+	<joint name="ft_sensor_joint_R" type="fixed">
+		<parent link="${r_arm_link_hand_1}"/>
+		<child link="${r_arm_link_hand_2}"/>
+		<origin
+				rpy="0 0 0"
+				xyz="0 0 -0.057"/>
+		<limit effort="1000" velocity="100" lower="0" upper="0"/>
+	</joint>
+
+	<link name="${r_arm_link_hand_2}">
+		<inertial>
+			<mass value="${r_arm_link_07_2_mass}" />
+			<origin
+					rpy="0 0 0"
+					xyz="0.0112 0.0129 -0.1085" />
+			<inertia
+					ixx="${r_arm_link_07_2_ixx}"
+					ixy="${r_arm_link_07_2_ixy}"
+					ixz="${r_arm_link_07_2_ixz}"
+					iyy="${r_arm_link_07_2_iyy}"
+					iyz="${r_arm_link_07_2_iyz}"
+					izz="${r_arm_link_07_2_izz}" />
+		</inertial>
+		<visual>
+			<origin
+					rpy="0 0 0"
+					xyz="0 0 0" />
+			<geometry>
+				<mesh
+						filename="package://dualarm_description/meshes/stl/allegro_ft.STL"
 						scale="0.001 0.001 0.001"/>
 			</geometry>
 		</visual>
@@ -565,9 +600,9 @@
 
 	<joint name="dualarm_R_end" type="fixed">
 		<origin
-				xyz="0 0 -0.167"
+				xyz="0 0 -0.110"
 				rpy="0 0 0"/>
-		<parent link="${r_arm_link_hand}"/>
+		<parent link="${r_arm_link_hand_2}"/>
 		<child link="dualarm_R_end_frame" />
 	</joint>
 
@@ -924,7 +959,7 @@
 		<parent
 				link="${l_arm_link_06_name}" />
 		<child
-				link="${l_arm_link_hand}" />
+				link="${l_arm_link_hand_1}" />
 		<dynamics damping="0.01" friction="0.01"/>
 	</joint>
 	<transmission
@@ -941,19 +976,19 @@
 		</actuator>
 	</transmission>
 
-	<link name="${l_arm_link_hand}">
+	<link name="${l_arm_link_hand_1}">
 		<inertial>
-			<mass value="${l_arm_link_07_mass}" />
+			<mass value="${l_arm_link_07_1_mass}" />
 			<origin
 					rpy="0 0 0"
-					xyz="0.0188 -0.0157 -0.1202" />
+					xyz="0.0079 0.0 -0.0345" />
 			<inertia
-					ixx="${l_arm_link_07_ixx}"
-					ixy="${l_arm_link_07_ixy}"
-					ixz="${l_arm_link_07_ixz}"
-					iyy="${l_arm_link_07_iyy}"
-					iyz="${l_arm_link_07_iyz}"
-					izz="${l_arm_link_07_izz}" />
+					ixx="${l_arm_link_07_1_ixx}"
+					ixy="${l_arm_link_07_1_ixy}"
+					ixz="${l_arm_link_07_1_ixz}"
+					iyy="${l_arm_link_07_1_iyy}"
+					iyz="${l_arm_link_07_1_iyz}"
+					izz="${l_arm_link_07_1_izz}" />
 		</inertial>
 		<visual>
 			<origin
@@ -961,7 +996,42 @@
 					xyz="0 0 0" />
 			<geometry>
 				<mesh
-						filename="package://dualarm_description/meshes/stl/l7.STL"
+						filename="package://dualarm_description/meshes/stl/wrist_ft_L.STL"
+						scale="0.001 0.001 0.001"/>
+			</geometry>
+		</visual>
+	</link>
+
+	<joint name="ft_sensor_joint_L" type="fixed">
+		<parent link="${l_arm_link_hand_1}"/>
+		<child link="${l_arm_link_hand_2}"/>
+		<origin
+				rpy="0 0 0"
+				xyz="0 0 -0.057"/>
+		<limit effort="1000" velocity="100" lower="0" upper="0"/>
+	</joint>
+
+	<link name="${l_arm_link_hand_2}">
+		<inertial>
+			<mass value="${l_arm_link_07_2_mass}" />
+			<origin
+					rpy="0 0 0"
+					xyz="0.0282 -0.0237 -0.0862" />
+			<inertia
+					ixx="${l_arm_link_07_2_ixx}"
+					ixy="${l_arm_link_07_2_ixy}"
+					ixz="${l_arm_link_07_2_ixz}"
+					iyy="${l_arm_link_07_2_iyy}"
+					iyz="${l_arm_link_07_2_iyz}"
+					izz="${l_arm_link_07_2_izz}" />
+		</inertial>
+		<visual>
+			<origin
+					rpy="0 0 0"
+					xyz="0 0 0" />
+			<geometry>
+				<mesh
+						filename="package://dualarm_description/meshes/stl/lefthand_ft.STL"
 						scale="0.001 0.001 0.001"/>
 			</geometry>
 		</visual>
@@ -969,9 +1039,9 @@
 
 	<joint name="dualarm_L_end" type="fixed">
 		<origin
-				xyz="0 0 -0.167"
+				xyz="0 0 -0.110"
 				rpy="0 0 0"/>
-		<parent link="${l_arm_link_hand}"/>
+		<parent link="${l_arm_link_hand_2}"/>
 		<child link="dualarm_L_end_frame" />
 	</joint>
 

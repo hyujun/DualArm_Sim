@@ -11,6 +11,7 @@
 #include <realtime_tools/realtime_publisher.h>
 #include "utils.h"
 #include "dualarm_controller/TaskCurrentState.h"
+#include "dualarm_controller/TaskDesiredState.h"
 
 //manipulability
 #include <ellipsoid.h>
@@ -30,6 +31,7 @@
 
 #include <SerialManipulator.h>
 #include <Controller.h>
+#include <Motion.h>
 
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
@@ -68,7 +70,7 @@ namespace  dualarm_controller
                 return false;
             }
 
-            if( ctr_obj_ == 8 && ik_mode_ != 4 )
+            if( ctr_obj_ == 7 && ik_mode_ != 4 )
             {
                 ROS_ERROR("!! If the ctr_obj is 8, ik_mode_ should be 4 !!");
                 return false;
@@ -280,6 +282,7 @@ namespace  dualarm_controller
             // ********* 5. 각종 변수 초기화 *********
             // 5.1 KDL Vector 초기화 (사이즈 정의 및 값 0)
             x_cmd_.data = Eigen::VectorXd::Zero(12);
+            targetpos.setZero(12);
             ex_.setZero(12);
             ex_dot_.setZero(12);
             dx.setZero(12);
@@ -328,10 +331,25 @@ namespace  dualarm_controller
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
             // 6.2 subsriber
-            const auto joint_state_cb = utils::makeCallback<dualarm_controller::TaskCurrentState>([&](const auto& msg){
+            const auto joint_state_cb = utils::makeCallback<dualarm_controller::TaskDesiredState>([&](const auto& msg){
+                ControlMode = msg.Index1;
+                ControlSubMode = msg.Index2;
+                ControlMotion = msg.SubIndex;
+                targetpos(0) = msg.dx[0].orientation.x*DEGtoRAD;
+                targetpos(1) = msg.dx[0].orientation.y*DEGtoRAD;
+                targetpos(2) = msg.dx[0].orientation.z*DEGtoRAD;
+                targetpos(3) = msg.dx[0].position.x;
+                targetpos(4) = msg.dx[0].position.y;
+                targetpos(5) = msg.dx[0].position.z;
+                targetpos(6) = msg.dx[1].orientation.x*DEGtoRAD;
+                targetpos(7) = msg.dx[1].orientation.y*DEGtoRAD;
+                targetpos(8) = msg.dx[1].orientation.z*DEGtoRAD;
+                targetpos(9) = msg.dx[1].position.x;
+                targetpos(10) = msg.dx[1].position.y;
+                targetpos(11) = msg.dx[1].position.z;
 
             });
-            sub_x_cmd_ = n.subscribe<dualarm_controller::TaskCurrentState>( "command", 5, joint_state_cb);
+            sub_x_cmd_ = n.subscribe<dualarm_controller::TaskDesiredState>( "command", 5, joint_state_cb);
 
             return true;
         }
@@ -339,13 +357,14 @@ namespace  dualarm_controller
         void starting(const ros::Time &time) override
         {
             t = 0.0;
-            InitTime=2.0;
+            InitTime=1.0;
 
             ROS_INFO("Starting Closed-loop Inverse Dynamics Controller");
 
             cManipulator = std::make_shared<SerialManipulator>();
 
             Control = std::make_unique<HYUControl::Controller>(cManipulator);
+            motion = std::make_unique<HYUControl::Motion>(cManipulator);
 
             cManipulator->UpdateManipulatorParam();
 
@@ -367,6 +386,10 @@ namespace  dualarm_controller
             Control->SetPIDGain(Kp_.data, Kd_.data, Ki_.data, K_inf_.data);
             Control->SetTaskspaceGain(CLIK_GAIN, CLIK_GAIN_DUMY);
             alpha = 5.0;
+
+            ControlMode = CTRLMODE_IDY_JOINT;
+            ControlSubMode = SYSTEM_BEGIN;
+            ControlMotion = MOVE_ZERO;
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -425,257 +448,22 @@ namespace  dualarm_controller
             //id_solver1_->JntToCoriolis(q2_, q2dot_, C1_kdl_);
             //id_solver1_->JntToGravity(q2_, G1_kdl_);
 
-            if( t <= InitTime )
+            ctr_obj_ = ControlSubMode;
+            ik_mode_ = ControlMotion;
+
+            if( ControlMode == CTRLMODE_CLIK )
             {
-                qd_.data(0) = -0.0*D2R;
-                qd_.data(1) = -0.0*D2R;
-
-                qd_.data(2) = 0.0*D2R;
-                qd_.data(3) = -0.0*D2R;
-                qd_.data(4) = -0.0*D2R;
-                qd_.data(5) = -0.0*D2R;
-                qd_.data(6) = -70.0*D2R;
-                qd_.data(7) = 0.0*D2R;
-                qd_.data(8) = 0.0*D2R;
-
-                qd_.data(9) = 0.0*D2R;
-                qd_.data(10) = 0.0*D2R;
-                qd_.data(11) = 0.0*D2R;
-                qd_.data(12) = -0.0*D2R;
-                qd_.data(13) = 70.0*D2R;
-                qd_.data(14) = -0.0*D2R;
-                qd_.data(15) = -0.0*D2R;
-
-                dx(0) = ForwardOri[0](0);
-                dx(1) = ForwardOri[0](1);
-                dx(2) = ForwardOri[0](2);
-                dx(3) = ForwardPos[0](0);
-                dx(4) = ForwardPos[0](1);
-                dx(5) = ForwardPos[0](2);
-                dx(6) = ForwardOri[1](0);
-                dx(7) = ForwardOri[1](1);
-                dx(8) = ForwardOri[1](2);
-                dx(9) = ForwardPos[1](0);
-                dx(10) = ForwardPos[1](1);
-                dx(11) = ForwardPos[1](2);
-
-                qd_old_ = qd_;
-            }
-            else
-            {
-                if(ik_mode_ == 0)
-                {
-                    xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
-                    xd_[0].p(1) = b2;
-                    xd_[0].p(2) = b3;
-                    xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, 0, M_PI/2));
-
-                    xd_[1].p(0) = -A * sin(f * M_PI * (t - InitTime)) + l_p1;
-                    xd_[1].p(1) = l_p2;
-                    xd_[1].p(2) = l_p3;
-                    xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
-
-                    dxdot.setZero();
-                    dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(9) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                    x_[0].p(0) = ForwardPos[0](0);
-                    x_[0].p(1) = ForwardPos[0](1);
-                    x_[0].p(2) = ForwardPos[0](2);
-                    x_[0].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[0](0), ForwardOri[0](1), ForwardOri[0](2)));
-
-                    x_[1].p(0) = ForwardPos[1](0);
-                    x_[1].p(1) = ForwardPos[1](1);
-                    x_[1].p(2) = ForwardPos[1](2);
-                    x_[1].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[1](0), ForwardOri[1](1), ForwardOri[1](2)));
-
-                    ex_temp_ = diff(x_[0], xd_[0]);
-                    ex_(0) = ex_temp_(3);
-                    ex_(1) = ex_temp_(4);
-                    ex_(2) = ex_temp_(5);
-                    ex_(3) = ex_temp_(0);
-                    ex_(4) = ex_temp_(1);
-                    ex_(5) = ex_temp_(2);
-
-                    ex_temp_ = diff(x_[1], xd_[1]);
-                    ex_(6) = ex_temp_(3);
-                    ex_(7) = ex_temp_(4);
-                    ex_(8) = ex_temp_(5);
-                    ex_(9) = ex_temp_(0);
-                    ex_(10) = ex_temp_(1);
-                    ex_(11) = ex_temp_(2);
-                }
-                if (ik_mode_ == 1)
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = A * sin(f * M_PI * (t - InitTime)) + b1;
-                    dx(4) = b2;
-                    dx(5) = b3;
-
-                    dx(6) = 0;
-                    dx(7) = -M_PI_2;
-                    dx(8) = 0;
-                    dx(9) = -A * sin(f * M_PI * (t - InitTime)) + l_p1;
-                    dx(10) = l_p2;
-                    dx(11) = l_p3;
-
-                    dxdot.setZero();
-                    dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(9) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                }
-                else if (ik_mode_ == 2)
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = b1;
-                    dx(4) = A * sin(f * M_PI * (t - InitTime)) + b2;
-                    dx(5) = b3;
-
-                    dx(6) = 0;
-                    dx(7) = -M_PI_2;
-                    dx(8) = 0;
-                    dx(9) = l_p1;
-                    dx(10) = -A * sin(f * M_PI * (t - InitTime)) + l_p2;
-                    dx(11) = l_p3;
-
-                    dxdot.setZero();
-                    dxdot(4) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(10) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                }
-                else if (ik_mode_ == 3)
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = b1-0.015;
-                    dx(4) = b2;
-                    dx(5) = A * sin(f * M_PI * (t - InitTime)) + b3;
-
-                    dx(6) = 0;
-                    dx(7) = -M_PI_2;
-                    dx(8) = 0;
-                    dx(9) = l_p1-0.01;
-                    dx(10) = l_p2;
-                    dx(11) = -A * sin(f * M_PI * (t - InitTime)) + l_p3;
-
-                    dxdot.setZero();
-                    dxdot(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(11) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                }
-                else if( ik_mode_ == 4 )
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = A * sin(f * M_PI * (t - InitTime)) + b1-0.015;
-                    dx(4) = b2+0.1;
-                    dx(5) = b3;
-
-                    dx(6) = 0;
-                    dx(7) = 0;
-                    dx(8) = 0;
-                    dx(9) = -A * cos(2*f * M_PI * (t - InitTime));
-                    dx(10) = -A * sin(2*f * M_PI * (t - InitTime)) + 0.45;
-                    dx(11) = 0;
-
-                    dxdot.setZero();
-                    dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(9) = (2*f * M_PI) * A * sin(2*f * M_PI * (t - InitTime));
-                    dxdot(10) = -(2*f * M_PI) * A * cos(2*f * M_PI * (t - InitTime));
-                }
-            }
-
-            if( ctr_obj_ == 9 && t > InitTime)
-            {
-                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 6);
+                motion->TaskMotion(dx, dxdot, dxddot, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
+                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, ControlSubMode);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
-                cManipulator->pKin->GetWDampedpInvLambda(wpInv_lambda);
+
+                if(ctr_obj_ == 6)
+                    cManipulator->pKin->GetWDampedpInvLambda(wpInv_lambda);
             }
-            else if( ctr_obj_ == 8 && t > InitTime)
-            {
-                Control->TaskRelativeError(dx, dxdot, qdot_.data, ex_, ex_dot_);
-
-                MatrixXd reljac;
-                cManipulator->pKin->GetRelativeJacobian(reljac);
-                MatrixXd AJacwithRel;
-                AJacwithRel = AJac;
-                AJacwithRel.block(6,0,6,16) = reljac;
-                MatrixXd pInvJac1;
-                pInvJac1 = AJacwithRel.completeOrthogonalDecomposition().pseudoInverse();
-
-                qd_dot_.data.setZero(16);
-                qd_dot_.data = pInvJac1 * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
-
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
-
-            }
-            else if( ctr_obj_ == 7 && t > InitTime)
-            {
-                if(ik_mode_ != 0)
-                {
-                    Control->TaskError(dx, dxdot, qdot_.data, ex_, ex_dot_);
-                }
-
-                cManipulator->pKin->GetDampedpInvJacobian(dampedpInvJac);
-
-                qd_dot_.data.setZero(16);
-                qd_dot_.data = dampedpInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
-
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
-
-            }
-            else if( ctr_obj_ == 6 && t > InitTime)
-            {
-                if(ik_mode_ != 0)
-                {
-                    Control->TaskError(dx, dxdot, qdot_.data, ex_, ex_dot_);
-                }
-
-                qd_dot_.data.setZero(16);
-                qd_dot_.data = pInvJac * (dxdot + CLIK_GAIN.cwiseProduct(ex_));
-
-                qd_.data = qd_old_.data + qd_dot_.data * dt;
-                qd_old_.data = qd_.data;
-
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
-            }
-            else if( ctr_obj_ == 5 && t > InitTime)
-            {
-                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 5);
-                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
-            }
-            else if( ctr_obj_ == 4 && t > InitTime)
-            {
-                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 3);
-                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
-            }
-            else if( ctr_obj_ == 3 && t > InitTime )
-            {
-                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 1);
-                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
-            }
-            else if( ctr_obj_ == 2 && t > InitTime )
-            {
-                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 2);
-                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
-            }
-            else if( ctr_obj_ == 1 && t > InitTime )
-            {
-                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, 4);
-                Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
-            }
-            else
+            else if( ControlMode == CTRLMODE_IDY_JOINT )
             {
                 qd_dot_.data.setZero(16);
+                motion->JointMotion(qd_.data, qd_dot_.data, qd_ddot_.data, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
                 Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
             }
 
@@ -832,15 +620,17 @@ namespace  dualarm_controller
                     printf("no.%d, PoE: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
                            ForwardPos[j](0), ForwardPos[j](1),ForwardPos[j](2),
                            ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
+                    printf("no.%d, PoE_desired: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
+                           dx(6*j+3),dx(6*j+4),dx(6*j+5),dx(6*j), dx(6*j+1), dx(6*j+2));
                     double a, b, g;
                     x_[j].M.GetEulerZYX(a, b, g);
                     printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
                            j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
                     printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n",
                            j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
-
-                    printf("Inverse Condition Number: %0.5lf \n\n", InverseConditionNumber[j]);
+                    printf("\n");
                 }
+                printf("Inverse Condition Number: Right:%0.5lf, Left:%0.5f\n", InverseConditionNumber[0], InverseConditionNumber[1]);
                 printf("SingleMM: Right:%0.5lf, Left:%0.5lf :: Right:%0.5lf, Left:%0.5lf,\n", SingleMM[0], SingleMM[1], SingleMM_1[0], SingleMM_1[1]);
                 printf("TOMM: Right:%0.5lf, Left:%0.5lf :: Right:%0.5lf, Left:%0.5lf\n", TOMM[0], TOMM[1], TOMM_1[0], TOMM_1[1]);
                 printf("MM: %0.5lf\n", MM);
@@ -854,13 +644,20 @@ namespace  dualarm_controller
                 printf("\n*********************************************************\n");
                 count = 0;
 
-                if(ctr_obj_ == 9)
+                if(ctr_obj_ == 6)
                 {
                     std::cout << "lambda[right]:" << std::endl;
                     std::cout << wpInv_lambda[0] << std::endl;
                     std::cout << "lambda[left]:" << std::endl;
                     std::cout << wpInv_lambda[1] << std::endl;
                 }
+
+                //std::cout << "J1:" <<std::endl;
+                //std::cout << J1_kdl_.data << "\n"<< std::endl;
+                //std::cout << "J2:" <<std::endl;
+                //std::cout << J2_kdl_.data << "\n"<< std::endl;
+                //std::cout << "Analytic Jacobian:" <<std::endl;
+                //std::cout << AJac << "\n"<< std::endl;
             }
             count++;
         }
@@ -871,6 +668,12 @@ namespace  dualarm_controller
         int ctr_obj_=0;
         int ik_mode_=0;
         double InitTime=0.0;
+
+        unsigned char ControlMode;
+        unsigned char ControlSubMode;
+        unsigned char ControlMotion;
+        unsigned char JointState;
+
         struct timespec begin, end;
         //Joint handles
         unsigned int n_joints_;
@@ -933,6 +736,7 @@ namespace  dualarm_controller
         Eigen::VectorXd q0dot;
         double alpha;
         Eigen::VectorXd torque;
+        Eigen::VectorXd targetpos;
 
         // Task Space State
         // ver. 01
@@ -945,6 +749,7 @@ namespace  dualarm_controller
         Eigen::VectorXd ex_dot_;
         Eigen::VectorXd dx;
         Eigen::VectorXd dxdot;
+        Eigen::VectorXd dxddot;
 
         // Input
         KDL::JntArray x_cmd_;
@@ -964,6 +769,7 @@ namespace  dualarm_controller
 
         std::shared_ptr<SerialManipulator> cManipulator;
         std::unique_ptr<HYUControl::Controller> Control;
+        std::unique_ptr<HYUControl::Motion> motion;
     };
 }
 

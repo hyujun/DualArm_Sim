@@ -61,21 +61,21 @@ dualarm:
       dualarm_joint16:
         pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
 
-    clik_gain: { K_pos: 0.3, K_ori: 0.005 }
+    clik_gain: { K_pos: 0.3, K_ori: 0.1 }
 
-    ctr_obj: 1  # 1 : Scaled Jacobian Transpose
+    ctr_obj: 1  # Index2
+                # 1 : Jacobian PseudoInverse
                 # 2 : Jacobian Transpose
-                # 3 : Jacobian PseudoInverse
-                # 4 : damped Jacobian PseudoInverse
+                # 3 : damped Jacobian PseudoInverse
+                # 4 : Scaled Jacobian Transpose
                 # 5 : Block Jacobian PseudoInverse
-                # 6 : Jacobian PseudoInverse without q0dot
-                # 7 : damped Jacobian PseudoInverse without q0dot
-                # 8 : Jacobian PseudoInver with Relative Jacobian(left-hand)
-                # 9 : Weight damped Jacobian PseudoInverse without q0dot
+                # 6 : Weight damped Jacobian PseudoInverse without q0dot
+                # 7 : Jacobian PseudoInver with Relative Jacobian(left-hand)
 
-    ik_mode: 2  # 0 : x-axis (kdl defined)
-                # 1 : x-axis
-                # 2 : y-axis
-                # 3 : z-axis
+    ik_mode: 2  # SubIndex
+                # 2 : x-axis
+                # 3 : y-axis
                 # 4 : relative motion (base:right-hand, end:left-hand)
+                # 5 : designed set-point
+                # 6 : given position from rqt
 

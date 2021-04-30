@@ -18,7 +18,7 @@ SerialManipulator::~SerialManipulator()
 
 }
 
-void SerialManipulator::StateMachine( const VectorXd _q, const VectorXd _qdot, VectorXd &_Target, uint16_t &_StateWord, uint16_t &_ControlWord )
+void SerialManipulator::StateMachine( const VectorXd _q, const VectorXd _qdot, VectorXd &_Target, unsigned char &_StateWord, unsigned char &_ControlWord )
 {
 	q = _q;
 	qdot = _qdot;

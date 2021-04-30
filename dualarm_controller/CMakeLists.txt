@@ -60,6 +60,7 @@ find_package(Boost REQUIRED COMPONENTS system)
          DIRECTORY msg
          FILES
          TaskCurrentState.msg
+         TaskDesiredState.msg
          JointCurrentState.msg
          JointDesiredState.msg
          state.msg

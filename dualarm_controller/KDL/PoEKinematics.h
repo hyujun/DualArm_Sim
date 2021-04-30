@@ -114,6 +114,8 @@ namespace HYUMotionKinematics {
 
         void GetDampedpInvJacobian( MatrixXd &_DampedpInvJacobian );
 
+        void GetDampedpInvJacobian( MatrixXd &_TargetMat, MatrixXd &_DampedpInvJacobian );
+
         void GetBlockpInvJacobian( MatrixXd &_BlockpInvJacobian );
 
         void GetRelativeJacobian( MatrixXd &_RelativeJacobian );
@@ -138,6 +140,8 @@ namespace HYUMotionKinematics {
         SO3 GetForwardKinematicsSO3( const int &_EndPosition ) const;
 
         void GetAngleAxis( Vector3d *_Axis, double *_Angle, int &_NumChain );
+
+        void SO3toAngleAxis( const Matrix3d &_RotMat, Vector3d &_orientation );
 
         void SO3toRollPitchYaw( const Matrix3d &_RotMat, Vector3d &_Orientation );
 
@@ -180,6 +184,8 @@ namespace HYUMotionKinematics {
         void pInvJacobian();
 
         void DampedpInvJacobian(const double sigma);
+
+        void DampedpInvJacobian( MatrixXd &_TargetMatrix, const double sigma);
 
         void RelativeJacobian(const int From, const int To);
 

@@ -4,7 +4,7 @@
 #define ENC_OFFSET_J2 16471556
 
 #define ENC_OFFSET_J3 104451305
-#define ENC_OFFSET_J4 506083805
+#define ENC_OFFSET_J4 503984552
 #define ENC_OFFSET_J5 14440820
 #define ENC_OFFSET_J6 10826499
 #define ENC_OFFSET_J7 -73395968
@@ -66,9 +66,9 @@ robot_kinematic_info serial_Kinematic_info[] = {
 				0.0, -325.0e-3, 260.0e-3},		// 7
 		{0, 0, 1,
 				0.0, -325.0e-3, 260.0e-3,
-                0.0, -325.0e-3, 179.0e-3},		// 8
+                0.0, -325.0e-3, 169.0e-3},		// 8
 		{1, 0, 0,
-				0.0, -325.0e-3, 179.0e-3,
+				0.0, -325.0e-3, 169.0e-3,
 
 #if defined(_WITH_HAND_)
                 0.0, -325.0e-3, 12.0e-3},		// Wrist with hand
@@ -96,9 +96,9 @@ robot_kinematic_info serial_Kinematic_info[] = {
             0.0, 325.0e-3, 260.0e-3},		// 13
 		{0, 0, 1,
 				0.0, 325.0e-3, 260.0e-3,
-                0.0, 325.0e-3, 179.0e-3},	// 14
+                0.0, 325.0e-3, 169.0e-3},	// 14
 		{1, 0, 0,
-				0.0, 325.0e-3, 179.0e-3,
+				0.0, 325.0e-3, 169.0e-3,
 
 #if defined(_WITH_HAND_)
                 0.0, 325.0e-3, 12.0e-3},		// wrist2 with hand

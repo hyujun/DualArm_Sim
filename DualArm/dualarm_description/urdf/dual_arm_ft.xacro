@@ -60,8 +60,8 @@
 		<axis xyz="0 0 -1" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-${90.0*D2R}"
+				upper="${90.0*D2R}"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -116,8 +116,8 @@
 		<axis xyz="0 -1 0" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-${90.0*D2R}"
+				upper="${90.0*D2R}"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -516,7 +516,7 @@
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
-				xyz="0 0 -0.081" />
+				xyz="0 0 -0.091" />
 		<parent
 				link="${r_arm_link_06_name}" />
 		<child
@@ -568,7 +568,7 @@
 		<child link="${r_arm_link_hand_2}"/>
 		<origin
 				rpy="0 0 0"
-				xyz="0 0 -0.057"/>
+				xyz="0 0 -0.067"/>
 		<limit effort="1000" velocity="100" lower="0" upper="0"/>
 	</joint>
 
@@ -600,7 +600,7 @@
 
 	<joint name="dualarm_R_end" type="fixed">
 		<origin
-				xyz="0 0 -0.110"
+				xyz="0 0 -0.090"
 				rpy="0 0 0"/>
 		<parent link="${r_arm_link_hand_2}"/>
 		<child link="dualarm_R_end_frame" />
@@ -955,7 +955,7 @@
 				velocity="${M_PI}" />
 		<origin
 				rpy="0 0 0"
-				xyz="0 0 -0.081" />
+				xyz="0 0 -0.091" />
 		<parent
 				link="${l_arm_link_06_name}" />
 		<child
@@ -1007,7 +1007,7 @@
 		<child link="${l_arm_link_hand_2}"/>
 		<origin
 				rpy="0 0 0"
-				xyz="0 0 -0.057"/>
+				xyz="0 0 -0.067"/>
 		<limit effort="1000" velocity="100" lower="0" upper="0"/>
 	</joint>
 
@@ -1039,7 +1039,7 @@
 
 	<joint name="dualarm_L_end" type="fixed">
 		<origin
-				xyz="0 0 -0.110"
+				xyz="0 0 -0.090"
 				rpy="0 0 0"/>
 		<parent link="${l_arm_link_hand_2}"/>
 		<child link="dualarm_L_end_frame" />

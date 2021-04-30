@@ -20,8 +20,8 @@ public:
 	explicit Motion(std::shared_ptr<SerialManipulator> Manipulator);
 	virtual ~Motion();
 
-	uint16_t JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot, VectorXd &_Target, const VectorXd &q, const VectorXd &qdot, double &_Time, uint16_t &_StatusWord, uint16_t &_MotionType);
-	uint16_t TaskMotion( VectorXd *_dx, VectorXd *_dxdot, VectorXd *_dxddot, double &_Time, uint16_t &_StatusWord, uint16_t &_MotionType );
+	uint16_t JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot, VectorXd &_Target, const VectorXd &q, const VectorXd &qdot, double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType);
+	uint16_t TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot, VectorXd _Target, const VectorXd &x, const VectorXd &qdot, double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType );
 
 private:
 
@@ -30,9 +30,9 @@ private:
 
 	Eigen::MatrixXd omega;
 
-	Eigen::MatrixXd x;
-	Eigen::MatrixXd xdot;
-	Eigen::MatrixXd TargetPosTask;
+	Eigen::VectorXd xdot;
+	Eigen::VectorXd TargetPosTask;
+	Eigen::MatrixXd AJacobian;
 
     std::shared_ptr<SerialManipulator> pManipulator;
 

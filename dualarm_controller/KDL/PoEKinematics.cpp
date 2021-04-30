@@ -293,6 +293,22 @@ namespace HYUMotionKinematics {
         _DampedpInvJacobian = mDampedpInvJacobian;
     }
 
+    void PoEKinematics::DampedpInvJacobian(MatrixXd &_TargetMatrix, const double sigma)
+    {
+        Mat_Tmp.setZero(12,12);
+        Mat_Tmp.noalias() += _TargetMatrix*_TargetMatrix.transpose();
+        Mat_Tmp.noalias() += sigma*Eigen::Matrix<double, 12, 12>::Identity();
+
+        mDampedpInvJacobian.setZero( m_DoF,6*m_NumChain );
+        mDampedpInvJacobian.noalias() += _TargetMatrix.transpose()*Mat_Tmp.inverse();
+    }
+
+    void PoEKinematics::GetDampedpInvJacobian(MatrixXd &_TargetMat, MatrixXd &_DampedpInvJacobian)
+    {
+        DampedpInvJacobian(_TargetMat, 0.0025);
+        _DampedpInvJacobian = mDampedpInvJacobian;
+    }
+
     void PoEKinematics::BlockpInvJacobian( Matrix<double, 6, Dynamic> &_Jacobian1, Matrix<double, 6, Dynamic> &_Jacobian2 )
     {
         MatrixXd P1 = Matrix<double, 16, 16>::Identity();
@@ -528,18 +544,28 @@ namespace HYUMotionKinematics {
     void PoEKinematics::GetAngleAxis( Vector3d *_Axis, double *_Angle, int &_NumChain )
     {
         _NumChain = this->m_NumChain;
-
+        AngleAxis<double> rot;
         for(int i=0; i<this->m_NumChain; i++)
         {
-            LogSO3(T[0][JointEndNum[i]].block(0,0,3,3), _Axis[i], _Angle[i]);
+            rot = T[0][JointEndNum[i]].block(0,0,3,3);
+            _Axis[i] = rot.axis();
+            _Angle[i] = rot.angle();
+            //LogSO3(T[0][JointEndNum[i]].block(0,0,3,3), _Axis[i], _Angle[i]);
         }
+    }
 
-        return;
+    void PoEKinematics::SO3toAngleAxis(const Matrix3d &_RotMat, Vector3d &_orientation)
+    {
+        AngleAxis<double> rot;
+        rot = _RotMat;
+        _orientation = rot.axis()*rot.angle();
     }
 
     void PoEKinematics::RollPitchYawtoSO3( const double &_Roll_rad, const double &_Pitch_rad, const double &_Yaw_rad, Matrix3d &_RotMat)
     {
-        _RotMat = Eigen::AngleAxisd(_Yaw_rad, Vector3d::UnitZ())*Eigen::AngleAxisd(_Pitch_rad, Vector3d::UnitY())*Eigen::AngleAxisd(_Roll_rad, Vector3d::UnitX());
+        Eigen::Quaterniond q;
+        q = Eigen::AngleAxisd(_Yaw_rad, Vector3d::UnitZ())*Eigen::AngleAxisd(_Pitch_rad, Vector3d::UnitY())*Eigen::AngleAxisd(_Roll_rad, Vector3d::UnitX());
+        _RotMat = q.toRotationMatrix();
     }
 
     void PoEKinematics::SO3toRollPitchYaw( const Matrix3d &_RotMat, Vector3d &_Orientation )
@@ -550,11 +576,12 @@ namespace HYUMotionKinematics {
 
         double sinp = 2.0*( q.w()*q.y() - q.z()*q.x() );
         if(abs(sinp) >= 1)
-            _Orientation(1) = copysign(M_PI/2, sinp);
+            _Orientation(1) = copysign(M_PI_2, sinp);
         else
             _Orientation(1) = asin(sinp);
 
         _Orientation(2) = atan2( 2.0*(q.w()*q.z() + q.x()*q.y()) , 1.0-2.0*( pow(q.y(),2) + pow(q.z(),2) ) );
     }
+
 
 }

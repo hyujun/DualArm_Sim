@@ -319,14 +319,12 @@ namespace dualarm_controller
             t = 0.0;
             InitTime=5.0;
 
-            ROS_INFO_STREAM("Starting Task space Controller");
+            ROS_INFO_STREAM("Starting Joint-Space Controller");
 
             cManipulator = std::make_shared<SerialManipulator>();
             Control = std::make_unique<HYUControl::Controller>(cManipulator);
 
             cManipulator->UpdateManipulatorParam();
-
-
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -414,7 +412,6 @@ namespace dualarm_controller
                     des_torque(i) = -300;
 
                 joints_[i].setCommand(des_torque(i));
-                //joints_[i].setCommand(0.0);
             }
 
             // ********* 4. data 저장 *********
@@ -428,7 +425,7 @@ namespace dualarm_controller
 
         void stopping(const ros::Time &time) override
         {
-            ROS_INFO_STREAM("Stop Task space Controller");
+            ROS_INFO_STREAM("Stop Joint-Space Controller");
         }
 
         void publish_data()

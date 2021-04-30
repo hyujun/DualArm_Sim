@@ -165,9 +165,48 @@ namespace HYUMotionBase {
 
     void LieOperator::LogSO3( const SO3 &_RotMat, Vector3d &_omega, double &_theta )
     {
-        mLogSO3 = _RotMat;
-        _omega = mLogSO3.axis();
-        _theta = mLogSO3.angle();
+        //mLogSO3 = _RotMat;
+        //_omega = mLogSO3.axis();
+        //_theta = mLogSO3.angle();
+
+        Eigen::Quaternion<double> q;
+        q = _RotMat;
+        double squared_n = q.vec().squaredNorm();
+        double w = q.w();
+        auto epsilon = std::numeric_limits<double>::epsilon();
+        double two_atan_nbyw_by_n;
+        if(squared_n < epsilon*epsilon)
+        {
+            if(abs(w) >= epsilon)
+            {
+
+            }
+            auto squared_w = w*w;
+            two_atan_nbyw_by_n = 2.0/w - 2.0/3.0*squared_n/(w*squared_w);
+            _theta = 2.0*squared_n/w;
+        }
+        else
+        {
+            auto n = sqrt(squared_n);
+            if(abs(w) < epsilon)
+            {
+                if(w > 0.0)
+                {
+                    two_atan_nbyw_by_n = M_PI/n;
+                }
+                else
+                {
+                    two_atan_nbyw_by_n = -M_PI/n;
+                }
+            }
+            else
+            {
+                two_atan_nbyw_by_n = 2.0*atan(n/w)/n;
+            }
+            _theta = two_atan_nbyw_by_n*n;
+        }
+        _omega = two_atan_nbyw_by_n*q.vec();
+
     }
 
     Matrix3d LieOperator::GmapMatrix( const Vector3d &_omega, const double &_theta )

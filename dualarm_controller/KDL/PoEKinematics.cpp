@@ -547,7 +547,7 @@ namespace HYUMotionKinematics {
         AngleAxis<double> rot;
         for(int i=0; i<this->m_NumChain; i++)
         {
-            rot = T[0][JointEndNum[i]].block(0,0,3,3);
+            rot = GetForwardKinematicsSO3(JointEndNum[i]);
             _Axis[i] = rot.axis();
             _Angle[i] = rot.angle();
             //LogSO3(T[0][JointEndNum[i]].block(0,0,3,3), _Axis[i], _Angle[i]);

@@ -331,6 +331,7 @@ void Controller::CLIKTaskController( const VectorXd &_q,
                                      const VectorXd &_qdot,
                                      const VectorXd &_dx,
                                      const VectorXd &_dxdot,
+                                     const VectorXd &_sensor,
                                      VectorXd &_Toq,
                                      const double &_dt,
                                      const int mode )

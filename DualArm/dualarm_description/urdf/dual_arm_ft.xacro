@@ -593,9 +593,23 @@
 			<geometry>
 				<mesh
 						filename="package://dualarm_description/meshes/stl/allegro_ft.STL"
-						scale="0.001 0.001 0.001"/>
+						scale="1 1 1"/>
 			</geometry>
 		</visual>
+		<collision name='collision'>
+			<geometry>
+				<mesh filename="package://dualarm_description/meshes/collision/allegro.dae"
+					  scale="1 1 1"/>
+			</geometry>
+			<surface>
+				<friction>
+					<ode>
+						<mu>100</mu>
+						<mu2>100</mu2>
+					</ode>
+				</friction>
+			</surface>
+		</collision>
 	</link>
 
 	<joint name="dualarm_R_end" type="fixed">
@@ -1035,6 +1049,20 @@
 						scale="0.001 0.001 0.001"/>
 			</geometry>
 		</visual>
+		<collision name='collision'>
+			<geometry>
+				<mesh filename="package://dualarm_description/meshes/collision/lefthand_ft.dae"
+				scale="0.001 0.001 0.001"/>
+			</geometry>
+			<surface>
+				<friction>
+					<ode>
+						<mu>100</mu>
+						<mu2>100</mu2>
+					</ode>
+				</friction>
+			</surface>
+		</collision>
 	</link>
 
 	<joint name="dualarm_L_end" type="fixed">

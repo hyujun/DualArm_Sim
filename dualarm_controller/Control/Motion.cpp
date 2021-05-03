@@ -85,9 +85,8 @@ uint16_t Motion::JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot, Ve
 		else
 		{
 			TargetPos.setZero();
-
-			_Target = TargetPos;
-
+			TargetPos(6) = -60.0*DEGtoRAD;
+            TargetPos(13) = 60.0*DEGtoRAD;
 			TrajectoryTime=5.0;
 			NewTarget=1;
 		}

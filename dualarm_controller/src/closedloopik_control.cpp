@@ -9,6 +9,7 @@
 #include <urdf/model.h>
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include "utils.h"
 #include "dualarm_controller/TaskCurrentState.h"
 #include "dualarm_controller/TaskDesiredState.h"
@@ -296,6 +297,7 @@ namespace  dualarm_controller
             q_.data = Eigen::VectorXd::Zero(n_joints_);
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
             torque.setZero(n_joints_);
+            ft_sensor.setZero(12);
 
             wpInv_lambda[0].setZero(3);
             wpInv_lambda[1].setZero(3);
@@ -350,10 +352,33 @@ namespace  dualarm_controller
 
             });
             sub_x_cmd_ = n.subscribe<dualarm_controller::TaskDesiredState>( "command", 5, joint_state_cb);
+            sub_ft_sensor_R = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_R", 5, &ClosedLoopIK_Control::UpdateFTsensorR, this);
+            sub_ft_sensor_L = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_L", 5, &ClosedLoopIK_Control::UpdateFTsensorL, this);
 
             return true;
         }
 
+        void UpdateFTsensorR(const geometry_msgs::WrenchStamped::ConstPtr &msg)
+        {
+            geometry_msgs::Wrench ft_measure = msg->wrench;
+            ft_sensor(0) = ft_measure.torque.x;
+            ft_sensor(1) = ft_measure.torque.y;
+            ft_sensor(2) = ft_measure.torque.z;
+            ft_sensor(3) = ft_measure.force.x;
+            ft_sensor(4) = ft_measure.force.y;
+            ft_sensor(5) = ft_measure.force.z;
+        }
+
+        void UpdateFTsensorL(const geometry_msgs::WrenchStamped::ConstPtr &msg)
+        {
+            geometry_msgs::Wrench ft_measure = msg->wrench;
+            ft_sensor(6) = ft_measure.torque.x;
+            ft_sensor(7) = ft_measure.torque.y;
+            ft_sensor(8) = ft_measure.torque.z;
+            ft_sensor(9) = ft_measure.force.x;
+            ft_sensor(10) = ft_measure.force.y;
+            ft_sensor(11) = ft_measure.force.z;
+        }
         void starting(const ros::Time &time) override
         {
             t = 0.0;
@@ -454,7 +479,7 @@ namespace  dualarm_controller
             if( ControlMode == CTRLMODE_CLIK )
             {
                 motion->TaskMotion(dx, dxdot, dxddot, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
-                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, torque, dt, ControlSubMode);
+                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, ft_sensor, torque, dt, ControlSubMode);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
 
                 if(ctr_obj_ == 6)
@@ -630,6 +655,12 @@ namespace  dualarm_controller
                            j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
                     printf("\n");
                 }
+
+                printf("FT Sensor(Right): torque_u:%0.3lf, torque_v:%0.3lf, torque_w:%0.3lf, force_x:%0.3lf, force_y:%0.3lf, force_z:%0.3lf\n",
+                       ft_sensor(0), ft_sensor(1), ft_sensor(2),ft_sensor(3),ft_sensor(4),ft_sensor(5));
+                printf("FT Sensor(Left): torque_u:%0.3lf, torque_v:%0.3lf, torque_w:%0.3lf, force_x:%0.3lf, force_y:%0.3lf, force_z:%0.3lf\n\n",
+                       ft_sensor(6), ft_sensor(7), ft_sensor(8),ft_sensor(9),ft_sensor(10),ft_sensor(11));
+
                 printf("Inverse Condition Number: Right:%0.5lf, Left:%0.5f\n", InverseConditionNumber[0], InverseConditionNumber[1]);
                 printf("SingleMM: Right:%0.5lf, Left:%0.5lf :: Right:%0.5lf, Left:%0.5lf,\n", SingleMM[0], SingleMM[1], SingleMM_1[0], SingleMM_1[1]);
                 printf("TOMM: Right:%0.5lf, Left:%0.5lf :: Right:%0.5lf, Left:%0.5lf\n", TOMM[0], TOMM[1], TOMM_1[0], TOMM_1[1]);
@@ -735,6 +766,7 @@ namespace  dualarm_controller
         KDL::JntArray qdot_, q1dot_, q2dot_;
         Eigen::VectorXd q0dot;
         double alpha;
+        Eigen::VectorXd ft_sensor;
         Eigen::VectorXd torque;
         Eigen::VectorXd targetpos;
 
@@ -766,6 +798,7 @@ namespace  dualarm_controller
 
         // subscriber
         ros::Subscriber sub_x_cmd_;
+        ros::Subscriber sub_ft_sensor_R, sub_ft_sensor_L;
 
         std::shared_ptr<SerialManipulator> cManipulator;
         std::unique_ptr<HYUControl::Controller> Control;

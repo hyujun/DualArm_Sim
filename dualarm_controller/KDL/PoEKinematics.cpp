@@ -55,9 +55,9 @@ namespace HYUMotionKinematics {
 
     }
 
-    void PoEKinematics::UpdateKinematicInfo( const Vector3d &_w, const Vector3d &_p, const Vector3d &_l, const int _link_num )
+    void PoEKinematics::UpdateKinematicInfo( const Vector3d &_w, const Vector3d &_p, const Vector3d &_Rot, const Vector3d &_l, const int _link_num )
     {
-        M[_link_num] = GetM(_l);
+        M[_link_num] = GetM(_Rot, _l);
 
         v_se3[_link_num] = GetTwist(_w, GetV(_w, _p));
     }
@@ -67,10 +67,13 @@ namespace HYUMotionKinematics {
         return -SkewMatrix(_w)*_p;
     }
 
-    SE3 PoEKinematics::GetM( const Vector3d &_link )
+    SE3 PoEKinematics::GetM( const Vector3d &_Rot, const Vector3d &_link )
     {
         SE3_Tmp.setIdentity();
-        SE3_Tmp.block<3, 1>(0, 3) = _link;
+        Eigen::Quaternion<double> q;
+        q = Eigen::AngleAxisd(_Rot(2), Vector3d::UnitZ())*Eigen::AngleAxisd(_Rot(1), Vector3d::UnitY())*Eigen::AngleAxisd(_Rot(0), Vector3d::UnitX());
+        SE3_Tmp.block(0,0,3,3) = q.matrix();
+        SE3_Tmp.block(0,3,3,1) = _link;
         return SE3_Tmp;
     }
 
@@ -329,8 +332,12 @@ namespace HYUMotionKinematics {
         _BlockpInvJacobian = mBlockpInvJacobian;
     }
 
-    void PoEKinematics::WeightpInvJacobian( const VectorXd &_rdot )
+    void PoEKinematics::WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat )
     {
+
+        WpInv_epsilon_left = 0.001;
+        WpInv_epsilon_right = 0.001;
+
         mWeightDampedpInvJacobian.setZero(16,12);
 
         VectorXd r1_right, r2_right, r1_left, r2_left;
@@ -361,9 +368,9 @@ namespace HYUMotionKinematics {
         MatrixXd W = Matrix<double, 16, 16>::Zero();
         W.noalias() += J1.transpose()*J1;
         W.noalias() += J2.transpose()*J2;
-        W.noalias() += WpInv_epsilon_right*Matrix<double, 16, 16>::Identity();
-        //MatrixXd W_inv = W.inverse()
-        MatrixXd W_inv = W.completeOrthogonalDecomposition().pseudoInverse();
+        W.noalias() += WpInv_epsilon_right*_WeightMat;
+        MatrixXd W_inv = W.inverse();
+        //MatrixXd W_inv = W.completeOrthogonalDecomposition().pseudoInverse();
 
         MatrixXd Y = Matrix<double, 3, 3>::Zero();
         Y.noalias() += J1*W_inv*J1.transpose();
@@ -384,7 +391,7 @@ namespace HYUMotionKinematics {
         J_WpInv_right.block(0,3,16,3) = Z12;
         lambda_right = -Z21*J2.transpose()*r2_right -Z22*r1_right;
         //WpInv_epsilon_right = lambda_right.norm();
-        WpInv_epsilon_right = tanh(lambda_right.norm());
+        //WpInv_epsilon_right = tanh(lambda_right.norm());
         mWeightDampedpInvJacobian.block(0,0,16,6) = J_WpInv_right;
 
         // 1st priority : Translation p 3x1, 2nd priority : Rotation r 3x1 for left-arm
@@ -394,9 +401,9 @@ namespace HYUMotionKinematics {
         W.setZero(16,16);
         W.noalias() += J1.transpose()*J1;
         W.noalias() += J2.transpose()*J2;
-        W.noalias() += WpInv_epsilon_left*Matrix<double, 16, 16>::Identity();
-        //W_inv = W.inverse();
-        W_inv = W.completeOrthogonalDecomposition().pseudoInverse();
+        W.noalias() += WpInv_epsilon_left*_WeightMat;
+        W_inv = W.inverse();
+        //W_inv = W.completeOrthogonalDecomposition().pseudoInverse();
 
         Y.setZero(3,3);
         Y.noalias() += J1*W_inv*J1.transpose();
@@ -417,13 +424,13 @@ namespace HYUMotionKinematics {
         J_WpInv_left.block(0,3,16,3) = Z12;
         lambda_left = -Z21*J2.transpose()*r2_left -Z22*r1_left;
         //WpInv_epsilon_left = lambda_left.norm();
-        WpInv_epsilon_left = tanh(lambda_left.norm());
+        //WpInv_epsilon_left = tanh(lambda_left.norm());
         mWeightDampedpInvJacobian.block(0,6,16,6) = J_WpInv_left;
     }
 
-    void PoEKinematics::GetWeightDampedpInvJacobian( const VectorXd &_rdot, MatrixXd &_WDampedpInvJacobian )
+    void PoEKinematics::GetWeightDampedpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, MatrixXd &_WDampedpInvJacobian )
     {
-        WeightpInvJacobian(_rdot);
+        WeightpInvJacobian(_rdot, _WeightMat);
         _WDampedpInvJacobian = mWeightDampedpInvJacobian;
     }
 

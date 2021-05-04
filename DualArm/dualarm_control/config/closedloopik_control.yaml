@@ -61,7 +61,7 @@ dualarm:
       dualarm_joint16:
         pid: {p: 20.0, i: 100.0, d: 1, h: 10.0}
 
-    clik_gain: { K_pos: 0.3, K_ori: 0.1 }
+    clik_gain: { K_pos: 0.1, K_ori: 0.1 }
 
     ctr_obj: 1  # Index2
                 # 1 : Jacobian PseudoInverse

@@ -73,6 +73,7 @@ public:
 private:
     Vector3d w[16]; 	/**< kinematic information container */
     Vector3d p[16]; 	/**< kinematic information container */
+    Vector3d M_Rot[16];
     Vector3d L[16]; 	/**< kinematic information container */
     Vector3d CoM[16];
     Matrix3d Iner[16];

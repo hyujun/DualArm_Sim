@@ -49,9 +49,10 @@ void SerialManipulator::UpdateManipulatorParam()
     {
     	w[i] << serial_Kinematic_info[i].w_x, serial_Kinematic_info[i].w_y, serial_Kinematic_info[i].w_z;
 		p[i] << serial_Kinematic_info[i].q_x, serial_Kinematic_info[i].q_y, serial_Kinematic_info[i].q_z;
+		M_Rot[i] << serial_Kinematic_info[i].r*DEGtoRAD, serial_Kinematic_info[i].p*DEGtoRAD, serial_Kinematic_info[i].y*DEGtoRAD;
 		L[i] << serial_Kinematic_info[i].l_x, serial_Kinematic_info[i].l_y, serial_Kinematic_info[i].l_z;
 
-		pKin->UpdateKinematicInfo( w[i], p[i], L[i], i );
+		pKin->UpdateKinematicInfo( w[i], p[i], M_Rot[i], L[i], i );
 
 
     	Iner[i] << serial_Dynamic_info[i].Ixx_kgm2, serial_Dynamic_info[i].Ixy_kgm2, serial_Dynamic_info[i].Izx_kgm2,

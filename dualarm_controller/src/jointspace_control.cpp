@@ -383,7 +383,7 @@ namespace dualarm_controller
                 qd_.data(1) = -0.0*D2R;
 
                 qd_.data(2) = 0.0*D2R;
-                qd_.data(3) = -0.0*D2R;
+                qd_.data(3) = -20.0*D2R;
                 qd_.data(4) = -0.0*D2R;
                 qd_.data(5) = -0.0*D2R;
                 qd_.data(6) = -70.0*D2R;
@@ -391,7 +391,7 @@ namespace dualarm_controller
                 qd_.data(8) = 0.0*D2R;
 
                 qd_.data(9) = 0.0*D2R;
-                qd_.data(10) = 0.0*D2R;
+                qd_.data(10) = 20.0*D2R;
                 qd_.data(11) = 0.0*D2R;
                 qd_.data(12) = -0.0*D2R;
                 qd_.data(13) = 70.0*D2R;

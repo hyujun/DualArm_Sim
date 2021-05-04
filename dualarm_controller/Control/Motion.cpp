@@ -396,13 +396,13 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
 	xdot.noalias() += AJacobian*qdot;
 
     auto A = 0.12;
-    auto b1 = 0.55;
-    auto b2 = -0.43;
+    auto b1 = 0.64;
+    auto b2 = -0.33;
     auto b3 = 0.45;
     auto f = 0.2;
 
-    auto l_p1 = 0.45;
-    auto l_p2 = 0.43;
+    auto l_p1 = 0.58;
+    auto l_p2 = 0.33;
     auto l_p3 = 0.42;
 
     if( MotionCommandTask == MOVE_TASK_CUSTOM )
@@ -439,14 +439,14 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         else
         {
             _dx(0) = 0;
-            _dx(1) = -M_PI_2;
+            _dx(1) = 0;
             _dx(2) = 0;
             _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + b1;
             _dx(4) = b2;
             _dx(5) = b3;
 
             _dx(6) = 0;
-            _dx(7) = -M_PI_2;
+            _dx(7) = 0;
             _dx(8) = 0;
             _dx(9) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + l_p1;
             _dx(10) = l_p2;
@@ -468,14 +468,14 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         else
         {
             _dx(0) = 0;
-            _dx(1) = -M_PI_2;
+            _dx(1) = 0;
             _dx(2) = 0;
             _dx(3) = b1;
             _dx(4) = A * sin(f * M_PI * (_Time - MotionInitTime)) + b2;
             _dx(5) = b3;
 
             _dx(6) = 0;
-            _dx(7) = -M_PI_2;
+            _dx(7) = 0;
             _dx(8) = 0;
             _dx(9) = l_p1;
             _dx(10) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + l_p2;
@@ -498,7 +498,7 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         {
             A = 0.07;
             _dx(0) = 0;
-            _dx(1) = -M_PI_2;
+            _dx(1) = 0;
             _dx(2) = 0;
             _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + b1 + 0.09;
             _dx(4) = b2 + 0.11;
@@ -528,14 +528,14 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         else
         {
             _dx(0) = 0.0*DEGtoRAD;
-            _dx(1) = -90.0*DEGtoRAD;
+            _dx(1) = 0.0*DEGtoRAD;
             _dx(2) = 0.0*DEGtoRAD;
             _dx(3) = b1;
             _dx(4) = b2;
             _dx(5) = b3;
 
             _dx(6) = 0.0*DEGtoRAD;
-            _dx(7) = -90.0*DEGtoRAD;
+            _dx(7) = 0.0*DEGtoRAD;
             _dx(8) = 0.0*DEGtoRAD;
             _dx(9) = l_p1;
             _dx(10) = l_p2;

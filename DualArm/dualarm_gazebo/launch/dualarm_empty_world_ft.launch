@@ -10,18 +10,8 @@
     <arg name="verbose" default="true"/>
     <arg name="extra_gazebo_args" default=""/>
 
-    <param name="robot_description" command="$(find xacro)/xacro '$(find dualarm_description)/urdf/dual_arm_ft.xacro'"/>
-    <node
-            name="urdf_spawner"
-            pkg="gazebo_ros"
-            type="spawn_model"
-            respawn="false"
-            output="screen"
-            args="-urdf -model dualarm -param robot_description
-              "/>
-
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="/home/baek/catkin_ws/src/DualArm_Sim/DualArm/dualarm_gazebo/launch/box.sdf"/>
+        <arg name="world_name" value="'$(find dualarm_gazebo)/launch/box.sdf'"/>
         <arg name="paused" value="$(arg paused)"/>
         <arg name="use_sim_time" value="$(arg use_sim_time)"/>
         <arg name="gui" value="$(arg gui)" />
@@ -32,4 +22,13 @@
         <arg name="verbose" value="$(arg verbose)"/>
     </include>
 
+    <param name="robot_description" command="$(find xacro)/xacro '$(find dualarm_description)/urdf/dual_arm_ft.xacro'"/>
+    <node
+            name="urdf_spawner"
+            pkg="gazebo_ros"
+            type="spawn_model"
+            args="-urdf -param robot_description -model dualarm"
+            respawn="false"
+            output="screen"
+    />
 </launch>

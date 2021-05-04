@@ -407,8 +407,11 @@ void Controller::CLIKTaskController( const VectorXd &_q,
     }
     else if(mode  == 6) // weight damped jacobian pseudoinverse with task priority
     {
-        pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-        pManipulator->pKin->GetWeightDampedpInvJacobian(Vector_temp, WdampedpInvJacobian);
+        MatrixXd weight;
+        //weight.setIdentity(16,16);
+        pManipulator->pDyn->M_Matrix(weight);
+        //pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
+        pManipulator->pKin->GetWeightDampedpInvJacobian(Vector_temp, weight, WdampedpInvJacobian);
 
         Matrix_temp = Eigen::MatrixXd::Identity(16,16);
         Matrix_temp += -WdampedpInvJacobian*AnalyticJacobian;

@@ -44,7 +44,7 @@ namespace HYUMotionKinematics {
          * @param[in] _l link length
          * @param[in] _link_num number of link attached to base-coordinate
          */
-        void UpdateKinematicInfo( const Vector3d &_w, const Vector3d &_p, const Vector3d &_l, const int _link_num );
+        void UpdateKinematicInfo( const Vector3d &_w, const Vector3d &_p, const Vector3d &_Rot, const Vector3d &_l, const int _link_num );
 
         /**
          * @brief Calculate the joint velocity v
@@ -59,7 +59,7 @@ namespace HYUMotionKinematics {
          * @param[in] _link total length of robot
          * @return SE(3)
          */
-        SE3 GetM( const Vector3d &_link );
+        SE3 GetM( const Vector3d &_Rot, const Vector3d &_link );
 
         void SetTwist( const se3 &_Twist, const int _link_num );
         /**
@@ -120,7 +120,7 @@ namespace HYUMotionKinematics {
 
         void GetRelativeJacobian( MatrixXd &_RelativeJacobian );
 
-        void GetWeightDampedpInvJacobian( const VectorXd &_rdot, MatrixXd &_WDampedpInvJacobian );
+        void GetWeightDampedpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, MatrixXd &_WDampedpInvJacobian );
 
         void GetWDampedpInvLambda(VectorXd *lambda);
 
@@ -191,7 +191,7 @@ namespace HYUMotionKinematics {
 
         void BlockpInvJacobian( Matrix<double, 6, Dynamic> &_Jacobian1, Matrix<double, 6, Dynamic> &_Jacobian2 );
 
-        void WeightpInvJacobian( const VectorXd &_rdot );
+        void WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat );
 
         MatrixXi ChainMatrix;
         int m_NumChain;

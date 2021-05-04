@@ -72,8 +72,9 @@ namespace HYUMotionDynamics{
 
     void Liedynamics::UpdateDynamicInfo( const Vector3d &_w, const Vector3d &_p, const Matrix3d &_Inertia, const double &_Mass, const Vector3d &_CoM, const int _LinkNum )
     {
+        Vector3d zero = Vector3d::Zero();
         GeneralizedInertia(_Inertia, _Mass, GIner[_LinkNum]);
-        UpdateKinematicInfo(_w, _p, _CoM, _LinkNum);
+        UpdateKinematicInfo(_w, _p, zero, _CoM, _LinkNum);
         A[_LinkNum] = AdjointMatrix(inverse_SE3(GetMMat(_LinkNum)))*GetTwist(_LinkNum);
         SetTwist(A[_LinkNum], _LinkNum);
     }

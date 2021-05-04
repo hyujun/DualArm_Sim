@@ -615,7 +615,7 @@
 	<joint name="dualarm_R_end" type="fixed">
 		<origin
 				xyz="0 0 -0.090"
-				rpy="0 0 0"/>
+				rpy="0 ${M_PI/2} 0"/>
 		<parent link="${r_arm_link_hand_2}"/>
 		<child link="dualarm_R_end_frame" />
 	</joint>
@@ -1068,7 +1068,7 @@
 	<joint name="dualarm_L_end" type="fixed">
 		<origin
 				xyz="0 0 -0.090"
-				rpy="0 0 0"/>
+				rpy="0 ${M_PI/2} 0"/>
 		<parent link="${l_arm_link_hand_2}"/>
 		<child link="dualarm_L_end_frame" />
 	</joint>

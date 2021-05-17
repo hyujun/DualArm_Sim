@@ -60,8 +60,8 @@
 		<axis xyz="0 0 -1" />
 		<limit
 				effort="300"
-				lower="-${90.0*D2R}"
-				upper="${90.0*D2R}"
+				lower="-1.5708"
+				upper="1.5708"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -116,8 +116,8 @@
 		<axis xyz="0 -1 0" />
 		<limit
 				effort="300"
-				lower="-${90.0*D2R}"
-				upper="${90.0*D2R}"
+				lower="0.2618"
+				upper="-1.2217"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -175,8 +175,8 @@
 		<axis xyz="0 0 -1" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-1.5708"
+				upper="0.5236"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -231,8 +231,8 @@
 		<axis xyz="0 1 0" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-1.5708"
+				upper="0.7854"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -287,8 +287,8 @@
 		<axis xyz="1 0 0" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-1.5708"
+				upper="0.349"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -343,8 +343,8 @@
 		<axis xyz="0 0 1" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-1.5708"
+				upper="1.5708"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -399,8 +399,8 @@
 		<axis xyz="0 1 0" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-1.5708"
+				upper="0.7854"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -455,8 +455,8 @@
 		<axis xyz="0 0 1" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-0.7854"
+				upper="0.7854"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -511,8 +511,8 @@
 		<axis xyz="1 0 0" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-1.5708"
+				upper="1.5708"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -628,8 +628,8 @@
 		<axis xyz="0 0 -1" />
 		<limit
 				effort="300"
-				lower="-${M_PI/2}"
-				upper="${M_PI/2}"
+				lower="-0.5236"
+				upper="1.5708"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -684,8 +684,8 @@
 		<axis xyz="0 -1 0" />
 		<limit
 				effort="300"
-				lower="-${M_PI/2}"
-				upper="${M_PI/2}"
+				lower="-0.7854"
+				upper="1.5708"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -740,8 +740,8 @@
 		<axis xyz="1 0 0" />
 		<limit
 				effort="200"
-				lower="-${M_PI/4}"
-				upper="${M_PI/2}"
+				lower="-0.349"
+				upper="1.5708"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -796,8 +796,8 @@
 		<axis xyz="0 0 1" />
 		<limit
 				effort="200"
-				lower="-${M_PI/2}"
-				upper="${M_PI/2}"
+				lower="-1.5708"
+				upper="1.5708"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -852,8 +852,8 @@
 		<axis xyz="0 -1 0" />
 		<limit
 				effort="300"
-				lower="-${M_PI/4}"
-				upper="${M_PI/2}"
+				lower="-0.7804"
+				upper="1.5708"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -964,8 +964,8 @@
 		<axis xyz="1 0 0" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-0.7854"
+				upper="0.7854"
 				velocity="${M_PI}" />
 		<origin
 				rpy="0 0 0"

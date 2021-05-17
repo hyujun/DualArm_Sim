@@ -120,6 +120,8 @@ namespace HYUMotionKinematics {
 
         void GetRelativeJacobian( MatrixXd &_RelativeJacobian );
 
+        void GetRelativeJacobianDot( const VectorXd &_qdot, MatrixXd &_RelativeJacobianDot );
+
         void GetWeightDampedpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, MatrixXd &_WDampedpInvJacobian );
 
         void GetWDampedpInvLambda(VectorXd *lambda);
@@ -167,6 +169,9 @@ namespace HYUMotionKinematics {
             return M[_pos];
         }
 
+        VectorXd qLimit_Low;
+        VectorXd qLimit_High;
+
     protected:
 
         void SpaceJacobian();
@@ -188,6 +193,8 @@ namespace HYUMotionKinematics {
         void DampedpInvJacobian( MatrixXd &_TargetMatrix, const double sigma);
 
         void RelativeJacobian(const int From, const int To);
+
+        void RelativeJacobianDot( const VectorXd &_qdot );
 
         void BlockpInvJacobian( Matrix<double, 6, Dynamic> &_Jacobian1, Matrix<double, 6, Dynamic> &_Jacobian2 );
 
@@ -216,6 +223,8 @@ namespace HYUMotionKinematics {
         MatrixXd mBlockpInvJacobian;
         MatrixXd mWeightDampedpInvJacobian;
         Eigen::Matrix<double, 6, Dynamic> mRelativeJacobian;
+        Eigen::Matrix<double, 6, Dynamic> mRelativeBodyJacobianDot;
+        Eigen::Matrix<double, 6, Dynamic> mRelativeJacobianDot;
 
         MatrixXd Mat_Tmp;
         VectorXd Vec_Tmp;

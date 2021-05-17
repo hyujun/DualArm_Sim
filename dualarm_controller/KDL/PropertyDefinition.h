@@ -9,6 +9,11 @@
 
 #define _WITH_HAND_
 
+typedef struct{
+    double Low[16];
+    double High[16];
+}JointLimit;
+
 /**
  * @brief Kinematics Infomation
  */
@@ -86,3 +91,5 @@ extern robot_motor_info serial_Motor_info[];
 extern FrictionMap frictionmap[];
 
 extern FrictionTanh frictiontanh[];
+
+extern JointLimit joint_limit;

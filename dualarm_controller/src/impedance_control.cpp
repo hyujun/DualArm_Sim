@@ -11,6 +11,7 @@
 #include <realtime_tools/realtime_publisher.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include "utils.h"
+#include "dualarm_controller/TaskDesiredState.h"
 #include "dualarm_controller/TaskCurrentState.h"
 
 //manipulability
@@ -33,6 +34,7 @@
 
 #include <SerialManipulator.h>
 #include <Controller.h>
+#include <Motion.h>
 
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
@@ -285,6 +287,8 @@ namespace dualarm_controller
 
             KpTask.setZero(12);
             KdTask.setZero(12);
+            KpNull.setZero(16);
+            KdNull.setZero(16);
 
             qd_.data = Eigen::VectorXd::Zero(n_joints_);
             qd_dot_.data = Eigen::VectorXd::Zero(n_joints_);
@@ -295,6 +299,7 @@ namespace dualarm_controller
             torque.setZero(n_joints_);
             ft_sensor.setZero(12);
             des_m.setZero(2);
+            targetpos.setZero(12);
 
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
@@ -323,13 +328,26 @@ namespace dualarm_controller
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
             // 6.2 subsriber
-            const auto joint_state_cb = utils::makeCallback<dualarm_controller::TaskCurrentState>([&](const auto& msg){
-
+            const auto joint_state_cb = utils::makeCallback<dualarm_controller::TaskDesiredState>([&](const auto& msg){
+                ControlMode = msg.Index1;
+                ControlSubMode = msg.Index2;
+                ControlMotion = msg.SubIndex;
+                targetpos(0) = msg.dx[0].orientation.x*DEGtoRAD;
+                targetpos(1) = msg.dx[0].orientation.y*DEGtoRAD;
+                targetpos(2) = msg.dx[0].orientation.z*DEGtoRAD;
+                targetpos(3) = msg.dx[0].position.x;
+                targetpos(4) = msg.dx[0].position.y;
+                targetpos(5) = msg.dx[0].position.z;
+                targetpos(6) = msg.dx[1].orientation.x*DEGtoRAD;
+                targetpos(7) = msg.dx[1].orientation.y*DEGtoRAD;
+                targetpos(8) = msg.dx[1].orientation.z*DEGtoRAD;
+                targetpos(9) = msg.dx[1].position.x;
+                targetpos(10) = msg.dx[1].position.y;
+                targetpos(11) = msg.dx[1].position.z;
             });
-            sub_x_cmd_ = n.subscribe<dualarm_controller::TaskCurrentState>( "command", 5, joint_state_cb);
+            sub_x_cmd_ = n.subscribe<dualarm_controller::TaskDesiredState>( "command", 5, joint_state_cb);
             sub_ft_sensor_R = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_R", 5, &Impedance_Control::UpdateFTsensorR, this);
             sub_ft_sensor_L = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_L", 5, &Impedance_Control::UpdateFTsensorL, this);
-
             return true;
         }
 
@@ -365,6 +383,7 @@ namespace dualarm_controller
             cManipulator = std::make_shared<SerialManipulator>();
 
             Control = std::make_unique<HYUControl::Controller>(cManipulator);
+            motion = std::make_unique<HYUControl::Motion>(cManipulator);
 
             cManipulator->UpdateManipulatorParam();
 
@@ -380,7 +399,14 @@ namespace dualarm_controller
             KdTask.segment(3, 3).setConstant(Kd_trans);
             KdTask.segment(6, 3).setConstant(Kd_rot);
             KdTask.segment(9, 3).setConstant(Kd_trans);
-            Control->SetImpedanceGain(KpTask, KdTask, des_m);
+
+            KpNull.setConstant(16,0.01);
+            KdNull.setConstant(16,0.1);
+            Control->SetImpedanceGain(KpTask, KdTask, KpNull, KdNull, des_m);
+
+            ControlMode = CTRLMODE_IDY_JOINT;
+            ControlSubMode = SYSTEM_BEGIN;
+            ControlMotion = MOVE_ZERO;
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -432,179 +458,20 @@ namespace dualarm_controller
             MM = cManipulator->pKin->GetManipulabilityMeasure();
             manipulability_data();
 
-            if( t <= InitTime )
+            ctrl_type = ControlSubMode;
+            target_obj = ControlMotion;
+
+            if( ControlMode == CTRLMODE_IMPEDANCE_TASK )
             {
-                qd_.data(0) = -0.0*D2R;
-                qd_.data(1) = -0.0*D2R;
-
-                qd_.data(2) = 0.0*D2R;
-                qd_.data(3) = -0.0*D2R;
-                qd_.data(4) = -0.0*D2R;
-                qd_.data(5) = -0.0*D2R;
-                qd_.data(6) = -70.0*D2R;
-                qd_.data(7) = 0.0*D2R;
-                qd_.data(8) = 0.0*D2R;
-
-                qd_.data(9) = 0.0*D2R;
-                qd_.data(10) = 0.0*D2R;
-                qd_.data(11) = 0.0*D2R;
-                qd_.data(12) = -0.0*D2R;
-                qd_.data(13) = 70.0*D2R;
-                qd_.data(14) = -0.0*D2R;
-                qd_.data(15) = -0.0*D2R;
-            }
-            else
-            {
-                if(target_obj == 0)
-                {
-                    xd_[0].p(0) = A * sin(f * M_PI * (t - InitTime)) + b1;
-                    xd_[0].p(1) = b2;
-                    xd_[0].p(2) = b3;
-                    xd_[0].M = KDL::Rotation(KDL::Rotation::RPY(0, 0, M_PI/2));
-
-                    xd_[1].p(0) = -A * sin(f * M_PI * (t - InitTime)) + l_p1;
-                    xd_[1].p(1) = l_p2;
-                    xd_[1].p(2) = l_p3;
-                    xd_[1].M = KDL::Rotation(KDL::Rotation::RPY(-M_PI/2, 0, M_PI/2));
-
-                    dxdot.setZero();
-                    dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(9) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                    x_[0].p(0) = ForwardPos[0](0);
-                    x_[0].p(1) = ForwardPos[0](1);
-                    x_[0].p(2) = ForwardPos[0](2);
-                    x_[0].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[0](0), ForwardOri[0](1), ForwardOri[0](2)));
-
-                    x_[1].p(0) = ForwardPos[1](0);
-                    x_[1].p(1) = ForwardPos[1](1);
-                    x_[1].p(2) = ForwardPos[1](2);
-                    x_[1].M = KDL::Rotation(KDL::Rotation::RPY(ForwardOri[1](0), ForwardOri[1](1), ForwardOri[1](2)));
-
-                    ex_temp_ = diff(x_[0], xd_[0]);
-                    ex_(0) = ex_temp_(3);
-                    ex_(1) = ex_temp_(4);
-                    ex_(2) = ex_temp_(5);
-                    ex_(3) = ex_temp_(0);
-                    ex_(4) = ex_temp_(1);
-                    ex_(5) = ex_temp_(2);
-
-                    ex_temp_ = diff(x_[1], xd_[1]);
-                    ex_(6) = ex_temp_(3);
-                    ex_(7) = ex_temp_(4);
-                    ex_(8) = ex_temp_(5);
-                    ex_(9) = ex_temp_(0);
-                    ex_(10) = ex_temp_(1);
-                    ex_(11) = ex_temp_(2);
-                }
-                if (target_obj == 1)
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = A * sin(f * M_PI * (t - InitTime)) + b1;
-                    dx(4) = b2;
-                    dx(5) = b3;
-
-                    dx(6) = 0;
-                    dx(7) = -M_PI_2;
-                    dx(8) = 0;
-                    dx(9) = -A * sin(f * M_PI * (t - InitTime)) + l_p1;
-                    dx(10) = l_p2;
-                    dx(11) = l_p3;
-
-                    dxdot.setZero();
-                    dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(9) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                    dxddot.setZero();
-                    dxddot(3) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                    dxddot(9) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                }
-                else if (target_obj == 2)
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = b1;
-                    dx(4) = A * sin(f * M_PI * (t - InitTime)) + b2;
-                    dx(5) = b3;
-
-                    dx(6) = 0;
-                    dx(7) = -M_PI_2;
-                    dx(8) = 0;
-                    dx(9) = l_p1;
-                    dx(10) = -A * sin(f * M_PI * (t - InitTime)) + l_p2;
-                    dx(11) = l_p3;
-
-                    dxdot.setZero();
-                    dxdot(4) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(10) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                    dxddot.setZero();
-                    dxddot(4) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                    dxddot(10) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                }
-                else if (target_obj == 3)
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = b1-0.015;
-                    dx(4) = b2;
-                    dx(5) = A * sin(f * M_PI * (t - InitTime)) + b3;
-
-                    dx(6) = 0;
-                    dx(7) = -M_PI_2;
-                    dx(8) = 0;
-                    dx(9) = l_p1-0.01;
-                    dx(10) = l_p2;
-                    dx(11) = -A * sin(f * M_PI * (t - InitTime)) + l_p3;
-
-                    dxdot.setZero();
-                    dxdot(5) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(11) = -(f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-
-                    dxddot.setZero();
-                    dxddot(5) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                    dxddot(11) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                }
-                else if( target_obj == 4 )
-                {
-                    dx(0) = 0;
-                    dx(1) = -M_PI_2;
-                    dx(2) = 0;
-                    dx(3) = A * sin(f * M_PI * (t - InitTime)) + b1-0.015;
-                    dx(4) = b2+0.1;
-                    dx(5) = b3;
-
-                    dx(6) = 0;
-                    dx(7) = 0;
-                    dx(8) = 0;
-                    dx(9) = -A * cos(2*f * M_PI * (t - InitTime));
-                    dx(10) = -A * sin(2*f * M_PI * (t - InitTime)) + 0.45;
-                    dx(11) = 0;
-
-                    dxdot.setZero();
-                    dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (t - InitTime));
-                    dxdot(9) = (2*f * M_PI) * A * sin(2*f * M_PI * (t - InitTime));
-                    dxdot(10) = -(2*f * M_PI) * A * cos(2*f * M_PI * (t - InitTime));
-
-                    dxddot.setZero();
-                    dxddot(3) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (t - InitTime));
-                    dxddot(9) = (2*f * M_PI) * (2*f * M_PI) * A * cos(2*f * M_PI * (t - InitTime));
-                    dxddot(10) = (2*f * M_PI) * (2*f * M_PI) * A * sin(2*f * M_PI * (t - InitTime));
-                }
-            }
-
-            if(t <= InitTime)
-            {
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
-            }
-            else
-            {
-                Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, ctrl_type);
+                motion->TaskMotion(dx, dxdot, dxddot, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
+                Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, ControlSubMode);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
+            }
+            else if( ControlMode == CTRLMODE_IDY_JOINT )
+            {
+                qd_dot_.data.setZero(16);
+                motion->JointMotion(qd_.data, qd_dot_.data, qd_ddot_.data, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
+                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
             }
 
             for (int i = 0; i < n_joints_; i++)
@@ -711,7 +578,9 @@ namespace dualarm_controller
                 printf("t_cal = %0.9lf\n", static_cast<double>(end.tv_sec - begin.tv_sec) + static_cast<double>(end.tv_nsec - begin.tv_nsec) / 1000000000.0);
                 printf("*** Simulation Time (unit: sec)  ***\n");
                 printf("t = %0.3lf\n", t);
-                printf("CTRL_OBJ:%d\n", target_obj);
+                printf("Index1:%d\n", ControlMode);
+                printf("Index2:%d\n", ControlSubMode);
+                printf("SubIndex:%d\n", ControlMotion);
                 printf("\n");
 
                 printf("*** Command from Subscriber in Task Space (unit: m) ***\n");
@@ -804,6 +673,12 @@ namespace dualarm_controller
         int target_obj=0;
         int ctrl_type=0;
         double InitTime=0.0;
+
+        unsigned char ControlMode;
+        unsigned char ControlSubMode;
+        unsigned char ControlMotion;
+        unsigned char JointState;
+
         struct timespec begin, end;
         //Joint handles
         unsigned int n_joints_;
@@ -864,6 +739,7 @@ namespace dualarm_controller
         Eigen::VectorXd q0dot;
         Eigen::VectorXd torque;
         Eigen::VectorXd ft_sensor;
+        Eigen::VectorXd targetpos;
 
         // Task Space State
         // ver. 01
@@ -883,6 +759,7 @@ namespace dualarm_controller
 
         // gains
         Eigen::VectorXd KpTask, KdTask, des_m;
+        Eigen::VectorXd KpNull, KdNull;
         Eigen::VectorXd aKp_, aKi_, aKd_, aK_inf_;
         double des_m1, des_m2;
         double Kp_trans, Kp_rot, Kd_trans, Kd_rot;
@@ -897,6 +774,7 @@ namespace dualarm_controller
 
         std::shared_ptr<SerialManipulator> cManipulator;
         std::unique_ptr<HYUControl::Controller> Control;
+        std::unique_ptr<HYUControl::Motion> motion;
     };
 }
 

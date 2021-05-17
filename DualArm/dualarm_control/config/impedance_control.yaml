@@ -28,15 +28,16 @@ dualarm:
     tip_link2: dualarm_L_end_frame
 
     desired:
-      mass: { m1: 0.8, m2: 0.1 } # unit:kg, shape:ellipsoid (for inertia shaping)
+      mass: { m1: 3.0, m2: 3.0 } # unit:kg, shape:ellipsoid (for inertia shaping)
     gains:
-      mbk: { KpT: 1.2, KpR: 0.01, KdT: 0.07, KdR: 0.002 } # gains for spring & damper
+      mbk: { KpT: 20.0, KpR: 1.0, KdT: 1.0, KdR: 0.05 } # gains for spring & damper
 
     target_obj: 2 # 1 : x-axis
                   # 2 : y-axis
                   # 3 : z-axis
                   # 4 : pre-defined
 
-    ctrl_type: 1  # 1 : Mx_desired = Mx_actual
+    ctrl_type: 2  # 1 : Mx_desired = Mx_actual
                   # 2 : Mx_desired != Mx_actual (need ft_sensor)
+                  # 3 : Relative Impedance
 

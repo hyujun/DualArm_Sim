@@ -51,6 +51,10 @@ void Trajectory::SetPoly5th( const double &_CurrentTime, const Eigen::VectorXd &
 
 void Trajectory::Poly5th( const double &_CurrentTime, Eigen::VectorXd &_dq, Eigen::VectorXd &_dqdot, Eigen::VectorXd &_dqddot )
 {
+    _dq.setZero(NumberJoint);
+    _dqdot.setZero(NumberJoint);
+    _dqddot.setZero(NumberJoint);
+
 	if( (_CurrentTime - TrajInitTime) >= TrajDuration )
 	{
 		m_isReady = 0;
@@ -63,10 +67,6 @@ void Trajectory::Poly5th( const double &_CurrentTime, Eigen::VectorXd &_dq, Eige
 	else if( m_isReady )
 	{
 		TrajTime = _CurrentTime - TrajInitTime;
-
-		_dq.setZero();
-		_dqdot.setZero();
-		_dqddot.setZero();
 
 		for(int i=0; i<NumberJoint; i++)
 		{

@@ -74,6 +74,8 @@ namespace HYUMotionDynamics{
          */
         void MG_Mat_Joint( MatrixXd &_M, VectorXd &_G );
 
+        void M_Mat_Task(MatrixXd &_Mx, MatrixXd &_pInv);
+
         void MG_Mat_Task(MatrixXd &_Mx, VectorXd &_Gx);
     private:
 

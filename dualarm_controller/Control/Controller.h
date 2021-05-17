@@ -61,7 +61,7 @@ public:
 	void SetCLIKGain( const double &_Kp_Translation, const double &_Kp_Rotation );
 	void SetTaskspaceGain( const VectorXd &_KpTask, const VectorXd &_KdTask);
 	void GetTaskspaceGain( const VectorXd &_KpTask, const VectorXd &_KdTask);
-	void SetImpedanceGain( const VectorXd &_Kp_Imp, const VectorXd &_Kd_Imp, const VectorXd &_des_m );
+	void SetImpedanceGain( const VectorXd &_Kp_Imp, const VectorXd &_Kd_Imp, const VectorXd &_Kp_Imp_Null, const VectorXd &_Kd_Imp_Null, const VectorXd &_des_m );
 	void GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask);
 	/**
 	 * @brief simple pd controller
@@ -99,11 +99,12 @@ private:
 	Eigen::VectorXd Ki, KiTask;
 	Eigen::VectorXd K_Hinf, K_HinfTask;
 
-	Eigen::VectorXd KpImpedance, KdImpedance;
+	Eigen::VectorXd KpImp, KdImp, KpImpNull, KdImpNull;
 	Eigen::VectorXd mass_shaped;
 
 	Eigen::VectorXd dq, dqdot, dqddot;
 	Eigen::VectorXd dq_old;
+	Eigen::VectorXd dqN, dqdotN;
 	Eigen::VectorXd FrictionTorque;
 
 	Eigen::VectorXd e, e_dev, e_int, e_int_sat;
@@ -124,6 +125,8 @@ private:
 	Eigen::MatrixXd DampedpInvJacobian;
 	Eigen::MatrixXd AnalyticJacobian;
 	Eigen::MatrixXd AnalyticJacobianDot;
+	Eigen::MatrixXd RelativeJacobian;
+	Eigen::MatrixXd RelativeJacobianDot;
     VectorXd q0dot;
 
     MatrixXd RelJacobian;
@@ -131,7 +134,7 @@ private:
     MatrixXd AJacwithRel;
 
 	Eigen::MatrixXd M, Mx;
-	Eigen::VectorXd G, Gx;
+	Eigen::VectorXd G;
 
 	int m_Jnum;
 	double InitTime=0.0;

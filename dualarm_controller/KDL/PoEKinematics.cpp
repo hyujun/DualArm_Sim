@@ -45,6 +45,15 @@ namespace HYUMotionKinematics {
             }
         }
 
+        qLimit_High.setZero(m_DoF);
+        qLimit_Low.setZero(m_DoF);
+
+        for(int l=0; l<m_DoF; l++)
+        {
+            qLimit_Low(l) = joint_limit.Low[l];
+            qLimit_High(l) = joint_limit.High[l];
+        }
+
         this->mBodyJacobian.setZero(6*this->m_NumChain, this->m_DoF);
         this->mSpaceJacobian.setZero(6*this->m_NumChain, this->m_DoF);
         this->mAnalyticJacobian.setZero(6*this->m_NumChain, this->m_DoF);
@@ -336,7 +345,7 @@ namespace HYUMotionKinematics {
     {
 
         WpInv_epsilon_left = 0.001;
-        WpInv_epsilon_right = 0.001;
+        WpInv_epsilon_right = 0.0081;
 
         mWeightDampedpInvJacobian.setZero(16,12);
 
@@ -442,7 +451,7 @@ namespace HYUMotionKinematics {
 
     void PoEKinematics::RelativeJacobian( const int From, const int To )
     {
-        Matrix<double, 6, 6> Body2Analyic = Eigen::Matrix<double, 6, 6>::Identity();
+        Matrix<double, 6, 6> Body2Analyic = Eigen::Matrix<double, 6, 6>::Zero();
         Matrix<double, 6, 16> RelJacTmp = Eigen::Matrix<double, 6, 16>::Zero();
         mRelativeJacobian.setZero(6, m_DoF);
         if( From == 0 && To == 1 )
@@ -459,6 +468,62 @@ namespace HYUMotionKinematics {
     {
         RelativeJacobian(0,1); // right to left
         _RelativeJacobian = mRelativeJacobian;
+    }
+
+    void PoEKinematics::RelativeJacobianDot(const VectorXd &_qdot)
+    {
+        mRelativeBodyJacobianDot.setZero(6,m_DoF);
+        mRelativeJacobianDot.setZero(6,m_DoF);
+        adjoint adTmp;
+        Adjoint AdTmp;
+        AdTmp = AdjointMatrix(inverse_SE3(T[0][JointEndNum[1]]));
+        for(int i=3; i<=8; i++)
+        {
+            adTmp = adjointMatrix(mSpaceJacobian.col(i).segment(0,6));
+            for(int k=2; k<i; k++)
+            {
+                mRelativeBodyJacobianDot.col(i).noalias() +=
+                        -AdTmp*(adTmp*(mSpaceJacobian.col(k).segment(0,6)*_qdot(k)));
+            }
+        }
+        for(int j=9; j<=14; j++)
+        {
+            adTmp = adjointMatrix(mBodyJacobian.col(j).segment(6,6));
+            for(int l=j+1; l<=15; l++)
+            {
+                mRelativeBodyJacobianDot.col(j).noalias() += adTmp*(mBodyJacobian.col(l).segment(6,6)*_qdot(l));
+            }
+        }
+
+        Matrix<double, 6, 6> Body2Analyic = Eigen::Matrix<double, 6, 6>::Zero();
+        Body2Analyic.block(3,3,3,3).noalias() += GetForwardKinematicsSO3(JointEndNum[0]).transpose()*GetForwardKinematicsSO3(JointEndNum[1]);
+        Body2Analyic.block(0,0,3,3) = Body2Analyic.block(3,3,3,3);
+
+        mRelativeJacobianDot.noalias() += Body2Analyic*mRelativeBodyJacobianDot;
+
+        Matrix<double, 6, 6> adMat;
+        for(int n=2; n<16;n++)
+        {
+            adMat.setZero();
+            if(n>=2 && n<=8)
+            {
+                adMat.block(0,0,3,3).noalias() += SkewMatrix(mBodyJacobian.col(n).segment(0,3)*_qdot(n));
+                adMat.block(3,3,3,3) = adMat.block(0,0,3,3);
+            }
+            else
+            {
+                adMat.block(0,0,3,3).noalias() += SkewMatrix(mSpaceJacobian.col(n).segment(6,3)*_qdot(n));
+                adMat.block(3,3,3,3) = adMat.block(0,0,3,3);
+            }
+            mRelativeJacobianDot.col(n).noalias() += adMat*mRelativeJacobian.col(n);
+        }
+    }
+
+    void PoEKinematics::GetRelativeJacobianDot(const VectorXd &_qdot, MatrixXd &_RelativeJacobianDot)
+    {
+        _RelativeJacobianDot.setZero(6, m_DoF);
+        RelativeJacobianDot(_qdot);
+        _RelativeJacobianDot = mRelativeJacobianDot;
     }
 
     void PoEKinematics::GetInverseConditionNumber( double *_InverseCondNumber )

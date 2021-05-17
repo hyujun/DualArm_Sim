@@ -494,11 +494,6 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
 
     if(mode == 1) // Mx = Mx_desired
     {
-        pManipulator->pKin->GetDampedpInvJacobian(pInvMat);
-
-        Matrix_temp = Eigen::MatrixXd::Identity(16,16);
-        Matrix_temp += -pInvMat*AnalyticJacobian;
-
         VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
         VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
         VectorXd u04 = VectorXd::Zero(AnalyticJacobian.cols());
@@ -516,6 +511,17 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
         dqdotN.noalias() += -0.5*(_q - pManipulator->pKin->qLimit_High).cwiseInverse();
         //u04.noalias() += KpImpNull.cwiseProduct(dqN - _q);
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
+
+        //pManipulator->pKin->GetDampedpInvJacobian(AnalyticJacobian, pInvMat);
+
+        MatrixXd weight;
+        //weight.setIdentity(16,16);
+        weight = M;
+        //pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
+        pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, AnalyticJacobian, pInvMat);
+
+        Matrix_temp = Eigen::MatrixXd::Identity(16,16);
+        Matrix_temp += -pInvMat*AnalyticJacobian;
 
         _Toq = G;
         _Toq.noalias() += M*(pInvMat*u01);
@@ -557,6 +563,9 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
         u04.noalias() += KpImpNull.cwiseProduct(dqN - _q);
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
 
+        Matrix_temp = Eigen::MatrixXd::Identity(16,16);
+        Matrix_temp += -pInvMat*AnalyticJacobian;
+
         _Toq = G;
         _Toq.noalias() += M*(pInvMat*u01);
         _Toq.noalias() += AnalyticJacobian.transpose()*u03;
@@ -568,11 +577,6 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
         pManipulator->pKin->GetRelativeJacobianDot(_qdot, RelativeJacobianDot);
         AnalyticJacobian.block(6,0,6,16) = RelativeJacobian;
         AnalyticJacobianDot.block(6,0,6,16) = RelativeJacobianDot;
-
-        pManipulator->pKin->GetDampedpInvJacobian(AnalyticJacobian, pInvMat);
-
-        Matrix_temp = Eigen::MatrixXd::Identity(16,16);
-        Matrix_temp += -pInvMat*AnalyticJacobian;
 
         VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
         VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
@@ -591,6 +595,17 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
         //dqdotN.noalias() += -0.5*(_q - pManipulator->pKin->qLimit_High).cwiseInverse();
         //u04.noalias() += KpImpNull.cwiseProduct(dqN - _q);
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
+
+        //pManipulator->pKin->GetDampedpInvJacobian(AnalyticJacobian, pInvMat);
+
+        MatrixXd weight;
+        //weight.setIdentity(16,16);
+        weight = M;
+        //pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
+        pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, AnalyticJacobian, pInvMat);
+
+        Matrix_temp = Eigen::MatrixXd::Identity(16,16);
+        Matrix_temp += -pInvMat*AnalyticJacobian;
 
         _Toq = G;
         _Toq.noalias() += M*(pInvMat*u01);

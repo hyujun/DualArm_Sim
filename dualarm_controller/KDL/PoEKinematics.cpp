@@ -443,6 +443,108 @@ namespace HYUMotionKinematics {
         _WDampedpInvJacobian = mWeightDampedpInvJacobian;
     }
 
+    void PoEKinematics::WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, const MatrixXd &_TargetMat )
+    {
+
+        WpInv_epsilon_left = 1.0;
+        WpInv_epsilon_right = 1.0;
+
+        mWeightDampedpInvJacobian.setZero(16,12);
+
+        VectorXd r1_right, r2_right, r1_left, r2_left;
+        r2_right = _rdot.segment(0,3);  //rotation error for right-arm
+        r1_right = _rdot.segment(3,3);  //translation error for right-arm
+        r2_left = _rdot.segment(6,3);   //rotation error for left-arm
+        r1_left = _rdot.segment(9,3);   //translation error for left-arm
+
+        // analytic jacobian devided into left-arm jacobian & right-arm jacobian
+        MatrixXd J_left1, J_right1;
+        J_right1 = _TargetMat.block(0,0,6,16);
+        J_left1 = _TargetMat.block(6,0,6,16);
+
+        MatrixXd P1 = Matrix<double, 16, 16>::Identity();
+        P1.noalias() += -J_right1.transpose()*(J_right1*J_right1.transpose()).inverse()*J_right1;
+        MatrixXd P2 = Matrix<double, 16, 16>::Identity();
+        P2.noalias() += -J_left1.transpose()*(J_left1*J_left1.transpose()).inverse()*J_left1;
+
+        MatrixXd J_left, J_right;
+        J_right = J_right1*P2;
+        J_left = J_left1*P1;
+
+        // 1st priority : Translation p 3x1, 2nd priority : Rotation r 3x1 for right-arm
+        MatrixXd J1, J2;
+        J1 = J_right.block(3,0,3,16);
+        J2 = J_right.block(0,0,3,16);
+
+        MatrixXd W = Matrix<double, 16, 16>::Zero();
+        W.noalias() += J1.transpose()*J1;
+        W.noalias() += J2.transpose()*J2;
+        W.noalias() += WpInv_epsilon_right*_WeightMat;
+        MatrixXd W_inv = W.inverse();
+        //MatrixXd W_inv = W.completeOrthogonalDecomposition().pseudoInverse();
+
+        MatrixXd Y = Matrix<double, 3, 3>::Zero();
+        Y.noalias() += J1*W_inv*J1.transpose();
+        MatrixXd Y_inv = Y.inverse();
+        //MatrixXd Y_inv = Y.completeOrthogonalDecomposition().pseudoInverse();
+
+        MatrixXd Z11 = W_inv;
+        Z11.noalias() += -W_inv*(J1.transpose()*((Y_inv*J1)*W_inv));
+        MatrixXd Z12 = Matrix<double, 16, 3>::Zero();
+        Z12.noalias() += W_inv*(J1.transpose()*Y_inv);
+        MatrixXd Z21 = Matrix<double, 3, 16>::Zero();
+        Z21.noalias() += (Y_inv*J1)*W_inv;
+        MatrixXd Z22 = Matrix<double, 3, 3>::Identity();
+        Z22.noalias() += -Y_inv;
+
+        MatrixXd J_WpInv_right = Matrix<double,16,6>::Zero();
+        J_WpInv_right.block(0,0,16,3).noalias() += Z11*J2.transpose();
+        J_WpInv_right.block(0,3,16,3) = Z12;
+        lambda_right = -Z21*J2.transpose()*r2_right -Z22*r1_right;
+        //WpInv_epsilon_right = lambda_right.norm();
+        //WpInv_epsilon_right = tanh(lambda_right.norm());
+        mWeightDampedpInvJacobian.block(0,0,16,6) = J_WpInv_right;
+
+        // 1st priority : Translation p 3x1, 2nd priority : Rotation r 3x1 for left-arm
+        J1 = J_left.block(3,0,3,16);
+        J2 = J_left.block(0,0,3,16);
+
+        W.setZero(16,16);
+        W.noalias() += J1.transpose()*J1;
+        W.noalias() += J2.transpose()*J2;
+        W.noalias() += WpInv_epsilon_left*_WeightMat;
+        W_inv = W.inverse();
+        //W_inv = W.completeOrthogonalDecomposition().pseudoInverse();
+
+        Y.setZero(3,3);
+        Y.noalias() += J1*W_inv*J1.transpose();
+        Y_inv = Y.inverse();
+        //Y_inv = Y.completeOrthogonalDecomposition().pseudoInverse();
+
+        Z11 = W_inv;
+        Z11.noalias() += -W_inv*(J1.transpose()*((Y_inv*J1)*W_inv));
+        Z12.setZero(16,3);
+        Z12.noalias() += W_inv*(J1.transpose()*Y_inv);
+        Z21.setZero(3,16);
+        Z21.noalias() += (Y_inv*J1)*W_inv;
+        Z22.setIdentity(3,3);
+        Z22.noalias() += -Y_inv;
+
+        MatrixXd J_WpInv_left = Matrix<double,16,6>::Zero();
+        J_WpInv_left.block(0,0,16,3).noalias() += Z11*J2.transpose();
+        J_WpInv_left.block(0,3,16,3) = Z12;
+        lambda_left = -Z21*J2.transpose()*r2_left -Z22*r1_left;
+        //WpInv_epsilon_left = lambda_left.norm();
+        //WpInv_epsilon_left = tanh(lambda_left.norm());
+        mWeightDampedpInvJacobian.block(0,6,16,6) = J_WpInv_left;
+    }
+
+    void PoEKinematics::GetWeightDampedpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, MatrixXd &_TargetMat, MatrixXd &_WDampedpInvJacobian )
+    {
+        WeightpInvJacobian(_rdot, _WeightMat, _TargetMat);
+        _WDampedpInvJacobian = mWeightDampedpInvJacobian;
+    }
+
     void PoEKinematics::GetWDampedpInvLambda(VectorXd *lambda)
     {
         lambda[0] = lambda_right;

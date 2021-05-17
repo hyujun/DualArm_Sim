@@ -124,6 +124,8 @@ namespace HYUMotionKinematics {
 
         void GetWeightDampedpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, MatrixXd &_WDampedpInvJacobian );
 
+        void GetWeightDampedpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, MatrixXd &_TargetMat, MatrixXd &_WDampedpInvJacobian );
+
         void GetWDampedpInvLambda(VectorXd *lambda);
 
         void GetInverseConditionNumber( double *_InverseCondNumber );
@@ -199,6 +201,8 @@ namespace HYUMotionKinematics {
         void BlockpInvJacobian( Matrix<double, 6, Dynamic> &_Jacobian1, Matrix<double, 6, Dynamic> &_Jacobian2 );
 
         void WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat );
+
+        void WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, const MatrixXd &_TargetMat );
 
         MatrixXi ChainMatrix;
         int m_NumChain;

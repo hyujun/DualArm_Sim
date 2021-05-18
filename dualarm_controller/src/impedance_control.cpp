@@ -300,6 +300,7 @@ namespace dualarm_controller
             ft_sensor.setZero(12);
             des_m.setZero(2);
             targetpos.setZero(12);
+            xa.setZero(12);
 
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
@@ -329,9 +330,10 @@ namespace dualarm_controller
 
             // 6.2 subsriber
             const auto joint_state_cb = utils::makeCallback<dualarm_controller::TaskDesiredState>([&](const auto& msg){
-                ControlMode = msg.Index1;
-                ControlSubMode = msg.Index2;
-                ControlMotion = msg.SubIndex;
+                ControlIndex1 = msg.Index1;
+                ControlIndex2 = msg.Index2;
+                ControlSubIndex = msg.SubIndex;
+                JointState = ControlSubIndex;
                 targetpos(0) = msg.dx[0].orientation.x*DEGtoRAD;
                 targetpos(1) = msg.dx[0].orientation.y*DEGtoRAD;
                 targetpos(2) = msg.dx[0].orientation.z*DEGtoRAD;
@@ -373,7 +375,6 @@ namespace dualarm_controller
             ft_sensor(11) = ft_measure.force.z;
         }
 
-
         void starting(const ros::Time &time) override {
             t = 0.0;
             InitTime = 2.0;
@@ -400,13 +401,14 @@ namespace dualarm_controller
             KdTask.segment(6, 3).setConstant(Kd_rot);
             KdTask.segment(9, 3).setConstant(Kd_trans);
 
-            KpNull.setConstant(16,0.01);
-            KdNull.setConstant(16,0.1);
+            KpNull.setConstant(16,0.001);
+            KdNull.setConstant(16,0.2);
             Control->SetImpedanceGain(KpTask, KdTask, KpNull, KdNull, des_m);
 
-            ControlMode = CTRLMODE_IDY_JOINT;
-            ControlSubMode = SYSTEM_BEGIN;
-            ControlMotion = MOVE_ZERO;
+            ControlIndex1 = CTRLMODE_IDY_JOINT;
+            ControlIndex2 = SYSTEM_BEGIN;
+            ControlSubIndex = MOVE_ZERO;
+            JointState = MOVE_ZERO;
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -436,6 +438,11 @@ namespace dualarm_controller
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
             cManipulator->pKin->GetInverseConditionNumber(InverseConditionNumber);
 
+            xa.segment(0,3) = ForwardOri[0];
+            xa.segment(3,3) = ForwardPos[0];
+            xa.segment(6,3) = ForwardOri[1];
+            xa.segment(9,3) = ForwardPos[1];
+
             q1_.data = q_.data.head(9);
             q1dot_.q = q1_;
             q1dot_.qdot.data = qdot_.data.head(9);
@@ -458,19 +465,19 @@ namespace dualarm_controller
             MM = cManipulator->pKin->GetManipulabilityMeasure();
             manipulability_data();
 
-            ctrl_type = ControlSubMode;
-            target_obj = ControlMotion;
+            ctrl_type = ControlIndex2;
+            target_obj = ControlSubIndex;
 
-            if( ControlMode == CTRLMODE_IMPEDANCE_TASK )
+            if( ControlIndex1 == CTRLMODE_IMPEDANCE_TASK )
             {
-                motion->TaskMotion(dx, dxdot, dxddot, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
-                Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, ControlSubMode);
+                motion->TaskMotion(dx, dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
+                Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, ControlIndex2);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
-            else if( ControlMode == CTRLMODE_IDY_JOINT )
+            else if( ControlIndex1 == CTRLMODE_IDY_JOINT )
             {
                 qd_dot_.data.setZero(16);
-                motion->JointMotion(qd_.data, qd_dot_.data, qd_ddot_.data, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
+                motion->JointMotion(qd_.data, qd_dot_.data, qd_ddot_.data, targetpos, q_.data, qdot_.data, t, JointState, ControlSubIndex);
                 Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
             }
 
@@ -578,9 +585,10 @@ namespace dualarm_controller
                 printf("t_cal = %0.9lf\n", static_cast<double>(end.tv_sec - begin.tv_sec) + static_cast<double>(end.tv_nsec - begin.tv_nsec) / 1000000000.0);
                 printf("*** Simulation Time (unit: sec)  ***\n");
                 printf("t = %0.3lf\n", t);
-                printf("Index1:%d\n", ControlMode);
-                printf("Index2:%d\n", ControlSubMode);
-                printf("SubIndex:%d\n", ControlMotion);
+                printf("Index1:%d\n", ControlIndex1);
+                printf("Index2:%d\n", ControlIndex2);
+                printf("SubIndex:%d\n", ControlSubIndex);
+                printf("MsgSubIndex:%d\n", JointState);
                 printf("\n");
 
                 printf("*** Command from Subscriber in Task Space (unit: m) ***\n");
@@ -674,9 +682,9 @@ namespace dualarm_controller
         int ctrl_type=0;
         double InitTime=0.0;
 
-        unsigned char ControlMode;
-        unsigned char ControlSubMode;
-        unsigned char ControlMotion;
+        unsigned char ControlIndex1;
+        unsigned char ControlIndex2;
+        unsigned char ControlSubIndex;
         unsigned char JointState;
 
         struct timespec begin, end;
@@ -736,6 +744,7 @@ namespace dualarm_controller
         KDL::JntArray q_, q1_, q2_;
         KDL::JntArray qdot_;
         KDL::JntArrayVel q1dot_, q2dot_;
+        Eigen::VectorXd xa;
         Eigen::VectorXd q0dot;
         Eigen::VectorXd torque;
         Eigen::VectorXd ft_sensor;

@@ -70,7 +70,7 @@ dualarm:
                 # 4 : Scaled Jacobian Transpose
                 # 5 : Block Jacobian PseudoInverse
                 # 6 : Weight damped Jacobian PseudoInverse without q0dot
-                # 7 : Jacobian PseudoInver with Relative Jacobian(left-hand)
+                # 7 : Jacobian PseudoInverse with Relative Jacobian(left-hand)
 
     ik_mode: 2  # SubIndex
                 # 2 : x-axis

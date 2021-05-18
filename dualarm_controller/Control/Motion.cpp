@@ -53,7 +53,7 @@ uint16_t Motion::JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot,
 
 	if( MotionCommand == MOVE_ZERO ) //home posture
 	{
-		if( MotionCommand == MotionCommand_p )
+		if( _StatusWord != MotionCommand )
 		{
 			if( NewTarget==1 )
 			{
@@ -73,11 +73,13 @@ uint16_t Motion::JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot,
             TargetPos(13) = 60.0*DEGtoRAD;
 			TrajectoryTime=5.0;
 			NewTarget=1;
+            _Target = TargetPos;
+			_StatusWord = 0;
 		}
 	}
 	else if( MotionCommand == MOVE_JOB ) //job posture
 	{
-		if( MotionCommand == MotionCommand_p )
+        if( _StatusWord != MotionCommand )
 		{
 			if( NewTarget==1 )
 			{
@@ -110,11 +112,12 @@ uint16_t Motion::JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot,
 
 			TrajectoryTime=5.0;
 			NewTarget=1;
+			_StatusWord = 0;
 		}
 	}
 	else if( MotionCommand == MOVE_CUSTOMIZE )
 	{
-		if( TargetPos_p == _Target )
+        if( _StatusWord != MotionCommand )
 		{
 			if( NewTarget == 1 )
 			{
@@ -134,13 +137,15 @@ uint16_t Motion::JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot,
             TargetPos_p = TargetPos;
 			TrajectoryTime=5.0;
 			NewTarget=1;
+			_StatusWord = 0;
 		}
 	}
 	else if( MotionCommand == MOVE_JOINT_CYCLIC )
 	{
-		if( MotionCommand != MotionCommand_p )
+        if( _StatusWord == MotionCommand )
 		{
 			MotionInitTime = _Time;
+			_StatusWord = 0;
 		}
 		else
 		{
@@ -245,7 +250,7 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
                              double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType )
 {
 	MotionCommandTask = _MotionType;
-	
+
 	pManipulator->pKin->GetAnalyticJacobian(AJacobian);
 	xdot.setZero(12);
 	xdot.noalias() += AJacobian*qdot;
@@ -262,7 +267,7 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
 
     if( MotionCommandTask == MOVE_TASK_CUSTOM )
     {
-        if( TargetPosTask_p == _Target )
+        if( _StatusWord != MotionCommandTask )
         {
             if( NewTarget==1 )
             {
@@ -289,7 +294,7 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _dxdot.setZero(12);
             _dxddot.setZero(12);
 
-            _dx = TargetPosTask;
+            _dx = _Target;
             _dx.segment(3,3) = _dx_tmp.head(3);
             _dx.segment(9,3) = _dx_tmp.tail(3);
             _dxdot.segment(3,3) = _dxdot_tmp.head(3);
@@ -310,14 +315,15 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
 
             TrajectoryTime=5.0;
             NewTarget=1;
-            _StatusWord = TARGET_MOVING;
+            _StatusWord = 0;
         }
     }
 	else if( MotionCommandTask == MOVE_TASK_CUSTOM1 )
 	{
-        if( MotionCommand != MotionCommand_p )
+        if( _StatusWord == MotionCommandTask )
         {
             MotionInitTime = _Time;
+            _StatusWord=0;
         }
         else
         {
@@ -342,14 +348,15 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _dxddot.setZero(12);
             _dxddot(3) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
             _dxddot(9) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
-            MotionProcess = MOVE_TASK_CUSTOM1;
+            _StatusWord = 0;
 		}
 	}
     else if( MotionCommandTask == MOVE_TASK_CUSTOM2 )
     {
-        if( MotionCommand != MotionCommand_p )
+        if( _StatusWord == MotionCommandTask )
         {
             MotionInitTime = _Time;
+            _StatusWord=0;
         }
         else
         {
@@ -374,14 +381,14 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _dxddot.setZero(12);
             _dxddot(4) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
             _dxddot(10) = (f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
-            MotionProcess = MOVE_TASK_CUSTOM2;
         }
     }
     else if( MotionCommandTask == MOVE_TASK_CUSTOM3 )
     {
-        if( MotionCommand != MotionCommand_p )
+        if( _StatusWord == MotionCommandTask )
         {
             MotionInitTime = _Time;
+            _StatusWord=0;
         }
         else
         {
@@ -410,7 +417,6 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _dxddot(9) = (2*f * M_PI) * (2*f * M_PI) * A * cos(2*f * M_PI * (_Time - MotionInitTime));
             _dxddot(10) = (2*f * M_PI) * (2*f * M_PI) * A * sin(2*f * M_PI * (_Time - MotionInitTime));
 
-            MotionProcess = MOVE_TASK_CUSTOM3;
         }
     }
     else if( MotionCommandTask == MOVE_TASK_CUSTOM5 )

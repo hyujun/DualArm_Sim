@@ -54,7 +54,7 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 
 #if defined(__SIMULATION__)
     GainWeightFactor.resize(m_Jnum);
-    GainWeightFactor.setConstant(9.0);
+    GainWeightFactor.setConstant(11.0);
 
     dq.setZero(m_Jnum);
     dqdot.setZero(m_Jnum);
@@ -68,7 +68,7 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 
 #else
     GainWeightFactor.setZero(m_Jnum);
-    GainWeightFactor.setConstant(10.0);
+    GainWeightFactor.setConstant(11.0);
 
 	Kp = GainWeightFactor*KpBase;
 	Kd = GainWeightFactor*KdBase;
@@ -79,10 +79,10 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 	dqddot.resize(m_Jnum);
 	dq_old.setZero(m_Jnum);
 
-	KpImp.setConstant(12,1);
+    KpImp.setConstant(12,1);
     KdImp.setConstant(12,0.2);
     KpImpNull.setConstant(16, 0.01);
-    KdImpNull.setConstant(16,1.0);
+    KdImpNull.setConstant(16,0.1);
 
 #endif
 }
@@ -426,10 +426,10 @@ void Controller::CLIKTaskController( const VectorXd &_q,
     else if(mode  == 6) // weight damped jacobian pseudoinverse with task priority
     {
         MatrixXd weight;
-        //weight.setIdentity(16,16);
-        pManipulator->pDyn->M_Matrix(weight);
+        weight.setIdentity(16,16);
+        //pManipulator->pDyn->M_Matrix(weight);
         //pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-        pManipulator->pKin->GetWeightDampedpInvJacobian(Vector_temp, weight, WdampedpInvJacobian);
+        pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, WdampedpInvJacobian);
 
         Matrix_temp = Eigen::MatrixXd::Identity(16,16);
         Matrix_temp += -WdampedpInvJacobian*AnalyticJacobian;
@@ -505,19 +505,16 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
         u02.noalias() += KdImp.cwiseProduct(edotTask);
         u02.noalias() += KpImp.cwiseProduct(eTask);
 
-        dqN = 0.5*(pManipulator->pKin->qLimit_High - pManipulator->pKin->qLimit_Low);
+        //dqN = 0.5*(pManipulator->pKin->qLimit_High - pManipulator->pKin->qLimit_Low);
         pManipulator->pKin->Getq0dotWithMM(alpha, dqdotN);
-        dqdotN.noalias() += -0.5*(pManipulator->pKin->qLimit_Low - _q).cwiseInverse();
-        dqdotN.noalias() += -0.5*(_q - pManipulator->pKin->qLimit_High).cwiseInverse();
+        //dqdotN.noalias() += -0.5*(pManipulator->pKin->qLimit_Low - _q).cwiseInverse();
+        //dqdotN.noalias() += 0.5*(_q - pManipulator->pKin->qLimit_High).cwiseInverse();
         //u04.noalias() += KpImpNull.cwiseProduct(dqN - _q);
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
-
-        //pManipulator->pKin->GetDampedpInvJacobian(AnalyticJacobian, pInvMat);
 
         MatrixXd weight;
         //weight.setIdentity(16,16);
         weight = M;
-        //pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
         pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, AnalyticJacobian, pInvMat);
 
         Matrix_temp = Eigen::MatrixXd::Identity(16,16);
@@ -558,7 +555,7 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
 
         dqN = 0.5*(pManipulator->pKin->qLimit_High - pManipulator->pKin->qLimit_Low);
         pManipulator->pKin->Getq0dotWithMM(alpha, dqdotN);
-        dqdotN.noalias() += -0.5*(pManipulator->pKin->qLimit_Low - _q).cwiseInverse();
+        dqdotN.noalias() += 0.5*(pManipulator->pKin->qLimit_Low - _q).cwiseInverse();
         dqdotN.noalias() += -0.5*(_q - pManipulator->pKin->qLimit_High).cwiseInverse();
         u04.noalias() += KpImpNull.cwiseProduct(dqN - _q);
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
@@ -571,7 +568,7 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
         _Toq.noalias() += AnalyticJacobian.transpose()*u03;
         _Toq.noalias() += Matrix_temp*u04;
     }
-    else if(mode == 3)
+    else if(mode == 3) // relative jacobian
     {
         pManipulator->pKin->GetRelativeJacobian(RelativeJacobian);
         pManipulator->pKin->GetRelativeJacobianDot(_qdot, RelativeJacobianDot);
@@ -589,19 +586,16 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
         u02.noalias() += KdImp.cwiseProduct(edotTask);
         u02.noalias() += KpImp.cwiseProduct(eTask);
 
-        dqN = 0.5*(pManipulator->pKin->qLimit_High - pManipulator->pKin->qLimit_Low);
+        //dqN = 0.5*(pManipulator->pKin->qLimit_High - pManipulator->pKin->qLimit_Low);
         pManipulator->pKin->Getq0dotWithMM(alpha, dqdotN);
-        //dqdotN.noalias() += -0.5*(pManipulator->pKin->qLimit_Low - _q).cwiseInverse();
+        //dqdotN.noalias() += 0.5*(pManipulator->pKin->qLimit_Low - _q).cwiseInverse();
         //dqdotN.noalias() += -0.5*(_q - pManipulator->pKin->qLimit_High).cwiseInverse();
         //u04.noalias() += KpImpNull.cwiseProduct(dqN - _q);
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
 
-        //pManipulator->pKin->GetDampedpInvJacobian(AnalyticJacobian, pInvMat);
-
         MatrixXd weight;
         //weight.setIdentity(16,16);
         weight = M;
-        //pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
         pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, AnalyticJacobian, pInvMat);
 
         Matrix_temp = Eigen::MatrixXd::Identity(16,16);

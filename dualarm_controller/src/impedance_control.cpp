@@ -302,6 +302,10 @@ namespace dualarm_controller
             targetpos.setZero(12);
             xa.setZero(12);
 
+            wpInv_lambda[0].setZero(3);
+            wpInv_lambda[1].setZero(3);
+
+
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
             state_pub_.reset(new realtime_tools::RealtimePublisher<dualarm_controller::TaskCurrentState>(n, "states", 10));
@@ -323,9 +327,12 @@ namespace dualarm_controller
             state_pub_->msg_.dx.resize(2);
             state_pub_->msg_.DAMM = DAMM;
             state_pub_->msg_.TODAMM = TODAMM2;
-
+            state_pub_->msg_.lambda1.resize(3);
+            state_pub_->msg_.lambda2.resize(3);
             state_pub_->msg_.Kp_R = Kp_rot;
             state_pub_->msg_.Kp_T = Kp_trans;
+            state_pub_->msg_.ftsensor.resize(12);
+
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
             // 6.2 subsriber
@@ -438,11 +445,6 @@ namespace dualarm_controller
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
             cManipulator->pKin->GetInverseConditionNumber(InverseConditionNumber);
 
-            xa.segment(0,3) = ForwardOri[0];
-            xa.segment(3,3) = ForwardPos[0];
-            xa.segment(6,3) = ForwardOri[1];
-            xa.segment(9,3) = ForwardPos[1];
-
             q1_.data = q_.data.head(9);
             q1dot_.q = q1_;
             q1dot_.qdot.data = qdot_.data.head(9);
@@ -470,9 +472,18 @@ namespace dualarm_controller
 
             if( ControlIndex1 == CTRLMODE_IMPEDANCE_TASK )
             {
+                if(ControlIndex2 == 3)
+                {
+                    cManipulator->pKin->GetForwardKinematicsWithRelative(xa);
+                }
+                else
+                {
+                    cManipulator->pKin->GetForwardKinematics(xa);
+                }
                 motion->TaskMotion(dx, dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
                 Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, ControlIndex2);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
+                cManipulator->pKin->GetWDampedpInvLambda(wpInv_lambda);
             }
             else if( ControlIndex1 == CTRLMODE_IDY_JOINT )
             {
@@ -556,18 +567,26 @@ namespace dualarm_controller
                         state_pub_->msg_.dx[j].position.y = dx(6*j+4);
                         state_pub_->msg_.dx[j].position.z = dx(6*j+5);
 
-                        state_pub_->msg_.x[j].orientation.x = ForwardOri[j](0);
-                        state_pub_->msg_.x[j].orientation.y = ForwardOri[j](1);
-                        state_pub_->msg_.x[j].orientation.z = ForwardOri[j](2);
-                        state_pub_->msg_.x[j].position.x = ForwardPos[j](0);
-                        state_pub_->msg_.x[j].position.y = ForwardPos[j](1);
-                        state_pub_->msg_.x[j].position.z = ForwardPos[j](2);
+                        state_pub_->msg_.x[j].orientation.x = xa(6*j);
+                        state_pub_->msg_.x[j].orientation.y = xa(6*j+1);
+                        state_pub_->msg_.x[j].orientation.z = xa(6*j+2);
+                        state_pub_->msg_.x[j].position.x = xa(6*j+3);
+                        state_pub_->msg_.x[j].position.y = xa(6*j+4);
+                        state_pub_->msg_.x[j].position.z = xa(6*j+5);
 
                         state_pub_->msg_.InverseConditionNum[j] = InverseConditionNumber[j];
                     }
 
                     state_pub_->msg_.DAMM = DAMM;
                     state_pub_->msg_.TODAMM = TODAMM2;
+                    state_pub_->msg_.lambda1[0] = wpInv_lambda[0](0);
+                    state_pub_->msg_.lambda1[1] = wpInv_lambda[0](1);
+                    state_pub_->msg_.lambda1[2] = wpInv_lambda[0](2);
+                    state_pub_->msg_.lambda2[0] = wpInv_lambda[1](0);
+                    state_pub_->msg_.lambda2[1] = wpInv_lambda[1](1);
+                    state_pub_->msg_.lambda2[2] = wpInv_lambda[1](2);
+                    for(int k=0; k<12; k++)
+                        state_pub_->msg_.ftsensor[k] = ft_sensor(k);
                     state_pub_->unlockAndPublish();
                 }
                 loop_count_=0;
@@ -749,6 +768,7 @@ namespace dualarm_controller
         Eigen::VectorXd torque;
         Eigen::VectorXd ft_sensor;
         Eigen::VectorXd targetpos;
+        Eigen::VectorXd wpInv_lambda[2];
 
         // Task Space State
         // ver. 01

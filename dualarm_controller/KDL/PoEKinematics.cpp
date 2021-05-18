@@ -344,8 +344,8 @@ namespace HYUMotionKinematics {
     void PoEKinematics::WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat )
     {
 
-        WpInv_epsilon_left = 0.001;
-        WpInv_epsilon_right = 0.0081;
+        WpInv_epsilon_left = 0.000000001;
+        WpInv_epsilon_right = 0.00000000081;
 
         mWeightDampedpInvJacobian.setZero(16,12);
 
@@ -703,6 +703,35 @@ namespace HYUMotionKinematics {
             _Position[i] = T[0][JointEndNum[i]].block(0,3,3,1);
             SO3toRollPitchYaw(T[0][JointEndNum[i]].block(0,0,3,3), _Orientation[i]);
         }
+    }
+
+    void PoEKinematics::GetForwardKinematics(VectorXd &_x)
+    {
+        _x.setZero(12);
+        Vector3d tmp_RPY;
+        for(int i=0; i<this->m_NumChain; i++)
+        {
+            _x.segment(6*i+3, 3) = T[0][JointEndNum[i]].block(0,3,3,1);
+            SO3toRollPitchYaw(T[0][JointEndNum[i]].block(0,0,3,3), tmp_RPY);
+            _x.segment(6*i, 3) = tmp_RPY;
+        }
+    }
+
+    void PoEKinematics::GetForwardKinematicsWithRelative(VectorXd &_x_rel)
+    {
+        _x_rel.setZero(12);
+        Vector3d tmp_RPY;
+
+        _x_rel.segment(3, 3) = T[0][JointEndNum[0]].block(0,3,3,1);
+        SO3toRollPitchYaw(T[0][JointEndNum[0]].block(0,0,3,3), tmp_RPY);
+        _x_rel.segment(0, 3) = tmp_RPY;
+
+        SE3 HTRel;
+        HTRel = inverse_SE3(T[0][JointEndNum[0]])*T[0][JointEndNum[1]];
+        _x_rel.segment(9, 3) = HTRel.block(0,3,3,1);
+        SO3toRollPitchYaw(HTRel.block(0,0,3,3), tmp_RPY);
+        _x_rel.segment(6, 3) = tmp_RPY;
+
     }
 
     SE3 PoEKinematics::GetForwardKinematicsSE3( const int &_EndPosition ) const

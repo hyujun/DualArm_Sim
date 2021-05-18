@@ -16,5 +16,7 @@ float64 TODAMM
 float64[] SingleMM
 float64[] lambda1
 float64[] lambda2
+float64[] ftsensor
+float64[] torque_ext
 
 

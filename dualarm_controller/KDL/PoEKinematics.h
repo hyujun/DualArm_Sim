@@ -139,6 +139,10 @@ namespace HYUMotionKinematics {
          */
         void GetForwardKinematics( Vector3d *_Position, Vector3d *_Orientation, int &_NumChain );
 
+        void GetForwardKinematics( VectorXd &_x );
+
+        void GetForwardKinematicsWithRelative( VectorXd &_x_rel );
+
         SE3 GetForwardKinematicsSE3( const int &_EndPosition ) const;
 
         SO3 GetForwardKinematicsSO3( const int &_EndPosition ) const;

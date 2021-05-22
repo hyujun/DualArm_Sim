@@ -324,22 +324,24 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         {
             MotionInitTime = _Time;
             _StatusWord=0;
+            start_pos.setZero(12);
+            start_pos = x;
         }
         else
         {
-            _dx(0) = 0;
-            _dx(1) = 0;
-            _dx(2) = 0;
-            _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + b1;
-            _dx(4) = b2;
-            _dx(5) = b3;
+            _dx(0) = start_pos(0);
+            _dx(1) = start_pos(1);
+            _dx(2) = start_pos(2);
+            _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
+            _dx(4) = start_pos(4);
+            _dx(5) = start_pos(5);
 
-            _dx(6) = 0;
-            _dx(7) = 0;
-            _dx(8) = 0;
-            _dx(9) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + l_p1;
-            _dx(10) = l_p2;
-            _dx(11) = l_p3;
+            _dx(6) = start_pos(6);
+            _dx(7) = start_pos(7);
+            _dx(8) = start_pos(8);
+            _dx(9) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx(10) = start_pos(10);
+            _dx(11) = start_pos(11);
 
             _dxdot.setZero(12);
             _dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
@@ -357,22 +359,24 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         {
             MotionInitTime = _Time;
             _StatusWord=0;
+            start_pos.setZero(12);
+            start_pos = x;
         }
         else
         {
-            _dx(0) = 0;
-            _dx(1) = 0;
-            _dx(2) = 0;
-            _dx(3) = b1;
-            _dx(4) = A * sin(f * M_PI * (_Time - MotionInitTime)) + b2;
-            _dx(5) = b3;
+            _dx(0) = start_pos(0);
+            _dx(1) = start_pos(1);
+            _dx(2) = start_pos(2);
+            _dx(3) = start_pos(3);
+            _dx(4) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(4);
+            _dx(5) = start_pos(5);
 
-            _dx(6) = 0;
-            _dx(7) = 0;
-            _dx(8) = 0;
-            _dx(9) = l_p1;
-            _dx(10) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + l_p2;
-            _dx(11) = l_p3;
+            _dx(6) = start_pos(6);
+            _dx(7) = start_pos(7);
+            _dx(8) = start_pos(8);
+            _dx(9) = start_pos(9);
+            _dx(10) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
+            _dx(11) = start_pos(11);
 
             _dxdot.setZero(12);
             _dxdot(4) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
@@ -389,23 +393,25 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         {
             MotionInitTime = _Time;
             _StatusWord=0;
+            start_pos.setZero(12);
+            start_pos = x;
         }
         else
         {
             A = 0.07;
-            _dx(0) = 0;
-            _dx(1) = 0;
-            _dx(2) = 0;
-            _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + b1 + 0.09;
-            _dx(4) = b2 + 0.11;
-            _dx(5) = b3;
+            _dx(0) = start_pos(0);
+            _dx(1) = start_pos(1);
+            _dx(2) = start_pos(2);
+            _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
+            _dx(4) = start_pos(4);
+            _dx(5) = start_pos(5);
 
-            _dx(6) = 0;
-            _dx(7) = 0;
-            _dx(8) = 0;
-            _dx(9) = -A * cos(2*f * M_PI * (_Time - MotionInitTime));
-            _dx(10) = -A * sin(2*f * M_PI * (_Time - MotionInitTime)) + 0.4;
-            _dx(11) = 0;
+            _dx(6) = start_pos(6);
+            _dx(7) = start_pos(7);
+            _dx(8) = start_pos(8);
+            _dx(9) = -A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx(10) = -A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
+            _dx(11) = start_pos(11);
 
             _dxdot.setZero(12);
             _dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
@@ -419,7 +425,77 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
 
         }
     }
+    else if( MotionCommandTask == MOVE_TASK_CUSTOM4 )
+    {
+        if( _StatusWord == MotionCommandTask )
+        {
+            MotionInitTime = _Time;
+            _StatusWord=0;
+            start_pos.setZero(12);
+            start_pos = x;
+        }
+        else
+        {
+            A = 0.10;
+            _dx(0) = start_pos(0);
+            _dx(1) = start_pos(1);
+            _dx(2) = start_pos(2);
+            _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
+            _dx(4) = start_pos(4);
+            _dx(5) = start_pos(5);
+
+            _dx(6) = start_pos(6);
+            _dx(7) = start_pos(7);
+            _dx(8) = start_pos(8);
+            _dx(9) = start_pos(9);
+            _dx(10) = start_pos(10);
+            _dx(11) = start_pos(11);
+
+            _dxdot.setZero(12);
+            _dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
+
+            _dxddot.setZero(12);
+            _dxddot(3) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
+
+
+        }
+    }
     else if( MotionCommandTask == MOVE_TASK_CUSTOM5 )
+    {
+        if( _StatusWord == MotionCommandTask )
+        {
+            MotionInitTime = _Time;
+            _StatusWord=0;
+            start_pos.setZero(12);
+            start_pos = x;
+        }
+        else
+        {
+            A = 0.1;
+            _dx(0) = start_pos(0);
+            _dx(1) = start_pos(1);
+            _dx(2) = start_pos(2);
+            _dx(3) = start_pos(3);
+            _dx(4) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(4);
+            _dx(5) = start_pos(5);
+
+            _dx(6) = start_pos(6);
+            _dx(7) = start_pos(7);
+            _dx(8) = start_pos(8);
+            _dx(9) = start_pos(9);
+            _dx(10) = start_pos(10);
+            _dx(11) = start_pos(11);
+
+            _dxdot.setZero(12);
+            _dxdot(4) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
+
+            _dxddot.setZero(12);
+            _dxddot(4) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
+
+
+        }
+    }
+    else if( MotionCommandTask == MOVE_TASK_CUSTOM6 )
     {
         _dx.setZero(12);
         _dxdot.setZero(12);

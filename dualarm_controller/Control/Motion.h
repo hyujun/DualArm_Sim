@@ -37,6 +37,8 @@ private:
 	Eigen::VectorXd _x_tmp, _xdot_tmp;
 	Eigen::MatrixXd AJacobian;
 
+	Eigen::VectorXd start_pos;
+
     std::shared_ptr<SerialManipulator> pManipulator;
 
 	Trajectory JointPoly5th;

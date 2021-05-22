@@ -54,7 +54,7 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 
 #if defined(__SIMULATION__)
     GainWeightFactor.resize(m_Jnum);
-    GainWeightFactor.setConstant(11.0);
+    GainWeightFactor.setConstant(15.0);
 
     dq.setZero(m_Jnum);
     dqdot.setZero(m_Jnum);
@@ -68,7 +68,7 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 
 #else
     GainWeightFactor.setZero(m_Jnum);
-    GainWeightFactor.setConstant(11.0);
+    GainWeightFactor.setConstant(15.0);
 
 	Kp = GainWeightFactor*KpBase;
 	Kd = GainWeightFactor*KdBase;
@@ -79,9 +79,9 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 	dqddot.resize(m_Jnum);
 	dq_old.setZero(m_Jnum);
 
-    KpImp.setConstant(12,1);
-    KdImp.setConstant(12,0.2);
-    KpImpNull.setConstant(16, 0.01);
+    KpImp.setConstant(12,10.0);
+    KdImp.setConstant(12,10.0);
+    KpImpNull.setConstant(16,0.01);
     KdImpNull.setConstant(16,0.1);
 
 #endif
@@ -490,7 +490,7 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
     dqN.setZero(16);
     dqdotN.setZero(16);
 
-    alpha = 10.0;
+    alpha = 7.5;
 
     if(mode == 1) // Mx = Mx_desired
     {
@@ -588,6 +588,7 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
 
         //dqN = 0.5*(pManipulator->pKin->qLimit_High - pManipulator->pKin->qLimit_Low);
         pManipulator->pKin->Getq0dotWithMM(alpha, dqdotN);
+        //pManipulator->pKin->Getq0dotWithMM_Relative(alpha, AnalyticJacobian, dqdotN);
         //dqdotN.noalias() += 0.5*(pManipulator->pKin->qLimit_Low - _q).cwiseInverse();
         //dqdotN.noalias() += -0.5*(_q - pManipulator->pKin->qLimit_High).cwiseInverse();
         //u04.noalias() += KpImpNull.cwiseProduct(dqN - _q);

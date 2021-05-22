@@ -446,8 +446,8 @@ namespace HYUMotionKinematics {
     void PoEKinematics::WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, const MatrixXd &_TargetMat )
     {
 
-        WpInv_epsilon_left = 1.0;
-        WpInv_epsilon_right = 1.0;
+        WpInv_epsilon_left = 10.0;
+        WpInv_epsilon_right = 10.0;
 
         mWeightDampedpInvJacobian.setZero(16,12);
 
@@ -643,6 +643,11 @@ namespace HYUMotionKinematics {
         return sqrt((mAnalyticJacobian*mAnalyticJacobian.transpose()).determinant());
     }
 
+    double PoEKinematics::GetManipulabilityMeasure(const MatrixXd &_Jacobian)
+    {
+        return sqrt((_Jacobian*_Jacobian.transpose()).determinant());
+    }
+
     void PoEKinematics::Getq0dotWithMM(const double &gain, VectorXd &q0dot)
     {
         q0dot.setZero(m_DoF);
@@ -684,6 +689,79 @@ namespace HYUMotionKinematics {
 
             dJadq.setZero();
             dJadq.noalias() += dKdq*mAnalyticJacobian;
+            dJadq.noalias() += K*dJbdq;
+
+            MatTrace.setZero();
+            MatTrace.noalias() += dJadq*pInvJacobian;
+
+            q0dot(i) = gain*ManipulabilityMeasure*MatTrace.trace();
+        }
+    }
+
+    void PoEKinematics::Getq0dotWithMM_Relative(const double &gain, const MatrixXd &_RelativeJacobian, VectorXd &q0dot)
+    {
+        q0dot.setZero(m_DoF);
+        Matrix<double, 12, 16> dJbdq, dJadq;
+        Matrix<double, 12, 12> MatTrace;
+
+        adjoint adTmp;
+        Adjoint AdTmp;
+        AdTmp = AdjointMatrix(inverse_SE3(T[0][JointEndNum[1]]));
+
+        auto ManipulabilityMeasure = GetManipulabilityMeasure(_RelativeJacobian);
+
+        Matrix<double, 12,12> K, dKdq;
+        K.setZero();
+        K.block(0,0,3,3) = GetForwardKinematicsSO3(JointEndNum[0]);
+        K.block(3,3,3,3) = GetForwardKinematicsSO3(JointEndNum[0]);
+        K.block(6,6,3,3).noalias() += GetForwardKinematicsSO3(JointEndNum[0]).transpose()*GetForwardKinematicsSO3(JointEndNum[1]);
+        K.block(9,9,3,3) = K.block(6,6,3,3);
+
+        MatrixXd pInvJacobian;
+        pInvJacobian = _RelativeJacobian.completeOrthogonalDecomposition().pseudoInverse();
+
+        int RowCount[2]={0,0};
+
+        for(int i=1; i<m_DoF; i++)
+        {
+            dJbdq.setZero();
+            dKdq.setZero();
+
+            if(ChainMatrix(0,i) == 1)
+            {
+                RowCount[0]++;
+                for(int k=0; k<RowCount[0]; k++)
+                {
+                    dJbdq.col(Arr[0](k)-1).segment(0,6).noalias() +=
+                            adjointMatrix(mBodyJacobian.col(Arr[0](k)-1).segment(0,6))*mBodyJacobian.col(i).segment(0,6);
+                }
+                dKdq.block(0,0,3,3).noalias() = SkewMatrix(mSpaceJacobian.col(i).segment(0,3));
+                dKdq.block(3,3,3,3) = dKdq.block(0,0,3,3) ;
+            }
+
+            if( i >=2 && i <=7)
+            {
+                for(int j=i; j<8;j++)
+                {
+                    adTmp = adjointMatrix(mSpaceJacobian.col(j).segment(0,6));
+                    dJbdq.col(j).segment(6,6).noalias() += -AdTmp*(adTmp*(mSpaceJacobian.col(i).segment(0,6)));
+                }
+                dKdq.block(6,6,3,3).noalias() += SkewMatrix(mBodyJacobian.col(i).segment(0,3));
+                dKdq.block(9,9,3,3) = dKdq.block(6,6,3,3);
+            }
+            else if(i>=10 && i<=15)
+            {
+                for(int k=9;k<i; k++)
+                {
+                    adTmp = adjointMatrix(mBodyJacobian.col(k).segment(6,6));
+                    dJbdq.col(k).segment(6,6).noalias() += adTmp*(mBodyJacobian.col(i).segment(6,6));
+                }
+                dKdq.block(6,6,3,3).noalias() += SkewMatrix(mSpaceJacobian.col(i).segment(6,3));
+                dKdq.block(9,9,3,3) = dKdq.block(6,6,3,3);
+            }
+
+            dJadq.setZero();
+            dJadq.noalias() += dKdq*_RelativeJacobian;
             dJadq.noalias() += K*dJbdq;
 
             MatTrace.setZero();

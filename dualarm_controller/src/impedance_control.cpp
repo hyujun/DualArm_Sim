@@ -409,7 +409,7 @@ namespace dualarm_controller
             KdTask.segment(9, 3).setConstant(Kd_trans);
 
             KpNull.setConstant(16,0.001);
-            KdNull.setConstant(16,0.2);
+            KdNull.setConstant(16,0.4);
             Control->SetImpedanceGain(KpTask, KdTask, KpNull, KdNull, des_m);
 
             ControlIndex1 = CTRLMODE_IDY_JOINT;
@@ -464,7 +464,7 @@ namespace dualarm_controller
             jnt_to_jacdot_solver->JntToJacDot(q1dot_, J1dot);
             jnt_to_jacdot_solver1->JntToJacDot(q2dot_, J2dot);
 
-            MM = cManipulator->pKin->GetManipulabilityMeasure();
+
             manipulability_data();
 
             ctrl_type = ControlIndex2;
@@ -475,10 +475,13 @@ namespace dualarm_controller
                 if(ControlIndex2 == 3)
                 {
                     cManipulator->pKin->GetForwardKinematicsWithRelative(xa);
+                    cManipulator->pKin->GetRelativeJacobian(RelativeJac);
+                    MM = cManipulator->pKin->GetManipulabilityMeasure(RelativeJac);
                 }
                 else
                 {
                     cManipulator->pKin->GetForwardKinematics(xa);
+                    MM = cManipulator->pKin->GetManipulabilityMeasure();
                 }
                 motion->TaskMotion(dx, dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
                 Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, ControlIndex2);
@@ -487,6 +490,7 @@ namespace dualarm_controller
             }
             else if( ControlIndex1 == CTRLMODE_IDY_JOINT )
             {
+                MM = cManipulator->pKin->GetManipulabilityMeasure();
                 qd_dot_.data.setZero(16);
                 motion->JointMotion(qd_.data, qd_dot_.data, qd_ddot_.data, targetpos, q_.data, qdot_.data, t, JointState, ControlSubIndex);
                 Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
@@ -577,6 +581,7 @@ namespace dualarm_controller
                         state_pub_->msg_.InverseConditionNum[j] = InverseConditionNumber[j];
                     }
 
+                    state_pub_->msg_.MM = MM;
                     state_pub_->msg_.DAMM = DAMM;
                     state_pub_->msg_.TODAMM = TODAMM2;
                     state_pub_->msg_.lambda1[0] = wpInv_lambda[0](0);
@@ -754,6 +759,7 @@ namespace dualarm_controller
         // kdl and Eigen Jacobian
         Eigen::MatrixXd pInvJac;
         Eigen::MatrixXd AJac, AJacDot, Jdot;
+        Eigen::MatrixXd RelativeJac;
         Eigen::MatrixXd BodyJacDot;
 
         // Joint Space State

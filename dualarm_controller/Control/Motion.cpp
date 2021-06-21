@@ -294,7 +294,7 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _dxdot.setZero(12);
             _dxddot.setZero(12);
 
-            _dx = _Target;
+            _dx = TargetPosTask;
             _dx.segment(3,3) = _dx_tmp.head(3);
             _dx.segment(9,3) = _dx_tmp.tail(3);
             _dxdot.segment(3,3) = _dxdot_tmp.head(3);
@@ -313,7 +313,7 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             TargetPos_Linear.head(3) = TargetPosTask.segment(3,3);
             TargetPos_Linear.tail(3) = TargetPosTask.segment(9,3);
 
-            TrajectoryTime=5.0;
+            TrajectoryTime=10.0;
             NewTarget=1;
             _StatusWord = 0;
         }
@@ -398,30 +398,32 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         }
         else
         {
-            A = 0.07;
+            auto ref_A = 0.1;
+            auto rel_A = 0.05;
+            f = 1.0/10.0;
             _dx(0) = start_pos(0);
             _dx(1) = start_pos(1);
             _dx(2) = start_pos(2);
-            _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
+            _dx(3) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
             _dx(4) = start_pos(4);
             _dx(5) = start_pos(5);
 
             _dx(6) = start_pos(6);
             _dx(7) = start_pos(7);
             _dx(8) = start_pos(8);
-            _dx(9) = -A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
-            _dx(10) = -A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
+            _dx(9) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx(10) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
             _dx(11) = start_pos(11);
 
             _dxdot.setZero(12);
-            _dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
-            _dxdot(9) = (2*f * M_PI) * A * sin(2*f * M_PI * (_Time - MotionInitTime));
-            _dxdot(10) = -(2*f * M_PI) * A * cos(2*f * M_PI * (_Time - MotionInitTime));
+            _dxdot(3) = -(f * M_PI) * ref_A * cos(f * M_PI * (_Time - MotionInitTime));
+            _dxdot(9) = (2*f * M_PI) * rel_A * sin(2*f * M_PI * (_Time - MotionInitTime));
+            _dxdot(10) = -(2*f * M_PI) * rel_A * cos(2*f * M_PI * (_Time - MotionInitTime));
 
             _dxddot.setZero(12);
-            _dxddot(3) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
-            _dxddot(9) = (2*f * M_PI) * (2*f * M_PI) * A * cos(2*f * M_PI * (_Time - MotionInitTime));
-            _dxddot(10) = (2*f * M_PI) * (2*f * M_PI) * A * sin(2*f * M_PI * (_Time - MotionInitTime));
+            _dxddot(3) = (f * M_PI) * (f * M_PI) * ref_A * sin(f * M_PI * (_Time - MotionInitTime));
+            _dxddot(9) = (2*f * M_PI) * (2*f * M_PI) * rel_A * cos(2*f * M_PI * (_Time - MotionInitTime));
+            _dxddot(10) = (2*f * M_PI) * (2*f * M_PI) * rel_A * sin(2*f * M_PI * (_Time - MotionInitTime));
 
         }
     }
@@ -436,27 +438,32 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         }
         else
         {
-            A = 0.10;
+            auto ref_A = 0.40;
+            auto rel_A = 0.05;
+            f = 1.0/35.0;
             _dx(0) = start_pos(0);
             _dx(1) = start_pos(1);
             _dx(2) = start_pos(2);
-            _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
-            _dx(4) = start_pos(4);
+            _dx(3) = start_pos(3);
+            _dx(4) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(4);;
             _dx(5) = start_pos(5);
 
             _dx(6) = start_pos(6);
             _dx(7) = start_pos(7);
             _dx(8) = start_pos(8);
-            _dx(9) = start_pos(9);
-            _dx(10) = start_pos(10);
+            _dx(9) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx(10) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
             _dx(11) = start_pos(11);
 
             _dxdot.setZero(12);
-            _dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
+            _dxdot(4) = -(f * M_PI) * ref_A * cos(f * M_PI * (_Time - MotionInitTime));
+            _dxdot(9) = (2*f * M_PI) * rel_A * sin(2*f * M_PI * (_Time - MotionInitTime));
+            _dxdot(10) = -(2*f * M_PI) * rel_A * cos(2*f * M_PI * (_Time - MotionInitTime));
 
             _dxddot.setZero(12);
-            _dxddot(3) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
-
+            _dxddot(4) = (f * M_PI) * (f * M_PI) * ref_A * sin(f * M_PI * (_Time - MotionInitTime));
+            _dxddot(9) = (2*f * M_PI) * (2*f * M_PI) * rel_A * cos(2*f * M_PI * (_Time - MotionInitTime));
+            _dxddot(10) = (2*f * M_PI) * (2*f * M_PI) * rel_A * sin(2*f * M_PI * (_Time - MotionInitTime));
 
         }
     }
@@ -471,26 +478,32 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
         }
         else
         {
-            A = 0.1;
+            auto ref_A = 0.45;
+            auto rel_A = 0.1;
+            f = 1.0/30.0;
             _dx(0) = start_pos(0);
             _dx(1) = start_pos(1);
             _dx(2) = start_pos(2);
             _dx(3) = start_pos(3);
-            _dx(4) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(4);
-            _dx(5) = start_pos(5);
+            _dx(4) = start_pos(4);;
+            _dx(5) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(5);
 
             _dx(6) = start_pos(6);
             _dx(7) = start_pos(7);
             _dx(8) = start_pos(8);
-            _dx(9) = start_pos(9);
-            _dx(10) = start_pos(10);
+            _dx(9) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx(10) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
             _dx(11) = start_pos(11);
 
             _dxdot.setZero(12);
-            _dxdot(4) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
+            _dxdot(5) = -(f * M_PI) * ref_A * cos(f * M_PI * (_Time - MotionInitTime));
+            _dxdot(9) = (2*f * M_PI) * rel_A * sin(2*f * M_PI * (_Time - MotionInitTime));
+            _dxdot(10) = -(2*f * M_PI) * rel_A * cos(2*f * M_PI * (_Time - MotionInitTime));
 
             _dxddot.setZero(12);
-            _dxddot(4) = -(f * M_PI) * (f * M_PI) * A * sin(f * M_PI * (_Time - MotionInitTime));
+            _dxddot(5) = (f * M_PI) * (f * M_PI) * ref_A * sin(f * M_PI * (_Time - MotionInitTime));
+            _dxddot(9) = (2*f * M_PI) * (2*f * M_PI) * rel_A * cos(2*f * M_PI * (_Time - MotionInitTime));
+            _dxddot(10) = (2*f * M_PI) * (2*f * M_PI) * rel_A * sin(2*f * M_PI * (_Time - MotionInitTime));
 
 
         }

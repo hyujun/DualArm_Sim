@@ -317,8 +317,38 @@ namespace HYUMotionKinematics {
 
     void PoEKinematics::GetDampedpInvJacobian(MatrixXd &_TargetMat, MatrixXd &_DampedpInvJacobian)
     {
-        DampedpInvJacobian(_TargetMat, 0.0025);
+        DampedpInvBlockJacobian(_TargetMat, 1.0);
         _DampedpInvJacobian = mDampedpInvJacobian;
+    }
+
+    void PoEKinematics::DampedpInvBlockJacobian(MatrixXd &_TargetMatrix, const double sigma)
+    {
+        MatrixXd Jacobian1 = _TargetMatrix.block(0,0,6,m_DoF);
+        MatrixXd Jacobian2 = _TargetMatrix.block(6,0,6,m_DoF);
+        MatrixXd P1 = Matrix<double, 16, 16>::Identity();
+        P1.noalias() += -Jacobian1.transpose()*(Jacobian1*Jacobian1.transpose()).inverse()*Jacobian1;
+        MatrixXd P2 = Matrix<double, 16, 16>::Identity();
+        P2.noalias() += -Jacobian2.transpose()*(Jacobian2*Jacobian2.transpose()).inverse()*Jacobian2;
+
+        mDampedpInvJacobian.setZero( m_DoF,6*m_NumChain );
+
+        Mat_Tmp.setZero(6,6);
+        Mat_Tmp.noalias() += (Jacobian1*P2)*(Jacobian1*P2).transpose();
+        Mat_Tmp.noalias() += sigma*Eigen::Matrix<double, 6, 6>::Identity();
+
+        mDampedpInvJacobian.block(0,0,m_DoF,6).noalias() += (Jacobian1*P2).transpose()*Mat_Tmp.inverse();
+
+        Mat_Tmp.setZero(6,6);
+        Mat_Tmp.noalias() += (Jacobian2*P1)*(Jacobian2*P1).transpose();
+        Mat_Tmp.noalias() += sigma*Eigen::Matrix<double, 6, 6>::Identity();
+
+        mDampedpInvJacobian.block(0,6,m_DoF,6).noalias() += (Jacobian2*P1).transpose()*Mat_Tmp.inverse();
+    }
+
+    void PoEKinematics::GetDampedpInvBlockJacobian(MatrixXd &_TargetMat, MatrixXd &_DampedInvBlockJacobian)
+    {
+        DampedpInvBlockJacobian(_TargetMat, 1.0);
+        _DampedInvBlockJacobian = mDampedpInvJacobian;
     }
 
     void PoEKinematics::BlockpInvJacobian( Matrix<double, 6, Dynamic> &_Jacobian1, Matrix<double, 6, Dynamic> &_Jacobian2 )
@@ -344,8 +374,8 @@ namespace HYUMotionKinematics {
     void PoEKinematics::WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat )
     {
 
-        WpInv_epsilon_left = 0.000000001;
-        WpInv_epsilon_right = 0.00000000081;
+        WpInv_epsilon_left = 0.001;
+        WpInv_epsilon_right = 0.001;
 
         mWeightDampedpInvJacobian.setZero(16,12);
 
@@ -446,8 +476,11 @@ namespace HYUMotionKinematics {
     void PoEKinematics::WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, const MatrixXd &_TargetMat )
     {
 
-        WpInv_epsilon_left = 10.0;
-        WpInv_epsilon_right = 10.0;
+        WpInv_epsilon_left = 0.001;
+        WpInv_epsilon_right = 0.001;
+
+        //WpInv_epsilon_left = 1.0;
+        //WpInv_epsilon_right = 1.0;
 
         mWeightDampedpInvJacobian.setZero(16,12);
 

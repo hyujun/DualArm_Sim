@@ -478,7 +478,7 @@ void Controller::InertiaShaping( const VectorXd &_Mass, MatrixXd &_M_Shaped_inv 
     _M_Shaped_inv.block(9,9,3,3).noalias() += Matrix<double, 3,3>::Identity()/_Mass(1);
 }
 
-void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx,
+void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx,
                                          const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor,
                                          VectorXd &_Toq, const int mode)
 {
@@ -595,9 +595,11 @@ void Controller::TaskImpedanceController(const VectorXd &_q, const VectorXd &_qd
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
 
         MatrixXd weight;
-        //weight.setIdentity(16,16);
-        weight = M;
+        weight.setIdentity(16,16);
+        //weight = M;
         pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, AnalyticJacobian, pInvMat);
+
+        //pManipulator->pKin->GetDampedpInvBlockJacobian(AnalyticJacobian, pInvMat);
 
         Matrix_temp = Eigen::MatrixXd::Identity(16,16);
         Matrix_temp += -pInvMat*AnalyticJacobian;

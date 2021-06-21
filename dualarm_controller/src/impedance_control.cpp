@@ -298,6 +298,7 @@ namespace dualarm_controller
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
             torque.setZero(n_joints_);
             ft_sensor.setZero(12);
+            torque_ext.setZero(n_joints_);
             des_m.setZero(2);
             targetpos.setZero(12);
             xa.setZero(12);
@@ -319,9 +320,11 @@ namespace dualarm_controller
                 state_pub_->msg_.dq.push_back(qd_.data(i));
                 state_pub_->msg_.dqdot.push_back(qd_dot_.data(i));
                 state_pub_->msg_.torque.push_back(torque(i));
+                state_pub_->msg_.torque_ext.push_back(torque_ext(i));
             }
             for(int j=0; j<2; j++) {
                 state_pub_->msg_.InverseConditionNum.push_back(InverseConditionNumber[j]);
+                state_pub_->msg_.SingleMM.push_back(SingleMM[j]);
             }
             state_pub_->msg_.x.resize(2);
             state_pub_->msg_.dx.resize(2);
@@ -409,7 +412,7 @@ namespace dualarm_controller
             KdTask.segment(9, 3).setConstant(Kd_trans);
 
             KpNull.setConstant(16,0.001);
-            KdNull.setConstant(16,0.4);
+            KdNull.setConstant(16,0.4 );
             Control->SetImpedanceGain(KpTask, KdTask, KpNull, KdNull, des_m);
 
             ControlIndex1 = CTRLMODE_IDY_JOINT;
@@ -444,6 +447,7 @@ namespace dualarm_controller
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
             cManipulator->pKin->GetInverseConditionNumber(InverseConditionNumber);
+            cManipulator->pKin->GetAnalyticJacobian(AJac);
 
             q1_.data = q_.data.head(9);
             q1dot_.q = q1_;
@@ -464,6 +468,8 @@ namespace dualarm_controller
             jnt_to_jacdot_solver->JntToJacDot(q1dot_, J1dot);
             jnt_to_jacdot_solver1->JntToJacDot(q2dot_, J2dot);
 
+            cManipulator->pDyn->M_Matrix(M);
+            KineticEnergy = qdot_.data.transpose()*M*qdot_.data;
 
             manipulability_data();
 
@@ -476,11 +482,17 @@ namespace dualarm_controller
                 {
                     cManipulator->pKin->GetForwardKinematicsWithRelative(xa);
                     cManipulator->pKin->GetRelativeJacobian(RelativeJac);
-                    MM = cManipulator->pKin->GetManipulabilityMeasure(RelativeJac);
+                    SingleMM[0] = cManipulator->pKin->GetManipulabilityMeasure(AJac.block(0,0,6,16));
+                    SingleMM[1] = cManipulator->pKin->GetManipulabilityMeasure(RelativeJac);
+                    AJac.block(6,0,6,16) = RelativeJac;
+                    MM = cManipulator->pKin->GetManipulabilityMeasure(AJac);
+
                 }
                 else
                 {
                     cManipulator->pKin->GetForwardKinematics(xa);
+                    SingleMM[0] = cManipulator->pKin->GetManipulabilityMeasure(AJac.block(0,0,6,16));
+                    SingleMM[1] = cManipulator->pKin->GetManipulabilityMeasure(AJac.block(6,0,6,16));
                     MM = cManipulator->pKin->GetManipulabilityMeasure();
                 }
                 motion->TaskMotion(dx, dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
@@ -535,8 +547,6 @@ namespace dualarm_controller
                                                                { (Eigen::Matrix<double, 6, 1>{} << 0, 0, 0, 0, 0, 1).finished(), 1.7 } } };
             auto left_ellipsoid = manipulability_metrics::ellipsoidFromJacobian(J2_kdl_.data);
             auto right_ellipsoid = manipulability_metrics::ellipsoidFromJacobian(J1_kdl_.data);
-            SingleMM[0] = sqrt((J1_kdl_.data * J1_kdl_.data.transpose()).determinant());
-            SingleMM[1] = sqrt((J2_kdl_.data * J2_kdl_.data.transpose()).determinant());
             TOMM[0] = manipulability_metrics::inverseShapeDiscrepancy(desired_Singelmanipulability, J1_kdl_.data);
             TOMM[1] = manipulability_metrics::inverseShapeDiscrepancy(desired_Singelmanipulability, J2_kdl_.data);
             DAMM = std::max(manipulability_metrics::volumeIntersection(left_ellipsoid, J1_kdl_.data),
@@ -553,6 +563,7 @@ namespace dualarm_controller
                 {
                     state_pub_->msg_.header.stamp = ros::Time::now();
                     state_pub_->msg_.header.seq++;
+                    torque_ext = AJac.transpose()*ft_sensor;
                     for(size_t i=0; i<n_joints_; i++)
                     {
                         state_pub_->msg_.q[i] = q_.data(i);
@@ -560,6 +571,7 @@ namespace dualarm_controller
                         state_pub_->msg_.dq[i] = qd_.data(i);
                         state_pub_->msg_.dqdot[i] = qd_dot_.data(i);
                         state_pub_->msg_.torque[i] = torque(i);
+                        state_pub_->msg_.torque_ext[i] = torque_ext(i);
                     }
 
                     for(int j=0; j<2; j++)
@@ -579,6 +591,7 @@ namespace dualarm_controller
                         state_pub_->msg_.x[j].position.z = xa(6*j+5);
 
                         state_pub_->msg_.InverseConditionNum[j] = InverseConditionNumber[j];
+                        state_pub_->msg_.SingleMM[j] = SingleMM[j];
                     }
 
                     state_pub_->msg_.MM = MM;
@@ -592,6 +605,8 @@ namespace dualarm_controller
                     state_pub_->msg_.lambda2[2] = wpInv_lambda[1](2);
                     for(int k=0; k<12; k++)
                         state_pub_->msg_.ftsensor[k] = ft_sensor(k);
+                    state_pub_->msg_.KE = KineticEnergy;
+
                     state_pub_->unlockAndPublish();
                 }
                 loop_count_=0;
@@ -755,6 +770,7 @@ namespace dualarm_controller
         double MM;
         double DAMM;
         double TODAMM2;
+        double KineticEnergy;
 
         // kdl and Eigen Jacobian
         Eigen::MatrixXd pInvJac;
@@ -773,6 +789,7 @@ namespace dualarm_controller
         Eigen::VectorXd q0dot;
         Eigen::VectorXd torque;
         Eigen::VectorXd ft_sensor;
+        Eigen::VectorXd torque_ext;
         Eigen::VectorXd targetpos;
         Eigen::VectorXd wpInv_lambda[2];
 

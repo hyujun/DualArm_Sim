@@ -11,6 +11,7 @@
 #include "Trajectory.h"
 #include "../KDL/SerialManipulator.h"
 #include "../KDL/LieOperator.h"
+#include "slerp.h"
 
 namespace HYUControl {
 
@@ -43,6 +44,8 @@ private:
 
 	Trajectory JointPoly5th;
 	Trajectory TaskPoly5th;
+
+	slerp slerp_ori;
 
 	int MotionProcess;
 	int NewTarget=0;

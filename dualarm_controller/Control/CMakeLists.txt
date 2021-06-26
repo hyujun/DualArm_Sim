@@ -6,7 +6,7 @@ file(GLOB SOURCE_FILES "*.cpp" "*.c")
 
 add_library(${PROJECT_NAME} SHARED STATIC
             ${SOURCE_FILES}
-            )
+)
 
 add_library(sub::CTRL ALIAS ${PROJECT_NAME})
 

@@ -284,6 +284,7 @@ namespace dualarm_controller
             dx.setZero(12);
             dxdot.setZero(12);
             dxddot.setZero(12);
+            xdot_logging.setZero(12);
 
             KpTask.setZero(12);
             KdTask.setZero(12);
@@ -335,6 +336,11 @@ namespace dualarm_controller
             state_pub_->msg_.Kp_R = Kp_rot;
             state_pub_->msg_.Kp_T = Kp_trans;
             state_pub_->msg_.ftsensor.resize(12);
+
+            //state_pub_->msg_.xdot.resize(12);
+            //state_pub_->msg_.dxdot.resize(12);
+            //state_pub_->msg_.dxddot.resize(12);
+
 
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
@@ -389,8 +395,6 @@ namespace dualarm_controller
             t = 0.0;
             InitTime = 2.0;
 
-            ROS_INFO("Starting Impedance Controller");
-
             cManipulator = std::make_shared<SerialManipulator>();
 
             Control = std::make_unique<HYUControl::Controller>(cManipulator);
@@ -419,6 +423,9 @@ namespace dualarm_controller
             ControlIndex2 = SYSTEM_BEGIN;
             ControlSubIndex = MOVE_ZERO;
             JointState = MOVE_ZERO;
+
+            ROS_INFO("Starting Impedance Controller");
+
         }
 
         void update(const ros::Time &time, const ros::Duration &period) override
@@ -448,6 +455,8 @@ namespace dualarm_controller
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
             cManipulator->pKin->GetInverseConditionNumber(InverseConditionNumber);
             cManipulator->pKin->GetAnalyticJacobian(AJac);
+
+            //xdot_logging = AJac*qdot_.data;
 
             q1_.data = q_.data.head(9);
             q1dot_.q = q1_;
@@ -486,7 +495,6 @@ namespace dualarm_controller
                     SingleMM[1] = cManipulator->pKin->GetManipulabilityMeasure(RelativeJac);
                     AJac.block(6,0,6,16) = RelativeJac;
                     MM = cManipulator->pKin->GetManipulabilityMeasure(AJac);
-
                 }
                 else
                 {
@@ -604,7 +612,12 @@ namespace dualarm_controller
                     state_pub_->msg_.lambda2[1] = wpInv_lambda[1](1);
                     state_pub_->msg_.lambda2[2] = wpInv_lambda[1](2);
                     for(int k=0; k<12; k++)
+                    {
                         state_pub_->msg_.ftsensor[k] = ft_sensor(k);
+                        //state_pub_->msg_.dxdot[k] = dxdot(k);
+                        //state_pub_->msg_.dxddot[k] = dxddot(k);
+                        //state_pub_->msg_.xdot[k] = xdot_logging(k);
+                    }
                     state_pub_->msg_.KE = KineticEnergy;
 
                     state_pub_->unlockAndPublish();
@@ -786,6 +799,7 @@ namespace dualarm_controller
         KDL::JntArray qdot_;
         KDL::JntArrayVel q1dot_, q2dot_;
         Eigen::VectorXd xa;
+        Eigen::VectorXd xdot_logging;
         Eigen::VectorXd q0dot;
         Eigen::VectorXd torque;
         Eigen::VectorXd ft_sensor;

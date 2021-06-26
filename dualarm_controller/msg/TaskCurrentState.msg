@@ -19,4 +19,7 @@ float64[] lambda2
 float64[] ftsensor
 float64 KE
 float64[] torque_ext
+float64[] xdot
+float64[] dxdot
+float64[] dxddot
 

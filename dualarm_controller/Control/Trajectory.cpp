@@ -84,7 +84,6 @@ void Trajectory::Poly5th( const double &_CurrentTime, Eigen::VectorXd &_dq, Eige
 			}
 		}
 	}
-	return;
 }
 
 } /* namespace HYUDA */

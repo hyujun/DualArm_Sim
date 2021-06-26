@@ -283,6 +283,7 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
 
                 TaskPoly5th.SetPoly5th(_Time, _x_tmp, _xdot_tmp, TargetPos_Linear, TrajectoryTime, target_size);
                 TaskPoly5th.Poly5th(_Time, _dx_tmp, _dxdot_tmp, _dxddot_tmp);
+
                 NewTarget=0;
             }
             else
@@ -510,13 +511,65 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
     }
     else if( MotionCommandTask == MOVE_TASK_CUSTOM6 )
     {
-        _dx.setZero(12);
-        _dxdot.setZero(12);
-        _dxddot.setZero(12);
+        if( _StatusWord != MotionCommandTask )
+        {
+            _dx.setZero(12);
+            _dxdot.setZero(12);
+            _dxddot.setZero(12);
 
-        _dx = _Target;
+            if( NewTarget==1 )
+            {
+                int target_size = 6;
+                _x_tmp.setZero(target_size);
+                _xdot_tmp.setZero(target_size);
 
-        MotionProcess = MOVE_TASK_CUSTOM5;
+                _x_tmp.head(3) = x.segment(3,3);
+                _x_tmp.tail(3) = x.segment(9,3);
+
+                _xdot_tmp.head(3) = xdot.segment(3,3);
+                _xdot_tmp.tail(3) = xdot.segment(9,3);
+
+                TaskPoly5th.SetPoly5th(_Time, _x_tmp, _xdot_tmp, TargetPos_Linear, TrajectoryTime, target_size);
+                TaskPoly5th.Poly5th(_Time, _dx_tmp, _dxdot_tmp, _dxddot_tmp);
+
+                Matrix3d SO3_a;
+                Matrix3d SO3_d;
+                pManipulator->pKin->RollPitchYawtoSO3(_dx(0), _dx(1), _dx(2), SO3_d);
+                pManipulator->pKin->RollPitchYawtoSO3(x(0), x(1), x(2), SO3_a);
+                slerp_ori.slerp_setup(SO3_d, SO3_a, _Time, TrajectoryTime);
+                slerp_ori.slerp_profile(_dxddot.head(3), _dxdot.head(3), _dx.head(3), _Time);
+
+                NewTarget=0;
+            }
+            else
+            {
+                TaskPoly5th.Poly5th(_Time, _dx_tmp, _dxdot_tmp, _dxddot_tmp);
+                slerp_ori.slerp_profile(_dxddot.head(3), _dxdot.head(3), _dx.head(3), _Time);
+            }
+
+            //_dx = TargetPosTask;
+            _dx.segment(3,3) = _dx_tmp.head(3);
+            _dx.segment(9,3) = _dx_tmp.tail(3);
+            _dxdot.segment(3,3) = _dxdot_tmp.head(3);
+            _dxdot.segment(9,3) = _dxdot_tmp.tail(3);
+            _dxddot.segment(3,3) = _dxddot_tmp.head(3);
+            _dxddot.segment(9,3) = _dxddot_tmp.tail(3);
+
+            MotionProcess = MOVE_TASK_CUSTOM6;
+        }
+        else
+        {
+            TargetPosTask = _Target;
+            TargetPosTask_p = TargetPosTask;
+
+            TargetPos_Linear.setZero(6);
+            TargetPos_Linear.head(3) = TargetPosTask.segment(3,3);
+            TargetPos_Linear.tail(3) = TargetPosTask.segment(9,3);
+
+            TrajectoryTime=10.0;
+            NewTarget=1;
+            _StatusWord = 0;
+        }
     }
 
 	MotionCommandTask_p = MotionCommandTask;

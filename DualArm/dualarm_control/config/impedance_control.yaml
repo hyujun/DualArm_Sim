@@ -30,8 +30,7 @@ dualarm:
     desired:
       mass: { m1: 3.0, m2: 3.0 } # unit:kg, shape:ellipsoid (for inertia shaping)
     gains:
-      mbk: { KpT: 140.0, KpR: 0.1, KdT: 7.0, KdR: 0.0001 } # gains for spring & damper
-      #mbk: { KpT: 140.0, KpR: 60.0, KdT: 7.0, KdR: 3.0 } # gains for spring & damper
+      mbk: { KpT: 140.0, KpR: 60.0, KdT: 7.0, KdR: 3.0 } # gains for spring & damper
 
     target_obj: 2 # 1 : x-axis
                   # 2 : y-axis

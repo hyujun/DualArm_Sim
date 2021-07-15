@@ -281,7 +281,7 @@ namespace dualarm_controller
             x_cmd_.data = Eigen::VectorXd::Zero(12);
             ex_.setZero(12);
             ex_dot_.setZero(12);
-            dx.setZero(12);
+
             dxdot.setZero(12);
             dxddot.setZero(12);
             xdot_logging.setZero(12);
@@ -329,6 +329,7 @@ namespace dualarm_controller
             }
             state_pub_->msg_.x.resize(2);
             state_pub_->msg_.dx.resize(2);
+            state_pub_->msg_.ex.resize(2);
             state_pub_->msg_.DAMM = DAMM;
             state_pub_->msg_.TODAMM = TODAMM2;
             state_pub_->msg_.lambda1.resize(3);
@@ -337,9 +338,9 @@ namespace dualarm_controller
             state_pub_->msg_.Kp_T = Kp_trans;
             state_pub_->msg_.ftsensor.resize(12);
 
-            //state_pub_->msg_.xdot.resize(12);
-            //state_pub_->msg_.dxdot.resize(12);
-            //state_pub_->msg_.dxddot.resize(12);
+            state_pub_->msg_.xdot.resize(12);
+            state_pub_->msg_.dxdot.resize(12);
+            state_pub_->msg_.dxddot.resize(12);
 
 
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
@@ -456,7 +457,7 @@ namespace dualarm_controller
             cManipulator->pKin->GetInverseConditionNumber(InverseConditionNumber);
             cManipulator->pKin->GetAnalyticJacobian(AJac);
 
-            //xdot_logging = AJac*qdot_.data;
+            xdot_logging = AJac*qdot_.data;
 
             q1_.data = q_.data.head(9);
             q1dot_.q = q1_;
@@ -582,14 +583,17 @@ namespace dualarm_controller
                         state_pub_->msg_.torque_ext[i] = torque_ext(i);
                     }
 
+                    Quaterniond tmp;
+
                     for(int j=0; j<2; j++)
                     {
-                        state_pub_->msg_.dx[j].orientation.x = dx(6*j);
-                        state_pub_->msg_.dx[j].orientation.y = dx(6*j+1);
-                        state_pub_->msg_.dx[j].orientation.z = dx(6*j+2);
-                        state_pub_->msg_.dx[j].position.x = dx(6*j+3);
-                        state_pub_->msg_.dx[j].position.y = dx(6*j+4);
-                        state_pub_->msg_.dx[j].position.z = dx(6*j+5);
+                        tmp = dx[j].r;
+                        state_pub_->msg_.dx[j].orientation.x = tmp.x();
+                        state_pub_->msg_.dx[j].orientation.y = tmp.y();
+                        state_pub_->msg_.dx[j].orientation.z = tmp.z();
+                        state_pub_->msg_.dx[j].position.x = dx[j].p(0);
+                        state_pub_->msg_.dx[j].position.y = dx[j].p(1);
+                        state_pub_->msg_.dx[j].position.z = dx[j].p(2);
 
                         state_pub_->msg_.x[j].orientation.x = xa(6*j);
                         state_pub_->msg_.x[j].orientation.y = xa(6*j+1);
@@ -597,6 +601,13 @@ namespace dualarm_controller
                         state_pub_->msg_.x[j].position.x = xa(6*j+3);
                         state_pub_->msg_.x[j].position.y = xa(6*j+4);
                         state_pub_->msg_.x[j].position.z = xa(6*j+5);
+
+                        state_pub_->msg_.ex[j].orientation.x = ex_(6*j);
+                        state_pub_->msg_.ex[j].orientation.y = ex_(6*j+1);
+                        state_pub_->msg_.ex[j].orientation.z = ex_(6*j+2);
+                        state_pub_->msg_.ex[j].position.x = ex_(6*j+3);
+                        state_pub_->msg_.ex[j].position.y = ex_(6*j+4);
+                        state_pub_->msg_.ex[j].position.z = ex_(6*j+5);
 
                         state_pub_->msg_.InverseConditionNum[j] = InverseConditionNumber[j];
                         state_pub_->msg_.SingleMM[j] = SingleMM[j];
@@ -614,9 +625,9 @@ namespace dualarm_controller
                     for(int k=0; k<12; k++)
                     {
                         state_pub_->msg_.ftsensor[k] = ft_sensor(k);
-                        //state_pub_->msg_.dxdot[k] = dxdot(k);
-                        //state_pub_->msg_.dxddot[k] = dxddot(k);
-                        //state_pub_->msg_.xdot[k] = xdot_logging(k);
+                        state_pub_->msg_.xdot[k] = xdot_logging(k);
+                        state_pub_->msg_.dxdot[k] = dxdot(k);
+                        state_pub_->msg_.dxddot[k] = dxddot(k);
                     }
                     state_pub_->msg_.KE = KineticEnergy;
 
@@ -663,8 +674,10 @@ namespace dualarm_controller
                     x_[j].M.GetEulerZYX(a, b, g);
                     printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
                            j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
+                    Vector3d RTmp;
+                    RTmp = dx[j].r.eulerAngles(2,1,0);
                     printf("no.%d, Desired: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
-                           dx(6*j+3), dx(6*j+4),dx(6*j+5), dx(6*j), dx(6*j+1), dx(6*j+2));
+                           dx[j].p(0), dx[j].p(1), dx[j].p(2), RTmp(0), RTmp(1), RTmp(2));
                     printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n",
                            j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
                 }
@@ -816,7 +829,7 @@ namespace dualarm_controller
         // KDL::Twist xd_dot_, xd_ddot_;
         Eigen::VectorXd ex_;
         Eigen::VectorXd ex_dot_;
-        Eigen::VectorXd dx;
+        Cartesiand dx[2];
         Eigen::VectorXd dxdot;
         Eigen::VectorXd dxddot;
 

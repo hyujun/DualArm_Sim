@@ -11,7 +11,7 @@
 #include "Trajectory.h"
 #include "../KDL/SerialManipulator.h"
 #include "../KDL/LieOperator.h"
-#include "slerp.h"
+#include "slerpHandler.h"
 
 namespace HYUControl {
 
@@ -22,7 +22,7 @@ public:
 	virtual ~Motion();
 
 	uint16_t JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot, VectorXd &_Target, const VectorXd &q, const VectorXd &qdot, double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType);
-	uint16_t TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot, VectorXd _Target, const VectorXd &x, const VectorXd &qdot, double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType );
+	uint16_t TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddot, VectorXd _Target, const VectorXd &x, const VectorXd &qdot, double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType );
 
 private:
 
@@ -31,12 +31,18 @@ private:
 
 	Eigen::MatrixXd omega;
 
+
+
 	Eigen::VectorXd xdot;
 	Eigen::VectorXd TargetPosTask, TargetPosTask_p;
 	Eigen::VectorXd TargetPos_Linear;
+	Cartesiand x[2];
 	Eigen::VectorXd _dx_tmp, _dxdot_tmp, _dxddot_tmp;
 	Eigen::VectorXd _x_tmp, _xdot_tmp;
 	Eigen::MatrixXd AJacobian;
+
+	Eigen::Quaterniond r, r1;
+	Eigen::Vector3d rdot, rddot, rdot1, rddot1;
 
 	Eigen::VectorXd start_pos;
 
@@ -45,7 +51,7 @@ private:
 	Trajectory JointPoly5th;
 	Trajectory TaskPoly5th;
 
-	slerp slerp_ori;
+	slerpHandler slerp_ori[2];
 
 	int MotionProcess;
 	int NewTarget=0;

@@ -245,7 +245,7 @@ uint16_t Motion::JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot,
 	return MotionProcess;
 }
 
-uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
+uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddot,
                              VectorXd _Target, const VectorXd &x, const VectorXd &qdot,
                              double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType )
 {
@@ -291,13 +291,19 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
                 TaskPoly5th.Poly5th(_Time, _dx_tmp, _dxdot_tmp, _dxddot_tmp);
             }
 
-            _dx.setZero(12);
+
             _dxdot.setZero(12);
             _dxddot.setZero(12);
 
-            _dx = TargetPosTask;
-            _dx.segment(3,3) = _dx_tmp.head(3);
-            _dx.segment(9,3) = _dx_tmp.tail(3);
+            _dx[0].r = AngleAxisd(TargetPosTask(2),Vector3d::UnitZ())
+                       *AngleAxisd(TargetPosTask(1),Vector3d::UnitY())
+                       *AngleAxisd(TargetPosTask(0),Vector3d::UnitX());
+            _dx[0].p = TargetPos_Linear.head(3);
+            _dx[1].r = AngleAxisd(TargetPosTask(8),Vector3d::UnitZ())
+                       *AngleAxisd(TargetPosTask(7),Vector3d::UnitY())
+                       *AngleAxisd(TargetPosTask(6),Vector3d::UnitX());
+            _dx[1].p = TargetPos_Linear.tail(3);
+
             _dxdot.segment(3,3) = _dxdot_tmp.head(3);
             _dxdot.segment(9,3) = _dxdot_tmp.tail(3);
             _dxddot.segment(3,3) = _dxddot_tmp.head(3);
@@ -317,6 +323,17 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             TrajectoryTime=10.0;
             NewTarget=1;
             _StatusWord = 0;
+
+            _dx[0].r = AngleAxisd(x(2),Vector3d::UnitZ())
+                       *AngleAxisd(x(1),Vector3d::UnitY())
+                       *AngleAxisd(x(0),Vector3d::UnitX());
+            _dx[0].p = x.segment(3,3);
+            _dx[1].r = AngleAxisd(x(8),Vector3d::UnitZ())
+                       *AngleAxisd(x(7),Vector3d::UnitY())
+                       *AngleAxisd(x(6),Vector3d::UnitX());
+            _dx[1].p = x.segment(9,3);
+            _dxdot.setZero();
+            _dxddot.setZero();
         }
     }
 	else if( MotionCommandTask == MOVE_TASK_CUSTOM1 )
@@ -327,22 +344,33 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _StatusWord=0;
             start_pos.setZero(12);
             start_pos = x;
+
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p = start_pos.segment(3,3);
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p = start_pos.segment(9,3);
+            _dxdot.setZero();
+            _dxddot.setZero();
         }
         else
         {
-            _dx(0) = start_pos(0);
-            _dx(1) = start_pos(1);
-            _dx(2) = start_pos(2);
-            _dx(3) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
-            _dx(4) = start_pos(4);
-            _dx(5) = start_pos(5);
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p(0) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
+            _dx[0].p(1) = start_pos(4);
+            _dx[0].p(2) = start_pos(5);
 
-            _dx(6) = start_pos(6);
-            _dx(7) = start_pos(7);
-            _dx(8) = start_pos(8);
-            _dx(9) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
-            _dx(10) = start_pos(10);
-            _dx(11) = start_pos(11);
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p(0) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx[1].p(1) = start_pos(10);
+            _dx[1].p(2) = start_pos(11);
 
             _dxdot.setZero(12);
             _dxdot(3) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
@@ -362,22 +390,34 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _StatusWord=0;
             start_pos.setZero(12);
             start_pos = x;
+
+            _dx[0].r = AngleAxisd(x(2),Vector3d::UnitZ())
+                       *AngleAxisd(x(1),Vector3d::UnitY())
+                       *AngleAxisd(x(0),Vector3d::UnitX());
+            _dx[0].p = x.segment(3,3);
+            _dx[1].r = AngleAxisd(x(8),Vector3d::UnitZ())
+                       *AngleAxisd(x(7),Vector3d::UnitY())
+                       *AngleAxisd(x(6),Vector3d::UnitX());
+            _dx[1].p = x.segment(9,3);
+            _dxdot.setZero();
+            _dxddot.setZero();
         }
         else
         {
-            _dx(0) = start_pos(0);
-            _dx(1) = start_pos(1);
-            _dx(2) = start_pos(2);
-            _dx(3) = start_pos(3);
-            _dx(4) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(4);
-            _dx(5) = start_pos(5);
 
-            _dx(6) = start_pos(6);
-            _dx(7) = start_pos(7);
-            _dx(8) = start_pos(8);
-            _dx(9) = start_pos(9);
-            _dx(10) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
-            _dx(11) = start_pos(11);
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                    *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                    *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p(0) = start_pos(3);
+            _dx[0].p(1) = A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(4);
+            _dx[0].p(2) = start_pos(5);
+
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p(0) = start_pos(9);
+            _dx[1].p(1) = -A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
+            _dx[1].p(2) = start_pos(11);
 
             _dxdot.setZero(12);
             _dxdot(4) = (f * M_PI) * A * cos(f * M_PI * (_Time - MotionInitTime));
@@ -396,25 +436,37 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _StatusWord=0;
             start_pos.setZero(12);
             start_pos = x;
+
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p = start_pos.segment(3,3);
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p = start_pos.segment(9,3);
+            _dxdot.setZero();
+            _dxddot.setZero();
         }
         else
         {
             auto ref_A = 0.1;
             auto rel_A = 0.05;
             f = 1.0/10.0;
-            _dx(0) = start_pos(0);
-            _dx(1) = start_pos(1);
-            _dx(2) = start_pos(2);
-            _dx(3) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
-            _dx(4) = start_pos(4);
-            _dx(5) = start_pos(5);
 
-            _dx(6) = start_pos(6);
-            _dx(7) = start_pos(7);
-            _dx(8) = start_pos(8);
-            _dx(9) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
-            _dx(10) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
-            _dx(11) = start_pos(11);
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p(0) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(3);
+            _dx[0].p(1) = start_pos(4);
+            _dx[0].p(2) = start_pos(5);
+
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p(0) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx[1].p(1) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
+            _dx[1].p(2) = start_pos(11);
 
             _dxdot.setZero(12);
             _dxdot(3) = -(f * M_PI) * ref_A * cos(f * M_PI * (_Time - MotionInitTime));
@@ -436,25 +488,37 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _StatusWord=0;
             start_pos.setZero(12);
             start_pos = x;
+
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p = start_pos.segment(3,3);
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p = start_pos.segment(9,3);
+            _dxdot.setZero();
+            _dxddot.setZero();
         }
         else
         {
             auto ref_A = 0.40;
             auto rel_A = 0.05;
             f = 1.0/35.0;
-            _dx(0) = start_pos(0);
-            _dx(1) = start_pos(1);
-            _dx(2) = start_pos(2);
-            _dx(3) = start_pos(3);
-            _dx(4) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(4);;
-            _dx(5) = start_pos(5);
 
-            _dx(6) = start_pos(6);
-            _dx(7) = start_pos(7);
-            _dx(8) = start_pos(8);
-            _dx(9) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
-            _dx(10) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
-            _dx(11) = start_pos(11);
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p(0) = start_pos(3);
+            _dx[0].p(1) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(4);
+            _dx[0].p(2) = start_pos(5);
+
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p(0) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx[1].p(1) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
+            _dx[1].p(2) = start_pos(11);
 
             _dxdot.setZero(12);
             _dxdot(4) = -(f * M_PI) * ref_A * cos(f * M_PI * (_Time - MotionInitTime));
@@ -476,25 +540,37 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             _StatusWord=0;
             start_pos.setZero(12);
             start_pos = x;
+
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p = start_pos.segment(3,3);
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p = start_pos.segment(9,3);
+            _dxdot.setZero();
+            _dxddot.setZero();
         }
         else
         {
             auto ref_A = 0.45;
             auto rel_A = 0.1;
             f = 1.0/30.0;
-            _dx(0) = start_pos(0);
-            _dx(1) = start_pos(1);
-            _dx(2) = start_pos(2);
-            _dx(3) = start_pos(3);
-            _dx(4) = start_pos(4);;
-            _dx(5) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(5);
 
-            _dx(6) = start_pos(6);
-            _dx(7) = start_pos(7);
-            _dx(8) = start_pos(8);
-            _dx(9) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
-            _dx(10) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
-            _dx(11) = start_pos(11);
+            _dx[0].r = AngleAxisd(start_pos(2),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(1),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(0),Vector3d::UnitX());
+            _dx[0].p(0) = start_pos(3);
+            _dx[0].p(1) = start_pos(4);
+            _dx[0].p(2) = -ref_A * sin(f * M_PI * (_Time - MotionInitTime)) + start_pos(5);
+
+            _dx[1].r = AngleAxisd(start_pos(8),Vector3d::UnitZ())
+                       *AngleAxisd(start_pos(7),Vector3d::UnitY())
+                       *AngleAxisd(start_pos(6),Vector3d::UnitX());
+            _dx[1].p(0) = -rel_A * cos(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(9);
+            _dx[1].p(1) = -rel_A * sin(2*f * M_PI * (_Time - MotionInitTime)) + start_pos(10);
+            _dx[1].p(2) = start_pos(11);
 
             _dxdot.setZero(12);
             _dxdot(5) = -(f * M_PI) * ref_A * cos(f * M_PI * (_Time - MotionInitTime));
@@ -513,10 +589,6 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
     {
         if( _StatusWord != MotionCommandTask )
         {
-            _dx.setZero(12);
-            _dxdot.setZero(12);
-            _dxddot.setZero(12);
-
             if( NewTarget==1 )
             {
                 int target_size = 6;
@@ -534,25 +606,48 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
 
                 Matrix3d SO3_a;
                 Matrix3d SO3_d;
-                pManipulator->pKin->RollPitchYawtoSO3(_dx(0), _dx(1), _dx(2), SO3_d);
-                pManipulator->pKin->RollPitchYawtoSO3(x(0), x(1), x(2), SO3_a);
-                slerp_ori.slerp_setup(SO3_d, SO3_a, _Time, TrajectoryTime);
-                slerp_ori.slerp_profile(_dxddot.head(3), _dxdot.head(3), _dx.head(3), _Time);
+                SO3_d = AngleAxisd(TargetPosTask(2),Vector3d::UnitZ())
+                          *AngleAxisd(TargetPosTask(1),Vector3d::UnitY())
+                          *AngleAxisd(TargetPosTask(0),Vector3d::UnitX());
+                SO3_a = pManipulator->pKin->GetForwardKinematicsSO3(9);
+                slerp_ori[0].slerp_setup(SO3_a, SO3_d, _Time, TrajectoryTime);
+                slerp_ori[0].slerp_profile(rddot, rdot, r, _Time);
+
+                Matrix3d SO3_a_Right;
+                Matrix3d SO3_d_Right;
+                SO3_d_Right = AngleAxisd(TargetPosTask(8),Vector3d::UnitZ())
+                              *AngleAxisd(TargetPosTask(7),Vector3d::UnitY())
+                              *AngleAxisd(TargetPosTask(6),Vector3d::UnitX());
+                SO3_a_Right = pManipulator->pKin->GetForwardKinematicsSO3(16);
+                slerp_ori[1].slerp_setup(SO3_a_Right, SO3_d_Right, _Time, TrajectoryTime);
+                slerp_ori[0].slerp_profile(rddot1, rdot1, r1, _Time);
 
                 NewTarget=0;
             }
             else
             {
                 TaskPoly5th.Poly5th(_Time, _dx_tmp, _dxdot_tmp, _dxddot_tmp);
-                slerp_ori.slerp_profile(_dxddot.head(3), _dxdot.head(3), _dx.head(3), _Time);
+                slerp_ori[0].slerp_profile(rddot, rdot, r, _Time);
+                slerp_ori[1].slerp_profile(rddot1, rdot1, r1, _Time);
             }
 
-            //_dx = TargetPosTask;
-            _dx.segment(3,3) = _dx_tmp.head(3);
-            _dx.segment(9,3) = _dx_tmp.tail(3);
+            _dxdot.setZero(12);
+            _dxddot.setZero(12);
+
+            _dx[0].r = r.matrix();
+            _dx[0].p = _dx_tmp.head(3);
+
+            _dx[1].r = r1.matrix();
+            _dx[1].p = _dx_tmp.tail(3);
+
+            _dxdot.segment(0,3) = rdot;
             _dxdot.segment(3,3) = _dxdot_tmp.head(3);
+            _dxdot.segment(6,3) = rdot1;
             _dxdot.segment(9,3) = _dxdot_tmp.tail(3);
+
+            _dxddot.segment(0,3) = rddot;
             _dxddot.segment(3,3) = _dxddot_tmp.head(3);
+            _dxddot.segment(6,3) = rddot1;
             _dxddot.segment(9,3) = _dxddot_tmp.tail(3);
 
             MotionProcess = MOVE_TASK_CUSTOM6;
@@ -569,6 +664,17 @@ uint16_t Motion::TaskMotion( VectorXd &_dx, VectorXd &_dxdot, VectorXd &_dxddot,
             TrajectoryTime=10.0;
             NewTarget=1;
             _StatusWord = 0;
+
+            _dx[0].r = AngleAxisd(x(2),Vector3d::UnitZ())
+                       *AngleAxisd(x(1),Vector3d::UnitY())
+                       *AngleAxisd(x(0),Vector3d::UnitX());
+            _dx[0].p = x.segment(3,3);
+            _dx[1].r = AngleAxisd(x(8),Vector3d::UnitZ())
+                       *AngleAxisd(x(7),Vector3d::UnitY())
+                       *AngleAxisd(x(6),Vector3d::UnitX());
+            _dx[1].p = x.segment(9,3);
+            _dxdot.setZero();
+            _dxddot.setZero();
         }
     }
 

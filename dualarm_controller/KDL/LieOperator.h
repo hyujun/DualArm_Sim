@@ -17,6 +17,12 @@ typedef Matrix<double, 4, 4> SE3;		/**<Size definition of SE3(matrix)*/
 typedef Matrix<double, 6, 6> Adjoint;	/**<Size definition of Adjoint operator(twist)*/
 typedef Matrix<double, 6, 6> adjoint;	/**<Size definition of adjoint operator(wrench)*/
 typedef Matrix3d SO3;
+
+struct Cartesiand{
+    Matrix3d r;
+    Vector3d p;
+};
+
 /**
  * @brief Biorobotics Lab Lie-Group Operator
  * @date 2018-08-13
@@ -32,6 +38,8 @@ namespace HYUMotionBase {
     public:
         LieOperator();
         virtual ~LieOperator();
+
+
 
     public:
         /**

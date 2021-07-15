@@ -478,8 +478,8 @@ namespace  dualarm_controller
 
             if( ControlMode == CTRLMODE_CLIK )
             {
-                motion->TaskMotion(dx, dxdot, dxddot, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
-                Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, ft_sensor, torque, dt, ControlSubMode);
+                //motion->TaskMotion(dx, dxdot, dxddot, targetpos, q_.data, qdot_.data, t, JointState, ControlMotion);
+                //Control->CLIKTaskController(q_.data, qdot_.data, dx, dxdot, ft_sensor, torque, dt, ControlSubMode);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
 
                 if(ctr_obj_ == 6)

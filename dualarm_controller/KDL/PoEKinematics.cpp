@@ -476,11 +476,11 @@ namespace HYUMotionKinematics {
     void PoEKinematics::WeightpInvJacobian( const VectorXd &_rdot, const MatrixXd &_WeightMat, const MatrixXd &_TargetMat )
     {
 
-        WpInv_epsilon_left = 0.001;
-        WpInv_epsilon_right = 0.001;
+        //WpInv_epsilon_left = 0.001;
+        //WpInv_epsilon_right = 0.001;
 
-        //WpInv_epsilon_left = 1.0;
-        //WpInv_epsilon_right = 1.0;
+        WpInv_epsilon_left = 1.0;
+        WpInv_epsilon_right = 1.0;
 
         mWeightDampedpInvJacobian.setZero(16,12);
 

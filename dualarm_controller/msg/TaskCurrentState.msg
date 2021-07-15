@@ -22,4 +22,4 @@ float64[] torque_ext
 float64[] xdot
 float64[] dxdot
 float64[] dxddot
-
+geometry_msgs/Pose[] ex

@@ -220,7 +220,7 @@ void Controller::InvDynController(const VectorXd &_q,
 #endif
 }
 
-void Controller::TaskInvDynController(const VectorXd &_dx,
+void Controller::TaskInvDynController( Cartesiand *_dx,
                                       const VectorXd &_dxdot,
                                       const VectorXd &_dxddot,
                                       const VectorXd &_q,
@@ -287,7 +287,7 @@ void Controller::TaskInvDynController(const VectorXd &_dx,
     }
 }
 
-void Controller::TaskError(const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot)
+void Controller::TaskError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot)
 {
     _error_x.setZero(6*2);
     _error_xdot.setZero(6*2);
@@ -299,12 +299,17 @@ void Controller::TaskError(const VectorXd &_dx, const VectorXd &_dxdot, const Ve
     double theta;
     for(int i=0; i<2; i++)
     {
-        pManipulator->pKin->RollPitchYawtoSO3(_dx(6*i), _dx(6*i+1), _dx(6*i+2), dSO3);
+        dSO3 = _dx[i].r;
         aSE3 = pManipulator->pKin->GetForwardKinematicsSE3(EndJoint[i]);
         //pManipulator->pKin->SO3toRollPitchYaw(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient);
-        pManipulator->pKin->LogSO3(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient,theta);
-        _error_x.segment(6*i,3) = eOrient;
-        _error_x.segment(6*i+3,3) = _dx.segment(6*i+3, 3) - aSE3.block(0,3,3,1);
+        //pManipulator->pKin->LogSO3(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient,theta);
+        //_error_x.segment(6*i,3) = eOrient;
+
+        Matrix3d SO3Tmp = aSE3.block(0,0,3,3).transpose()*dSO3;
+        Quaterniond eSO3;
+        eSO3 = SO3Tmp;
+        _error_x.segment(6*i,3) = eSO3.vec();
+        _error_x.segment(6*i+3,3) = _dx[i].p - aSE3.block(0,3,3,1);
     }
 
     MatrixXd AnalyticJac;
@@ -313,7 +318,7 @@ void Controller::TaskError(const VectorXd &_dx, const VectorXd &_dxdot, const Ve
     _error_xdot.noalias() += -AnalyticJac*_qdot;
 }
 
-void Controller::TaskRelativeError(const VectorXd &_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot)
+void Controller::TaskRelativeError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot )
 {
     _error_x.setZero(6*2);
     _error_xdot.setZero(6*2);
@@ -324,18 +329,18 @@ void Controller::TaskRelativeError(const VectorXd &_dx, const VectorXd &_dxdot, 
     MatrixXd AnalyticJac, RelativeJac;
     Vector3d eOrient;
 
-    pManipulator->pKin->RollPitchYawtoSO3(_dx(0), _dx(1), _dx(2), dSO3);
+    dSO3 = _dx[0].r;
     aSE3 = pManipulator->pKin->GetForwardKinematicsSE3(EndJoint[0]);
     pManipulator->pKin->SO3toRollPitchYaw(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient);
     _error_x.segment(0,3) = eOrient;
-    _error_x.segment(3,3) = _dx.segment(3, 3) - aSE3.block(0,3,3,1);
+    _error_x.segment(3,3) = _dx[0].p - aSE3.block(0,3,3,1);
 
-    pManipulator->pKin->RollPitchYawtoSO3(_dx(6), _dx(7), _dx(8), dSO3);
+    dSO3 = _dx[1].r;
     aSE3_Rel.setZero();
     aSE3_Rel.noalias() += inverse_SE3(aSE3)*pManipulator->pKin->GetForwardKinematicsSE3(EndJoint[1]);
     pManipulator->pKin->SO3toRollPitchYaw(aSE3_Rel.block(0,0,3,3).transpose()*dSO3, eOrient);
     _error_x.segment(6,3) = eOrient;
-    _error_x.segment(9,3) = _dx.segment(9, 3) - aSE3_Rel.block(0,3,3,1);
+    _error_x.segment(9,3) = _dx[1].p - aSE3_Rel.block(0,3,3,1);
 
     pManipulator->pKin->GetAnalyticJacobian(AnalyticJac);
     _error_xdot.head(6) = _dxdot.head(6);
@@ -347,7 +352,7 @@ void Controller::TaskRelativeError(const VectorXd &_dx, const VectorXd &_dxdot, 
 
 void Controller::CLIKTaskController( const VectorXd &_q,
                                      const VectorXd &_qdot,
-                                     const VectorXd &_dx,
+                                     Cartesiand *_dx,
                                      const VectorXd &_dxdot,
                                      const VectorXd &_sensor,
                                      VectorXd &_Toq,
@@ -429,7 +434,16 @@ void Controller::CLIKTaskController( const VectorXd &_q,
         weight.setIdentity(16,16);
         //pManipulator->pDyn->M_Matrix(weight);
         //pManipulator->pKin->Getq0dotWithMM(alpha, q0dot);
-        pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, WdampedpInvJacobian);
+        VectorXd dx_tmp(12);
+        Quaterniond q_tmp;
+        q_tmp = _dx[0].r;
+        dx_tmp.segment(0,3) = q_tmp.vec();
+        dx_tmp.segment(3,3) = _dx[0].p;
+        q_tmp = _dx[1].r;
+        dx_tmp.segment(6,3) = q_tmp.vec();
+        dx_tmp.segment(9,3) = _dx[1].p;
+
+        pManipulator->pKin->GetWeightDampedpInvJacobian(dx_tmp, weight, WdampedpInvJacobian);
 
         Matrix_temp = Eigen::MatrixXd::Identity(16,16);
         Matrix_temp += -WdampedpInvJacobian*AnalyticJacobian;
@@ -478,7 +492,7 @@ void Controller::InertiaShaping( const VectorXd &_Mass, MatrixXd &_M_Shaped_inv 
     _M_Shaped_inv.block(9,9,3,3).noalias() += Matrix<double, 3,3>::Identity()/_Mass(1);
 }
 
-void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dx,
+void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx,
                                          const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor,
                                          VectorXd &_Toq, const int mode)
 {
@@ -502,6 +516,7 @@ void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_q
         u01.noalias() += -AnalyticJacobianDot*_qdot;
 
         TaskError(_dx, _dxdot, _qdot, eTask, edotTask);
+
         u02.noalias() += KdImp.cwiseProduct(edotTask);
         u02.noalias() += KpImp.cwiseProduct(eTask);
 
@@ -515,7 +530,17 @@ void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_q
         MatrixXd weight;
         //weight.setIdentity(16,16);
         weight = M;
-        pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, AnalyticJacobian, pInvMat);
+
+        VectorXd dx_tmp(12);
+        Quaterniond q_tmp;
+        q_tmp = _dx[0].r;
+        dx_tmp.segment(0,3) = q_tmp.vec();
+        dx_tmp.segment(3,3) = _dx[0].p;
+        q_tmp = _dx[1].r;
+        dx_tmp.segment(6,3) = q_tmp.vec();
+        dx_tmp.segment(9,3) = _dx[1].p;
+
+        pManipulator->pKin->GetWeightDampedpInvJacobian(dx_tmp, weight, AnalyticJacobian, pInvMat);
 
         Matrix_temp = Eigen::MatrixXd::Identity(16,16);
         Matrix_temp += -pInvMat*AnalyticJacobian;
@@ -595,9 +620,19 @@ void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_q
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
 
         MatrixXd weight;
-        weight.setIdentity(16,16);
-        //weight = M;
-        pManipulator->pKin->GetWeightDampedpInvJacobian(_dx, weight, AnalyticJacobian, pInvMat);
+        //weight.setIdentity(16,16);
+        weight = M;
+
+        VectorXd dx_tmp(12);
+        Quaterniond q_tmp;
+        q_tmp = _dx[0].r;
+        dx_tmp.segment(0,3) = q_tmp.vec();
+        dx_tmp.segment(3,3) = _dx[0].p;
+        q_tmp = _dx[1].r;
+        dx_tmp.segment(6,3) = q_tmp.vec();
+        dx_tmp.segment(9,3) = _dx[1].p;
+
+        pManipulator->pKin->GetWeightDampedpInvJacobian(dx_tmp, weight, AnalyticJacobian, pInvMat);
 
         //pManipulator->pKin->GetDampedpInvBlockJacobian(AnalyticJacobian, pInvMat);
 

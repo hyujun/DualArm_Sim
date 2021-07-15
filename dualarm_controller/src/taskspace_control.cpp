@@ -601,7 +601,7 @@ namespace dualarm_controller
             }
             else
             {
-                Control->TaskInvDynController(dx, dxdot, dxddot, q_.data, qdot_.data, torque, dt, ctrl_type);
+                //Control->TaskInvDynController(dx, dxdot, dxddot, q_.data, qdot_.data, torque, dt, ctrl_type);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
             }
 

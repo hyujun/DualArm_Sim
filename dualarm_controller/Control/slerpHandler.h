@@ -29,6 +29,9 @@ private:
     Quaterniond slerp_rw(Quaterniond& q0, Quaterniond& q1, double alpha);
     Quaterniond slerp_gael(Quaterniond& q0, Quaterniond& q1, double alpha);
 
+    Quaterniond exp_q(const Eigen::Quaterniond &q);
+    Quaterniond log_q(const Eigen::Quaterniond &q);
+
     double sin_over_x(double x);
 
     double TrajDuration;
@@ -42,6 +45,7 @@ private:
 
     Quaterniond q_init;
     Quaterniond q_final;
+    Quaterniond q_log;
 };
 
 

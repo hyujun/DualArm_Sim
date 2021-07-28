@@ -620,7 +620,7 @@ uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddo
                               *AngleAxisd(TargetPosTask(6),Vector3d::UnitX());
                 SO3_a_Right = pManipulator->pKin->GetForwardKinematicsSO3(16);
                 slerp_ori[1].slerp_setup(SO3_a_Right, SO3_d_Right, _Time, TrajectoryTime);
-                slerp_ori[0].slerp_profile(rddot1, rdot1, r1, _Time);
+                slerp_ori[1].slerp_profile(rddot1, rdot1, r1, _Time);
 
                 NewTarget=0;
             }

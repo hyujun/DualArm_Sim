@@ -37,23 +37,20 @@ void slerpHandler::slerp_setup(Matrix3d rot_a, Matrix3d rot_d, double current_ti
     q_init = rot_a;
     q_final = rot_d;
 
+    q_log = log_q(q_init.inverse()*q_final);
 }
 
 
 void slerpHandler::slerp_profile(Vector3d &rddot, Vector3d &rdot, Quaterniond &r, double &current_t)
 {
-    //r.coeffs().setZero();
     rdot.setZero();
     rddot.setZero();
 
     if( (current_t - TrajInitTime) >= TrajDuration )
     {
-        AngleAxisd angleaxis_tar;
-        angleaxis_tar = q_final;
         r = q_final;
         rdot.setZero();
         rddot.setZero();
-
     }
     else
     {
@@ -76,19 +73,10 @@ void slerpHandler::slerp_profile(Vector3d &rddot, Vector3d &rdot, Quaterniond &r
 
         }
 
-        r = slerp_legacy(q_init, q_final, t_traj);
-
-        Quaterniond qlog = q_init.inverse()*q_final;
-        double d = q_init.dot(q_final);
-        double absD = abs(d);
-        double theta = 2.0*acos(absD);
-
-        Vector3d uhat;
-        uhat = r.vec()/r.vec().norm();
-
-        rdot = t_traj_dot*theta*uhat;
-        rddot = pow(t_traj_dot,2)*pow(theta,2)*uhat + t_traj_ddot*theta*uhat;
-        //rddot = t_traj_ddot*theta*uhat;
+        //r = slerp_legacy(q_init, q_final, t_traj);
+        r = slerp_gael(q_init, q_final, t_traj);
+        rdot = t_traj_dot*q_log.vec();
+        rddot = t_traj_ddot*q_log.vec();
     }
 }
 
@@ -191,3 +179,37 @@ Quaterniond slerpHandler::slerp_gael(Quaterniond &q0, Quaterniond &q1, double al
     return Quaterniond( scale0*q0.coeffs() + scale1*q1.coeffs() );
 }
 
+Quaterniond slerpHandler::exp_q(const Eigen::Quaterniond &q)
+{
+    double a = q.vec().norm();
+    double exp_w = exp(q.w());
+
+    if(a == double(0))
+    {
+        return Quaterniond(exp_w, 0, 0, 0);
+    }
+
+    Quaterniond res;
+    res.w() = exp_w*double(cos(a));
+    res.vec() = exp_w * double(sin(a))*q.vec();
+
+    return res;
+}
+
+Quaterniond slerpHandler::log_q(const Eigen::Quaterniond &q)
+{
+    double exp_w = q.norm();
+    double w = log(exp_w);
+    double a = acos(q.w() / exp_w);
+
+    if(a == double(0))
+    {
+        return Quaterniond(w, 0, 0, 0);
+    }
+
+    Quaterniond res;
+    res.w() = w;
+    res.vec() = q.vec()/exp_w/(sin(a)/a);
+
+    return res;
+}

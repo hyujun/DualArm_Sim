@@ -299,16 +299,27 @@ void Controller::TaskError( Cartesiand *_dx, const VectorXd &_dxdot, const Vecto
     double theta;
     for(int i=0; i<2; i++)
     {
-        dSO3 = _dx[i].r;
+        //dSO3 = _dx[i].r;
         aSE3 = pManipulator->pKin->GetForwardKinematicsSE3(EndJoint[i]);
         //pManipulator->pKin->SO3toRollPitchYaw(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient);
         //pManipulator->pKin->LogSO3(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient,theta);
         //_error_x.segment(6*i,3) = eOrient;
 
-        Matrix3d SO3Tmp = aSE3.block(0,0,3,3).transpose()*dSO3;
-        Quaterniond eSO3;
-        eSO3 = SO3Tmp;
-        _error_x.segment(6*i,3) = eSO3.vec();
+        //Matrix3d SO3Tmp = aSE3.block(0,0,3,3).transpose()*dSO3;
+        //Quaterniond eSO3;
+        //eSO3 = SO3Tmp;
+
+        Quaterniond q_d;
+        q_d = _dx[i].r;
+        Quaterniond q_a;
+        q_a = pManipulator->pKin->GetForwardKinematicsSO3(EndJoint[i]);
+
+        Vector3d e_orientation;
+        Vector3d qd_vec;
+        qd_vec = q_d.vec();
+        e_orientation = q_d.w()*q_a.vec() - q_a.w()*q_d.vec() + SkewMatrix(qd_vec)*q_a.vec();
+        //_error_x.segment(6*i,3) = eSO3.vec();
+        _error_x.segment(6*i,3) = -e_orientation;
         _error_x.segment(6*i+3,3) = _dx[i].p - aSE3.block(0,3,3,1);
     }
 

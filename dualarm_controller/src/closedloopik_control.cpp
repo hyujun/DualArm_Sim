@@ -315,6 +315,7 @@ namespace  dualarm_controller
                 state_pub_->msg_.dq.push_back(qd_.data(i));
                 state_pub_->msg_.dqdot.push_back(qd_dot_.data(i));
                 state_pub_->msg_.torque.push_back(torque(i));
+
             }
             for(int j=0; j<2; j++) {
                 state_pub_->msg_.InverseConditionNum.push_back(InverseConditionNumber[j]);

@@ -203,22 +203,69 @@ void Controller::InvDynController(const VectorXd &_q,
 
 	e = _dq - _q;
 	e_dev = _dqdot - _qdot;
-	//e_int += e*_dt*1e-6;
-	//e_int_sat = tanh(e_int);
+	e_int += e*_dt;
+    for(int i = 0;i<m_Jnum;i++)
+        e_int(i) = tanh(e_int(i));
 
-	FrictionCompensator(_qdot, _dqdot);
+//	FrictionCompensator(_qdot, _dqdot);
+    FrictionCompensator2( _dqdot);
+
 
     VectorXd u0;
 	u0.setZero(m_Jnum);
 	u0.noalias() += _dqddot;
 	u0.noalias() += Kd.cwiseProduct(e_dev);
 	u0.noalias() += Kp.cwiseProduct(e);
+//    u0.noalias() += Ki.cwiseProduct(e_int);
+
     _Toq = G;
     _Toq.noalias() += M*u0;
+//    _Toq.noalias() += FrictionTorque;
+
 #if !defined(__SIMULATION__)
     //_Toq.noalias() += FrictionTorque;
 #endif
 }
+
+void Controller::InvDynController2(const VectorXd &_q,
+                                  const VectorXd &_qdot,
+                                  const VectorXd &_dq,
+                                  const VectorXd &_dqdot,
+                                  const VectorXd &_dqddot,
+                                  VectorXd &_Toq,
+                                  VectorXd &_frictionToq,
+                                  const double &_dt )
+{
+    pManipulator->pDyn->MG_Mat_Joint(M, G);
+    //pManipulator->pDyn->G_Matrix(G);
+    dq_old = _dq;
+
+    e = _dq - _q;
+    e_dev = _dqdot - _qdot;
+    e_int += e*_dt;
+    for(int i = 0;i<m_Jnum;i++)
+        e_int(i) = tanh(e_int(i));
+
+//	FrictionCompensator(_qdot, _dqdot);
+    FrictionCompensator2( _dqdot);
+
+
+    VectorXd u0;
+    u0.setZero(m_Jnum);
+    u0.noalias() += _dqddot;
+    u0.noalias() += Kd.cwiseProduct(e_dev);
+    u0.noalias() += Kp.cwiseProduct(e);
+    u0.noalias() += Ki.cwiseProduct(e_int);
+
+    _Toq = G;
+    _Toq.noalias() += M*u0;
+    _Toq.noalias() += FrictionTorque;
+    _frictionToq = FrictionTorque;
+
+#if !defined(__SIMULATION__)
+        //_Toq.noalias() += FrictionTorque;
+#endif
+    }
 
 void Controller::TaskInvDynController( Cartesiand *_dx,
                                       const VectorXd &_dxdot,
@@ -263,6 +310,7 @@ void Controller::TaskInvDynController( Cartesiand *_dx,
     else if( mode == 2 ) //tracking
     {
         MatrixXd ScaledJT;
+        pManipulator->pKin->GetScaledTransJacobian(ScaledJT);
         pManipulator->pKin->GetScaledTransJacobian(ScaledJT);
 
         MatrixXd Jdot;
@@ -677,6 +725,41 @@ void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_q
         _Toq.noalias() += AnalyticJacobian.transpose()*u02;
     }
 }
+    double SignFunction(double value)
+    {
+        if (value<0.0f)
+        {
+            return -1.0f;
+        }
+        else if(value>0.0f)
+        {
+            return 1.0f;
+        }
+        else return 0.0f;
+        return 0.0f;
+    }
+
+    void Controller::FrictionCompensator2( const VectorXd &_dqdot)
+    {
+        FrictionTorque.setZero(m_Jnum);
+
+        FrictionTorque(0) = 18.3f*0.8*SignFunction(_dqdot(0));
+        FrictionTorque(1) = 25.6f*0.5*SignFunction(_dqdot(1));
+        FrictionTorque(2) = 6.8f*SignFunction(_dqdot(2));
+        FrictionTorque(3) = 4.3f*SignFunction(_dqdot(3));
+        FrictionTorque(4) = 7.2f*SignFunction(_dqdot(4));
+        FrictionTorque(5) = 4.08f*SignFunction(_dqdot(5));
+        FrictionTorque(6) = 4.24f*SignFunction(_dqdot(6));
+        FrictionTorque(7) = 3.04f*SignFunction(_dqdot(7));
+        FrictionTorque(8) = 2.56f*SignFunction(_dqdot(8));
+        FrictionTorque(9) = 9.2f*SignFunction(_dqdot(9));
+        FrictionTorque(10) = 5.2f*SignFunction(_dqdot(10));
+        FrictionTorque(11) = 7.0f*SignFunction(_dqdot(11));
+        FrictionTorque(12) = 4.4*SignFunction(_dqdot(12));
+        FrictionTorque(13) = 2.4*SignFunction(_dqdot(13));
+        FrictionTorque(14) = 3.6f*SignFunction(_dqdot(14));
+        FrictionTorque(15) = 2.24f*SignFunction(_dqdot(15));
+    }
 
 void Controller::FrictionIdentification( const VectorXd &_q, const VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, const double &gt )
 {

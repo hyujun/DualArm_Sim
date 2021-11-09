@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="38b7fd61-d2c7-4cb2-a538-42ee23789048" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/DualArm/dualarm_control/config/jointspace_control.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/DualArm/dualarm_control/config/jointspace_control.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DualArm/dualarm_description/urdf/dual_arm_ft.xacro" beforeDir="false" afterPath="$PROJECT_DIR$/DualArm/dualarm_description/urdf/dual_arm_ft.xacro" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Trajectory.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Trajectory.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/JointCurrentState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/JointCurrentState.msg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/JointDesiredState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/JointDesiredState.msg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/src/closedloopik_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/src/closedloopik_control.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/src/jointspace_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/src/jointspace_control.cpp" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1xkOO0DLuqH8dbFbLZ3VMFKJIvC" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="RunOnceActivity.cidr.known.project.marker" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="true" />
+    <property name="cf.first.check.clang-format" value="false" />
+    <property name="cidr.known.project.marker" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../RTControlDualArm" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="38b7fd61-d2c7-4cb2-a538-42ee23789048" name="Changes" comment="" />
+      <created>1630895586767</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1630895586767</updated>
+      <workItem from="1630895599501" duration="7290000" />
+      <workItem from="1631003732471" duration="3050000" />
+      <workItem from="1631087300647" duration="599000" />
+      <workItem from="1632466764257" duration="24000" />
+      <workItem from="1632466808880" duration="407000" />
+      <workItem from="1632882664176" duration="21000" />
+      <workItem from="1634478129541" duration="295000" />
+      <workItem from="1635851503713" duration="4550000" />
+      <workItem from="1635856642351" duration="11123000" />
+      <workItem from="1635915983816" duration="2664000" />
+      <workItem from="1635918810689" duration="6167000" />
+      <workItem from="1635942124721" duration="601000" />
+      <workItem from="1635946096419" duration="3472000" />
+      <workItem from="1636011263765" duration="31614000" />
+      <workItem from="1636360800415" duration="6205000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

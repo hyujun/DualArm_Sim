@@ -31,6 +31,7 @@
 
 #include <SerialManipulator.h>
 #include <Controller.h>
+#include <Motion.h>
 
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
@@ -278,24 +279,35 @@ namespace dualarm_controller
             q_.data = Eigen::VectorXd::Zero(n_joints_);
             qdot_.data = Eigen::VectorXd::Zero(n_joints_);
             dq.setZero(n_joints_);
+            frictiontorque_.data = Eigen::VectorXd::Zero(n_joints_);
+
 
             des_torque.setZero(n_joints_);
             act_torque.setZero(n_joints_);
+//            frictiontorque.setZero(n_joints_);
+
+
+            targetpos.setZero(16);
+
 
             // ********* 6. ROS 명령어 *********
             // 6.1 publisher
             state_pub_.reset(new realtime_tools::RealtimePublisher<dualarm_controller::JointCurrentState>(n, "states", 10));
             state_pub_->msg_.header.stamp = ros::Time::now();
-            for(int i=0; i<(n_joints_-1); i++)
+            for(int i=0; i<(n_joints_); i++)
             {
                 state_pub_->msg_.name.push_back(joint_names_[i].c_str()) ;
                 state_pub_->msg_.q.push_back(q_.data(i));
                 state_pub_->msg_.qdot.push_back(qdot_.data(i));
                 state_pub_->msg_.dq.push_back(qd_.data(i));
                 state_pub_->msg_.dqdot.push_back(qd_dot_.data(i));
+                state_pub_->msg_.dqddot.push_back(qd_ddot_.data(i));
+
                 state_pub_->msg_.effort_command.push_back(act_torque(i));
                 state_pub_->msg_.Kp.push_back(Kp_.data(i));
                 state_pub_->msg_.Kd.push_back(Kd_.data(i));
+                state_pub_->msg_.frictiontorque.push_back(frictiontorque_.data(i));
+
             }
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
@@ -303,9 +315,12 @@ namespace dualarm_controller
             const auto joint_state_cb = utils::makeCallback<dualarm_controller::JointDesiredState>([&](const auto& msg){
                 for(int i=0; i<n_joints_; i++)
                 {
+                    ControlSubIndex = msg.SubIndex;
+                    JointState = ControlSubIndex;
+                    targetpos(i)=msg.dq[i].data*D2R;
                     dq(i) = msg.dq[i].data*D2R;
-                    Kp_.data(i) = msg.Kp[i].data;
-                    Kd_.data(i) = msg.Kd[i].data;
+//                    Kp_.data(i) = msg.Kp[i].data;
+//                    Kd_.data(i) = msg.Kd[i].data;
                 }
                 qd_.data = dq;
             });
@@ -323,7 +338,9 @@ namespace dualarm_controller
 
             cManipulator = std::make_shared<SerialManipulator>();
             Control = std::make_unique<HYUControl::Controller>(cManipulator);
-
+            motion = std::make_unique<HYUControl::Motion>(cManipulator);
+            ControlSubIndex = MOVE_ZERO;
+            JointState = MOVE_ZERO;
             cManipulator->UpdateManipulatorParam();
         }
 
@@ -401,15 +418,15 @@ namespace dualarm_controller
 
             qd_ddot_.data.setZero();
             qd_dot_.data.setZero();
-
-            Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, des_torque, dt);
-
+            motion->JointMotion(qd_.data, qd_dot_.data, qd_ddot_.data, targetpos, q_.data, qdot_.data, t, JointState, ControlSubIndex);
+            Control->InvDynController2(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, des_torque, frictiontorque_.data, dt);
+            e=qd_.data-q_.data;
             for (int i = 0; i < n_joints_; i++)
             {
-                if(des_torque(i) >= 300)
-                    des_torque(i) = 300;
-                else if(des_torque(i) <= -300)
-                    des_torque(i) = -300;
+                if(des_torque(i) >= 100)
+                    des_torque(i) = 100;
+                else if(des_torque(i) <= -100)
+                    des_torque(i) = -100;
 
                 joints_[i].setCommand(des_torque(i));
             }
@@ -442,7 +459,11 @@ namespace dualarm_controller
                         state_pub_->msg_.qdot[i] = qdot_.data(i);
                         state_pub_->msg_.dq[i] = qd_.data(i);
                         state_pub_->msg_.dqdot[i] = qd_dot_.data(i);
+                        state_pub_->msg_.dqddot[i] = qd_ddot_.data(i);
+
                         state_pub_->msg_.effort_command[i] = act_torque(i);
+                        state_pub_->msg_.frictiontorque[i] = frictiontorque_.data(i);
+
                         state_pub_->msg_.Kp[i] = Kp_.data(i);
                         state_pub_->msg_.Kd[i] = Kd_.data(i);
                     }
@@ -468,12 +489,19 @@ namespace dualarm_controller
                 for(int i=0; i < n_joints_; i++)
                 {
                     printf("[%s]:  \t", joint_names_[i].c_str());
-                    printf("Kp:%0.3lf, Kd:%0.3lf,\t", aKp_.data(i), aKd_.data(i));
                     printf("q: %0.3lf,\t", q_.data(i) * R2D);
                     printf("dq: %0.3lf,\t", qd_.data(i) * R2D);
+                    printf("e: %0.3lf,\t", e(i) * R2D);
+
                     printf("qdot: %0.3lf,\t", qdot_.data(i) * R2D);
-                    printf("dqdot: %0.3lf,\t", qd_dot_.data(i) * R2D);
-                    printf("tau: %0.3f\n", des_torque(i));
+//                    printf("dqdot: %0.3lf,\t", qd_dot_.data(i) * R2D);
+                    printf("tau: %0.3f\t", des_torque(i));
+                    printf("tau_friction: %0.3f\t", frictiontorque_.data(i));
+
+//                    printf("Kp:%0.1lf, Kd:%0.1lf, Ki:%0.1lf\t", aKp_.data(i), aKd_.data(i),  aKi_.data(i));
+                    printf("SubIndex:%d\n", ControlSubIndex);
+
+
                 }
 
                 printf("\nForward Kinematics:\n");
@@ -533,6 +561,10 @@ namespace dualarm_controller
 
         //Joint handles
         unsigned int n_joints_;
+        unsigned char ControlSubIndex;
+        unsigned char JointState;
+
+
         std::vector<std::string> joint_names_;
         std::vector<hardware_interface::JointHandle> joints_;
         std::vector<urdf::JointConstSharedPtr> joint_urdfs_;
@@ -550,6 +582,8 @@ namespace dualarm_controller
         Eigen::MatrixXd g_mat_collect;
         Eigen::MatrixXd M_mat_collect;
         Eigen::MatrixXd C_mat_collect;
+        Eigen::VectorXd e, e_dev, e_int, e_int_sat;
+
 
         KDL::Jacobian J1_kdl_, J2_kdl_;
 
@@ -574,10 +608,17 @@ namespace dualarm_controller
         KDL::JntArray qd_ddot_;
         KDL::JntArray q_, q1_, q2_;
         KDL::JntArray qdot_, q1dot_, q2dot_;
+        KDL::JntArray frictiontorque_;
+
+        Eigen::VectorXd targetpos;
+
 
         VectorXd dq;
         VectorXd des_torque;
         VectorXd act_torque;
+        VectorXd frictiontorque;
+
+
 
         // Task Space State
         KDL::Frame x_[2];
@@ -595,6 +636,8 @@ namespace dualarm_controller
 
         std::shared_ptr<SerialManipulator> cManipulator;
         std::unique_ptr<HYUControl::Controller> Control;
+        std::unique_ptr<HYUControl::Motion> motion;
+
     };
 }
 

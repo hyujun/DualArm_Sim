@@ -62,7 +62,8 @@ public:
 	void SetTaskspaceGain( const VectorXd &_KpTask, const VectorXd &_KdTask);
 	void GetTaskspaceGain( const VectorXd &_KpTask, const VectorXd &_KdTask);
 	void SetImpedanceGain( const VectorXd &_Kp_Imp, const VectorXd &_Kd_Imp, const VectorXd &_Kp_Imp_Null, const VectorXd &_Kd_Imp_Null, const VectorXd &_des_m );
-	void GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask);
+    void FrictionCompensator2( const VectorXd &_dqdot);
+    void GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask);
 	/**
 	 * @brief simple pd controller
 	 * @param[in] q current joint position
@@ -74,7 +75,9 @@ public:
 	void PDController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq);
 	void PDGravController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq );
     void InvDynController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, const VectorXd &_dqddot, VectorXd &_Toq, const double &_dt );
-	void TaskInvDynController( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_q, const VectorXd &_qdot, VectorXd &_Toq, const double &_dt, const int mode);
+    void InvDynController2( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, const VectorXd &_dqddot, VectorXd &_Toq, VectorXd &_frictionToq, const double &_dt );
+
+    void TaskInvDynController( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_q, const VectorXd &_qdot, VectorXd &_Toq, const double &_dt, const int mode);
 
 	void TaskError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );
 	void TaskRelativeError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );

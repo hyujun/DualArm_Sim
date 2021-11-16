@@ -242,9 +242,9 @@ void Controller::InvDynController2(const VectorXd &_q,
 
     e = _dq - _q;
     e_dev = _dqdot - _qdot;
-    e_int += e*_dt;
-    for(int i = 0;i<m_Jnum;i++)
-        e_int(i) = tanh(e_int(i));
+    e_int += e*_dt*0.1;
+//    for(int i = 0;i<m_Jnum;i++)
+//        e_int(i) = tanh(e_int(i));
 
 //	FrictionCompensator(_qdot, _dqdot);
     FrictionCompensator2( _dqdot);
@@ -259,7 +259,7 @@ void Controller::InvDynController2(const VectorXd &_q,
 
     _Toq = G;
     _Toq.noalias() += M*u0;
-    _Toq.noalias() += FrictionTorque;
+//    _Toq.noalias() += FrictionTorque;
     _frictionToq = FrictionTorque;
 
 #if !defined(__SIMULATION__)
@@ -362,9 +362,18 @@ void Controller::TaskError( Cartesiand *_dx, const VectorXd &_dxdot, const Vecto
         Quaterniond q_a;
         q_a = pManipulator->pKin->GetForwardKinematicsSO3(EndJoint[i]);
 
+
         Vector3d e_orientation;
+        Vector3d e_orientation2;
+
         Vector3d qd_vec;
+        Vector3d qa_vec;
+
         qd_vec = q_d.vec();
+        qa_vec = q_a.vec();
+
+        double e_orientation1;
+        e_orientation1 = q_a.w()*q_d.w()+qa_vec.transpose()*q_d.vec();
         e_orientation = q_d.w()*q_a.vec() - q_a.w()*q_d.vec() + SkewMatrix(qd_vec)*q_a.vec();
         //_error_x.segment(6*i,3) = eSO3.vec();
         _error_x.segment(6*i,3) = -e_orientation;

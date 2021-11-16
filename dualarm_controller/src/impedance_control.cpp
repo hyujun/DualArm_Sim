@@ -306,6 +306,7 @@ namespace dualarm_controller
 
             wpInv_lambda[0].setZero(3);
             wpInv_lambda[1].setZero(3);
+            frictiontorque_.data = Eigen::VectorXd::Zero(n_joints_);
 
 
             // ********* 6. ROS 명령어 *********
@@ -322,6 +323,7 @@ namespace dualarm_controller
                 state_pub_->msg_.dqdot.push_back(qd_dot_.data(i));
                 state_pub_->msg_.torque.push_back(torque(i));
                 state_pub_->msg_.torque_ext.push_back(torque_ext(i));
+
             }
             for(int j=0; j<2; j++) {
                 state_pub_->msg_.InverseConditionNum.push_back(InverseConditionNumber[j]);
@@ -350,6 +352,7 @@ namespace dualarm_controller
                 ControlIndex1 = msg.Index1;
                 ControlIndex2 = msg.Index2;
                 ControlSubIndex = msg.SubIndex;
+
                 JointState = ControlSubIndex;
                 targetpos(0) = msg.dx[0].orientation.x*DEGtoRAD;
                 targetpos(1) = msg.dx[0].orientation.y*DEGtoRAD;
@@ -416,7 +419,7 @@ namespace dualarm_controller
             KdTask.segment(6, 3).setConstant(Kd_rot);
             KdTask.segment(9, 3).setConstant(Kd_trans);
 
-            KpNull.setConstant(16,0.001);
+            KpNull.setConstant(16,0.1);
             KdNull.setConstant(16,0.4 );
             Control->SetImpedanceGain(KpTask, KdTask, KpNull, KdNull, des_m);
 
@@ -514,7 +517,7 @@ namespace dualarm_controller
                 MM = cManipulator->pKin->GetManipulabilityMeasure();
                 qd_dot_.data.setZero(16);
                 motion->JointMotion(qd_.data, qd_dot_.data, qd_ddot_.data, targetpos, q_.data, qdot_.data, t, JointState, ControlSubIndex);
-                Control->InvDynController(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, dt);
+                Control->InvDynController2(q_.data, qdot_.data, qd_.data, qd_dot_.data, qd_ddot_.data, torque, frictiontorque_.data, dt);
             }
 
             for (int i = 0; i < n_joints_; i++)
@@ -584,13 +587,17 @@ namespace dualarm_controller
                     }
 
                     Quaterniond tmp;
+                    Vector3d RTmp1;
 
                     for(int j=0; j<2; j++)
                     {
-                        tmp = dx[j].r;
-                        state_pub_->msg_.dx[j].orientation.x = tmp.x();
-                        state_pub_->msg_.dx[j].orientation.y = tmp.y();
-                        state_pub_->msg_.dx[j].orientation.z = tmp.z();
+//                        tmp = dx[j].r;
+
+                        RTmp1 = dx[j].r.eulerAngles(2,1,0);
+
+                        state_pub_->msg_.dx[j].orientation.x = RTmp1(2);
+                        state_pub_->msg_.dx[j].orientation.y = RTmp1(1);
+                        state_pub_->msg_.dx[j].orientation.z = RTmp1(0);
                         state_pub_->msg_.dx[j].position.x = dx[j].p(0);
                         state_pub_->msg_.dx[j].position.y = dx[j].p(1);
                         state_pub_->msg_.dx[j].position.z = dx[j].p(2);
@@ -660,6 +667,8 @@ namespace dualarm_controller
                 {
                     printf("[%s]:  \t", joint_names_[i].c_str());
                     printf("q: %0.2lf,\t", q_.data(i) * R2D);
+                    printf("dq: %0.2lf,\t", qd_.data(i) * R2D);
+
                     printf("qdot: %0.2lf,\t", qdot_.data(i) * R2D);
                     printf("tau: %0.2f\n", torque(i));
                 }
@@ -677,7 +686,7 @@ namespace dualarm_controller
                     Vector3d RTmp;
                     RTmp = dx[j].r.eulerAngles(2,1,0);
                     printf("no.%d, Desired: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n", j,
-                           dx[j].p(0), dx[j].p(1), dx[j].p(2), RTmp(0), RTmp(1), RTmp(2));
+                           dx[j].p(0), dx[j].p(1), dx[j].p(2), RTmp(2), RTmp(1), RTmp(0));
                     printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n",
                            j, ForwardAxis[j](0), ForwardAxis[j](1), ForwardAxis[j](2), ForwardAngle[j]);
                 }
@@ -811,6 +820,9 @@ namespace dualarm_controller
         KDL::JntArray q_, q1_, q2_;
         KDL::JntArray qdot_;
         KDL::JntArrayVel q1dot_, q2dot_;
+        KDL::JntArray frictiontorque_;
+        VectorXd frictiontorque;
+
         Eigen::VectorXd xa;
         Eigen::VectorXd xdot_logging;
         Eigen::VectorXd q0dot;

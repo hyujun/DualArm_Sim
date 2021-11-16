@@ -10,16 +10,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="38b7fd61-d2c7-4cb2-a538-42ee23789048" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/DualArm/dualarm_control/config/jointspace_control.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/DualArm/dualarm_control/config/jointspace_control.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/DualArm/dualarm_description/urdf/dual_arm_ft.xacro" beforeDir="false" afterPath="$PROJECT_DIR$/DualArm/dualarm_description/urdf/dual_arm_ft.xacro" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Trajectory.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Trajectory.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/JointCurrentState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/JointCurrentState.msg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/JointDesiredState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/JointDesiredState.msg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/src/closedloopik_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/src/closedloopik_control.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/src/jointspace_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/src/jointspace_control.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/slerp.cpp" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/slerp.h" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/motionlibrary.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/motionlibrary.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/TaskDesiredState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/TaskDesiredState.msg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,16 +45,17 @@
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="cf.first.check.clang-format" value="false" />
     <property name="cidr.known.project.marker" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../RTControlDualArm" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="settings.editor.selected.configurable" value="CMakeSettings" />
   </component>
   <component name="RunManager">
-    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
-        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
   </component>
@@ -81,10 +82,27 @@
       <workItem from="1635946096419" duration="3472000" />
       <workItem from="1636011263765" duration="31614000" />
       <workItem from="1636360800415" duration="6205000" />
+      <workItem from="1636532826773" duration="7476000" />
+      <workItem from="1636546853084" duration="1250000" />
+      <workItem from="1636609342741" duration="55054000" />
+      <workItem from="1636990754469" duration="3140000" />
+      <workItem from="1637037050904" duration="997000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
 </project>

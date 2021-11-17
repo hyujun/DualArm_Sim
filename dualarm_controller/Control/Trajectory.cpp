@@ -40,7 +40,7 @@ void Trajectory::SetPoly5th( const double &_CurrentTime, const Eigen::VectorXd &
 			 0.0, 0.0, 					2.0, 						6.0*pow(TrajDuration,1), 	12.0*pow(TrajDuration,2),	20.0*pow(TrajDuration,3);
 
 	StateVec.row(0) = _StartPos.transpose();
-	//StateVec.row(1) = _StartVel.transpose();
+//	StateVec.row(1) = _StartVel.transpose();
 	StateVec.row(3) = _FinalPos.transpose();
 
 	Coefficient.noalias() += m_cof.inverse()*StateVec;

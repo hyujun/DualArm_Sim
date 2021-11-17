@@ -350,6 +350,7 @@ uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddo
 
 	pManipulator->pKin->GetAnalyticJacobian(AJacobian);
 	xdot.setZero(12);
+
 	xdot.noalias() += AJacobian*qdot;
 
     auto A = 0.12;
@@ -391,6 +392,15 @@ uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddo
 
             _dxdot.setZero(12);
             _dxddot.setZero(12);
+//             target topic published by msg publisher
+//            _dx[0].r = AngleAxisd(TargetPosTask(2),Vector3d::UnitZ())
+//                       *AngleAxisd(TargetPosTask(1),Vector3d::UnitY())
+//                       *AngleAxisd(TargetPosTask(0),Vector3d::UnitX()); //SO3
+//            _dx[0].p = TargetPos_Linear.head(3);
+//            _dx[1].r = AngleAxisd(TargetPosTask(8),Vector3d::UnitZ())
+//                       *AngleAxisd(TargetPosTask(7),Vector3d::UnitY())
+//                       *AngleAxisd(TargetPosTask(6),Vector3d::UnitX());
+//            _dx[1].p = TargetPos_Linear.tail(3);
 
             _dx[0].r = AngleAxisd(TargetPosTask(2),Vector3d::UnitZ())
                        *AngleAxisd(TargetPosTask(1),Vector3d::UnitY())
@@ -417,7 +427,7 @@ uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddo
             TargetPos_Linear.head(3) = TargetPosTask.segment(3,3);
             TargetPos_Linear.tail(3) = TargetPosTask.segment(9,3);
 
-            TrajectoryTime=10.0;
+            TrajectoryTime=5.0;
             NewTarget=1;
             _StatusWord = 0;
 
@@ -774,7 +784,6 @@ uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddo
             _dxddot.setZero();
         }
     }
-
     else if( MotionCommandTask == MOVE_TASK_CUSTOM7 )
     {
         if( _StatusWord != MotionCommandTask )
@@ -881,6 +890,110 @@ uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddo
 
 	MotionCommandTask_p = MotionCommandTask;
 	return MotionProcess;
+}
+
+uint16_t Motion::TaskMotion2( Cartesiand *_dx, Quaterniond &_q_R, Quaterniond &_q_L, VectorXd &_dxdot, VectorXd &_dxddot,
+                             VectorXd _Target, const VectorXd &x, const VectorXd &qdot,
+                             double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType )
+{
+    MotionCommandTask = _MotionType;
+
+    pManipulator->pKin->GetAnalyticJacobian(AJacobian);
+    xdot.setZero(12);
+
+    xdot.noalias() += AJacobian*qdot;
+
+    auto A = 0.12;
+    auto b1 = 0.64;
+    auto b2 = -0.33;
+    auto b3 = 0.45;
+    auto f = 0.2;
+
+    auto l_p1 = 0.58;
+    auto l_p2 = 0.33;
+    auto l_p3 = 0.42;
+
+    if( MotionCommandTask == MOVE_TASK_CUSTOM )
+    {
+        if( _StatusWord != MotionCommandTask )
+        {
+            if( NewTarget==1 )
+            {
+                int target_size = 6;
+                _x_tmp.setZero(target_size);
+                _xdot_tmp.setZero(target_size);
+
+                _x_tmp.head(3) = x.segment(3,3);
+                _x_tmp.tail(3) = x.segment(9,3);
+
+                _xdot_tmp.head(3) = xdot.segment(3,3);
+                _xdot_tmp.tail(3) = xdot.segment(9,3);
+
+                TaskPoly5th.SetPoly5th(_Time, _x_tmp, _xdot_tmp, TargetPos_Linear, TrajectoryTime, target_size);
+                TaskPoly5th.Poly5th(_Time, _dx_tmp, _dxdot_tmp, _dxddot_tmp);
+
+                NewTarget=0;
+            }
+            else
+            {
+                TaskPoly5th.Poly5th(_Time, _dx_tmp, _dxdot_tmp, _dxddot_tmp);
+            }
+
+
+            _dxdot.setZero(12);
+            _dxddot.setZero(12);
+            q_R=_q_R;
+            q_L=_q_L;
+
+//            _dx[0].r = AngleAxisd(TargetPosTask(2),Vector3d::UnitZ())
+//                       *AngleAxisd(TargetPosTask(1),Vector3d::UnitY())
+//                       *AngleAxisd(TargetPosTask(0),Vector3d::UnitX());; //SO3
+//            _dx[0].p = TargetPos_Linear.head(3);
+//            _dx[1].r = AngleAxisd(TargetPosTask(8),Vector3d::UnitZ())
+//                       *AngleAxisd(TargetPosTask(7),Vector3d::UnitY())
+//                       *AngleAxisd(TargetPosTask(6),Vector3d::UnitX());
+//            _dx[1].p = TargetPos_Linear.tail(3);
+
+            _dx[0].r = q_R.toRotationMatrix();; //SO3
+            _dx[0].p = TargetPos_Linear.head(3);
+            _dx[1].r = q_L.toRotationMatrix();
+            _dx[1].p = TargetPos_Linear.tail(3);
+
+            _dxdot.segment(3,3) = _dxdot_tmp.head(3);
+            _dxdot.segment(9,3) = _dxdot_tmp.tail(3);
+            _dxddot.segment(3,3) = _dxddot_tmp.head(3);
+            _dxddot.segment(9,3) = _dxddot_tmp.tail(3);
+
+            MotionProcess = MOVE_TASK_CUSTOM;
+        }
+        else
+        {
+            TargetPosTask = _Target;
+            TargetPosTask_p = TargetPosTask;
+
+            TargetPos_Linear.setZero(6);
+            TargetPos_Linear.head(3) = TargetPosTask.segment(3,3);
+            TargetPos_Linear.tail(3) = TargetPosTask.segment(9,3);
+
+            TrajectoryTime=5.0;
+            NewTarget=1;
+            _StatusWord = 0;
+
+            _dx[0].r = AngleAxisd(x(2),Vector3d::UnitZ())
+                       *AngleAxisd(x(1),Vector3d::UnitY())
+                       *AngleAxisd(x(0),Vector3d::UnitX());
+            _dx[0].p = x.segment(3,3);
+            _dx[1].r = AngleAxisd(x(8),Vector3d::UnitZ())
+                       *AngleAxisd(x(7),Vector3d::UnitY())
+                       *AngleAxisd(x(6),Vector3d::UnitX());
+            _dx[1].p = x.segment(9,3);
+            _dxdot.setZero();
+            _dxddot.setZero();
+        }
+    }
+
+    MotionCommandTask_p = MotionCommandTask;
+    return MotionProcess;
 }
 
 } /* namespace hyuCtrl */

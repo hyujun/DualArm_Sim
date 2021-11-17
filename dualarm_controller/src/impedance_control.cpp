@@ -10,6 +10,8 @@
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
 #include <geometry_msgs/WrenchStamped.h>
+#include <nav_msgs/Odometry.h>
+
 #include "utils.h"
 #include "dualarm_controller/TaskDesiredState.h"
 #include "dualarm_controller/TaskCurrentState.h"
@@ -51,7 +53,7 @@
 
 #define Deg_A 70
 #define Deg_f 0.5
-
+#define aaa 0
 namespace dualarm_controller
 {
     class Impedance_Control : public controller_interface::Controller<hardware_interface::EffortJointInterface>
@@ -347,30 +349,62 @@ namespace dualarm_controller
 
             pub_buffer_.writeFromNonRT(std::vector<double>(n_joints_, 0.0));
 
-            // 6.2 subsriber
+            // 6.2 subscriber
             const auto joint_state_cb = utils::makeCallback<dualarm_controller::TaskDesiredState>([&](const auto& msg){
                 ControlIndex1 = msg.Index1;
                 ControlIndex2 = msg.Index2;
                 ControlSubIndex = msg.SubIndex;
 
                 JointState = ControlSubIndex;
-                targetpos(0) = msg.dx[0].orientation.x*DEGtoRAD;
-                targetpos(1) = msg.dx[0].orientation.y*DEGtoRAD;
-                targetpos(2) = msg.dx[0].orientation.z*DEGtoRAD;
-                targetpos(3) = msg.dx[0].position.x;
-                targetpos(4) = msg.dx[0].position.y;
-                targetpos(5) = msg.dx[0].position.z;
+//                targetpos(0) = msg.dx[0].orientation.x*DEGtoRAD;
+//                targetpos(1) = msg.dx[0].orientation.y*DEGtoRAD;
+//                targetpos(2) = msg.dx[0].orientation.z*DEGtoRAD;
+//                targetpos(3) = msg.dx[0].position.x;
+//                targetpos(4) = msg.dx[0].position.y;
+//                targetpos(5) = msg.dx[0].position.z;
                 targetpos(6) = msg.dx[1].orientation.x*DEGtoRAD;
                 targetpos(7) = msg.dx[1].orientation.y*DEGtoRAD;
                 targetpos(8) = msg.dx[1].orientation.z*DEGtoRAD;
-                targetpos(9) = msg.dx[1].position.x;
-                targetpos(10) = msg.dx[1].position.y;
-                targetpos(11) = msg.dx[1].position.z;
+//                targetpos(9) = msg.dx[1].position.x;
+//                targetpos(10) = msg.dx[1].position.y;
+//                targetpos(11) = msg.dx[1].position.z;
             });
+
+
             sub_x_cmd_ = n.subscribe<dualarm_controller::TaskDesiredState>( "command", 5, joint_state_cb);
             sub_ft_sensor_R = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_R", 5, &Impedance_Control::UpdateFTsensorR, this);
             sub_ft_sensor_L = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_L", 5, &Impedance_Control::UpdateFTsensorL, this);
+            vive_pose_sub_R  = n.subscribe<nav_msgs::Odometry>( "/LHR_18744CF1_odom", 5, &Impedance_Control::Update_vive_pose_R, this);
+            vive_pose_sub_L  = n.subscribe<nav_msgs::Odometry>( "/LHR_FC007723_odom", 5, &Impedance_Control::Update_vive_pose_L, this);
+
             return true;
+        }
+
+        void Update_vive_pose_R(const nav_msgs::Odometry::ConstPtr &msg)
+        {
+            q_R.w() = msg->pose.pose.orientation.w;
+            q_R.x() = msg->pose.pose.orientation.x;
+            q_R.y() = msg->pose.pose.orientation.y;
+            q_R.z() = msg->pose.pose.orientation.z;
+
+
+            targetpos(3) = msg->pose.pose.position.x;
+            targetpos(4) = msg->pose.pose.position.y;
+            targetpos(5) = msg->pose.pose.position.z;
+
+        }
+
+        void Update_vive_pose_L(const nav_msgs::Odometry::ConstPtr &msg)
+        {
+            q_L.w() = msg->pose.pose.orientation.w;
+            q_L.x() = msg->pose.pose.orientation.x;
+            q_L.y() = msg->pose.pose.orientation.y;
+            q_L.z() = msg->pose.pose.orientation.z;
+
+            targetpos[9] = msg->pose.pose.position.x;
+            targetpos[10] = msg->pose.pose.position.y;
+            targetpos[11] = msg->pose.pose.position.z;
+
         }
 
         void UpdateFTsensorR(const geometry_msgs::WrenchStamped::ConstPtr &msg)
@@ -507,8 +541,9 @@ namespace dualarm_controller
                     SingleMM[1] = cManipulator->pKin->GetManipulabilityMeasure(AJac.block(6,0,6,16));
                     MM = cManipulator->pKin->GetManipulabilityMeasure();
                 }
-                motion->TaskMotion(dx, dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
-                Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, ControlIndex2);
+                motion->TaskMotion2(dx,q_R,q_L, dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
+                //Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque,ControlIndex2);
+                Control->TaskImpedanceController2(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, q_R,q_L,ControlIndex2);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
                 cManipulator->pKin->GetWDampedpInvLambda(wpInv_lambda);
             }
@@ -844,6 +879,7 @@ namespace dualarm_controller
         Cartesiand dx[2];
         Eigen::VectorXd dxdot;
         Eigen::VectorXd dxddot;
+        Eigen::Quaterniond q_R, q_L;
 
         // Input
         KDL::JntArray x_cmd_;
@@ -862,6 +898,9 @@ namespace dualarm_controller
         // subscriber
         ros::Subscriber sub_x_cmd_;
         ros::Subscriber sub_ft_sensor_R, sub_ft_sensor_L;
+        ros::Subscriber vive_pose_sub_R;
+        ros::Subscriber vive_pose_sub_L;
+
 
         std::shared_ptr<SerialManipulator> cManipulator;
         std::unique_ptr<HYUControl::Controller> Control;

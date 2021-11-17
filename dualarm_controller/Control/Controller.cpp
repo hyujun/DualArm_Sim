@@ -335,7 +335,7 @@ void Controller::TaskInvDynController( Cartesiand *_dx,
     }
 }
 
-void Controller::TaskError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot)
+void Controller::TaskError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot )
 {
     _error_x.setZero(6*2);
     _error_xdot.setZero(6*2);
@@ -385,7 +385,62 @@ void Controller::TaskError( Cartesiand *_dx, const VectorXd &_dxdot, const Vecto
     _error_xdot = _dxdot;
     _error_xdot.noalias() += -AnalyticJac*_qdot;
 }
+void Controller::TaskError2( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot ,Quaterniond _q_R,Quaterniond _q_L)
+    {
+        _error_x.setZero(6*2);
+        _error_xdot.setZero(6*2);
 
+        int EndJoint[2] = {9, 16};
+        SE3 aSE3;
+        SO3 dSO3;
+        Vector3d eOrient;
+        double theta;
+        for(int i=0; i<2; i++)
+        {
+            //dSO3 = _dx[i].r;
+            aSE3 = pManipulator->pKin->GetForwardKinematicsSE3(EndJoint[i]);
+            //pManipulator->pKin->SO3toRollPitchYaw(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient);
+            //pManipulator->pKin->LogSO3(aSE3.block(0,0,3,3).transpose()*dSO3, eOrient,theta);
+            //_error_x.segment(6*i,3) = eOrient;
+
+            //Matrix3d SO3Tmp = aSE3.block(0,0,3,3).transpose()*dSO3;
+            //Quaterniond eSO3;
+            //eSO3 = SO3Tmp;
+            Quaterniond q_d;
+            if(i ==0)
+                 q_d = _q_R;
+            else
+                 q_d = _q_L;
+
+
+            Quaterniond q_a;
+            q_a = pManipulator->pKin->GetForwardKinematicsSO3(EndJoint[i]);
+            if (q_d.coeffs().dot(q_a.coeffs()) < 0.0) {
+                q_a.coeffs() << -q_a.coeffs();
+            }
+
+            Vector3d e_orientation;
+            Vector3d e_orientation2;
+
+            Vector3d qd_vec;
+            Vector3d qa_vec;
+
+            qd_vec = q_d.vec();
+            qa_vec = q_a.vec();
+
+            double e_orientation1;
+            e_orientation1 = q_a.w()*q_d.w()+qa_vec.transpose()*q_d.vec();
+            e_orientation = q_d.w()*q_a.vec() - q_a.w()*q_d.vec() + SkewMatrix(qd_vec)*q_a.vec();
+            //_error_x.segment(6*i,3) = eSO3.vec();
+            _error_x.segment(6*i,3) = -e_orientation;
+            _error_x.segment(6*i+3,3) = _dx[i].p - aSE3.block(0,3,3,1);
+        }
+
+        MatrixXd AnalyticJac;
+        pManipulator->pKin->GetAnalyticJacobian(AnalyticJac);
+        _error_xdot = _dxdot;
+        _error_xdot.noalias() += -AnalyticJac*_qdot;
+    }
 void Controller::TaskRelativeError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot )
 {
     _error_x.setZero(6*2);
@@ -617,6 +672,20 @@ void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_q
         _Toq.noalias() += M*(pInvMat*u01);
         _Toq.noalias() += AnalyticJacobian.transpose()*u02;
         _Toq.noalias() += Matrix_temp*u04;
+        VectorXd jobDesired=VectorXd::Zero(16);
+        MatrixXd Kp_job=Eigen::MatrixXd::Identity(16,16);;
+        for(int i=0;i<16;i++)
+            Kp_job(i,i) = 10.0;
+        jobDesired(1) = -20.0*DEGtoRAD;
+        jobDesired(3) = -45.0*DEGtoRAD;
+        jobDesired(3+7) = -jobDesired(3);
+        jobDesired(6) = -90.00*DEGtoRAD;
+        jobDesired(6+7) = -jobDesired(6);
+
+        _Toq.noalias() += Kp_job*(jobDesired-_q);
+
+        _Toq.noalias() += Matrix_temp*u04;
+
     }
     else if(mode == 2) // Mx != Mx_desired
     {
@@ -734,6 +803,105 @@ void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_q
         _Toq.noalias() += AnalyticJacobian.transpose()*u02;
     }
 }
+
+
+void Controller:: TaskImpedanceController2(const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx,
+                                          const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor,
+                                          VectorXd &_Toq,Quaterniond &_q_R,Quaterniond &_q_L,const int mode)
+{
+    MatrixXd pInvMat;
+    pManipulator->pDyn->MG_Mat_Joint(M, G);
+    pManipulator->pKin->GetAnalyticJacobian(AnalyticJacobian);
+    pManipulator->pKin->GetAnalyticJacobianDot(_qdot, AnalyticJacobianDot);
+
+    dqN.setZero(16);
+    dqdotN.setZero(16);
+
+    alpha = 7.5;
+
+    if(mode == 1) // Mx = Mx_desired
+    {
+        VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
+        VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
+        VectorXd u04 = VectorXd::Zero(AnalyticJacobian.cols());
+
+        u01 = _dxddot;
+        u01.noalias() += -AnalyticJacobianDot*_qdot;
+
+        TaskError2(_dx, _dxdot, _qdot, eTask, edotTask,_q_R,_q_L);
+
+        u02.noalias() += KdImp.cwiseProduct(edotTask);
+        u02.noalias() += KpImp.cwiseProduct(eTask);
+
+        //dqN = 0.5*(pManipulator->pKin->qLimit_High - pManipulator->pKin->qLimit_Low);
+        pManipulator->pKin->Getq0dotWithMM(alpha, dqdotN);
+        //dqdotN.noalias() += -0.5*(pManipulator->pKin->qLimit_Low - _q).cwiseInverse();
+        //dqdotN.noalias() += 0.5*(_q - pManipulator->pKin->qLimit_High).cwiseInverse();
+        //u04.noalias() += KpImpNull.cwiseProduct(dqN - _q);
+        u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
+
+        MatrixXd weight;
+        //weight.setIdentity(16,16);
+        weight = M;
+
+        VectorXd dx_tmp(12);
+        Quaterniond q_tmp;
+
+        q_tmp = _dx[0].r;
+        dx_tmp.segment(0,3) = q_tmp.vec();
+        dx_tmp.segment(3,3) = _dx[0].p;
+        q_tmp = _dx[1].r;
+        dx_tmp.segment(6,3) = q_tmp.vec();
+        dx_tmp.segment(9,3) = _dx[1].p;
+
+        pManipulator->pKin->GetWeightDampedpInvJacobian(dx_tmp, weight, AnalyticJacobian, pInvMat);
+
+        Matrix_temp = Eigen::MatrixXd::Identity(16,16);
+        Matrix_temp += -pInvMat*AnalyticJacobian;
+
+        _Toq = G;
+        _Toq.noalias() += M*(pInvMat*u01);
+        _Toq.noalias() += AnalyticJacobian.transpose()*u02;
+        _Toq.noalias() += Matrix_temp*u04;
+        VectorXd jobDesired=VectorXd::Zero(16);
+        MatrixXd Kp_job=Eigen::MatrixXd::Identity(16,16);;
+        for(int i=0;i<16;i++)
+            Kp_job(i,i) = 10.0;
+        jobDesired(1) = -20.0*DEGtoRAD;
+        jobDesired(3) = -45.0*DEGtoRAD;
+        jobDesired(3+7) = -jobDesired(3);
+        jobDesired(6) = -90.00*DEGtoRAD;
+        jobDesired(6+7) = -jobDesired(6);
+
+//        _Toq.noalias() += Kp_job*(jobDesired-_q);
+
+        _Toq.noalias() += Matrix_temp*u04;
+
+    }
+
+    else
+    {
+        pManipulator->pKin->GetDampedpInvJacobian(pInvMat);
+
+        Matrix_temp = Eigen::MatrixXd::Identity(16,16);
+        Matrix_temp += -pInvMat*AnalyticJacobian;
+
+        VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
+        VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
+
+        u01 = _dxddot;
+        u01.noalias() += -AnalyticJacobianDot*_qdot;
+
+        TaskError(_dx, _dxdot, _qdot, eTask, edotTask);
+        u02.noalias() += KdImp.cwiseProduct(edotTask);
+        u02.noalias() += KpImp.cwiseProduct(eTask);
+
+        _Toq = G;
+        _Toq.noalias() += M*(pInvMat*u01);
+        _Toq.noalias() += AnalyticJacobian.transpose()*u02;
+    }
+}
+
     double SignFunction(double value)
     {
         if (value<0.0f)

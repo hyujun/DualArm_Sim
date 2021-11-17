@@ -70,7 +70,7 @@
 				link="${base_link_name}" />
 		<child
 				link="${waist_link_01_name}" />
-		<dynamics damping="0.01" friction="0.1"/>0
+		<dynamics damping="0.01" friction="1"/>0
 	</joint>
 	<transmission
 			name="trans_dualarm_joint1">
@@ -185,7 +185,7 @@
 				link="${waist_link_02_name}" />
 		<child
 				link="${r_arm_link_01_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint3">
@@ -241,7 +241,7 @@
 				link="${r_arm_link_01_name}" />
 		<child
 				link="${r_arm_link_02_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint4">
@@ -297,7 +297,7 @@
 				link="${r_arm_link_02_name}" />
 		<child
 				link="${r_arm_link_03_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint5">
@@ -353,7 +353,7 @@
 				link="${r_arm_link_03_name}" />
 		<child
 				link="${r_arm_link_04_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint6">
@@ -409,7 +409,7 @@
 				link="${r_arm_link_04_name}" />
 		<child
 				link="${r_arm_link_05_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint7">
@@ -455,8 +455,8 @@
 		<axis xyz="0 0 1" />
 		<limit
 				effort="300"
-				lower="-0.7854"
-				upper="0.7854"
+				lower="-2.037"
+				upper="2.037"
 				velocity="${2*M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -465,7 +465,7 @@
 				link="${r_arm_link_05_name}" />
 		<child
 				link="${r_arm_link_06_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint8">
@@ -521,7 +521,7 @@
 				link="${r_arm_link_06_name}" />
 		<child
 				link="${r_arm_link_hand_1}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint9">
@@ -638,7 +638,7 @@
 				link="${waist_link_02_name}" />
 		<child
 				link="${l_arm_link_01_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint10">
@@ -694,7 +694,7 @@
 				link="${l_arm_link_01_name}" />
 		<child
 				link="${l_arm_link_02_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint11">
@@ -750,7 +750,7 @@
 				link="${l_arm_link_02_name}" />
 		<child
 				link="${l_arm_link_03_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint12">
@@ -806,7 +806,7 @@
 				link="${l_arm_link_03_name}" />
 		<child
 				link="${l_arm_link_04_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint13">
@@ -862,7 +862,7 @@
 				link="${l_arm_link_04_name}" />
 		<child
 				link="${l_arm_link_05_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint14">
@@ -908,8 +908,8 @@
 		<axis xyz="0 0 1" />
 		<limit
 				effort="300"
-				lower="-${M_PI}"
-				upper="${M_PI}"
+				lower="-2.037"
+				upper="2.037"
 				velocity="${M_PI}" />
 		<origin
 				rpy="0 0 0"
@@ -918,7 +918,7 @@
 				link="${l_arm_link_05_name}" />
 		<child
 				link="${l_arm_link_06_name}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint15">
@@ -974,7 +974,7 @@
 				link="${l_arm_link_06_name}" />
 		<child
 				link="${l_arm_link_hand_1}" />
-		<dynamics damping="0.01" friction="0.1"/>
+		<dynamics damping="0.01" friction="1"/>
 	</joint>
 	<transmission
 			name="trans_dualarm_joint16">

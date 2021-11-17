@@ -23,6 +23,7 @@ public:
 
 	uint16_t JointMotion(VectorXd &dq, VectorXd &dqdot, VectorXd &dqddot, VectorXd &_Target, const VectorXd &q, const VectorXd &qdot, double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType);
 	uint16_t TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddot, VectorXd _Target, const VectorXd &x, const VectorXd &qdot, double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType );
+    uint16_t TaskMotion2( Cartesiand *_dx, Quaterniond &_q_R, Quaterniond &_q_L, VectorXd &_dxdot, VectorXd &_dxddot, VectorXd _Target, const VectorXd &x, const VectorXd &qdot, double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType );
 
 private:
 
@@ -41,7 +42,7 @@ private:
 	Eigen::VectorXd _x_tmp, _xdot_tmp;
 	Eigen::MatrixXd AJacobian;
 
-	Eigen::Quaterniond r, r1;
+	Eigen::Quaterniond r, r1, q_R, q_L;
 	Eigen::Vector3d rdot, rddot, rdot1, rddot1;
 
 	Eigen::VectorXd start_pos;

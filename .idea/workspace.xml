@@ -13,12 +13,10 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/DualArm/dualarm_description/urdf/dual_arm_ft.xacro" beforeDir="false" afterPath="$PROJECT_DIR$/DualArm/dualarm_description/urdf/dual_arm_ft.xacro" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Motion.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Motion.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Trajectory.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Trajectory.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/slerp.cpp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/slerp.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/motionlibrary.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/motionlibrary.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/TaskDesiredState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/TaskDesiredState.msg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -86,7 +84,11 @@
       <workItem from="1636546853084" duration="1250000" />
       <workItem from="1636609342741" duration="55054000" />
       <workItem from="1636990754469" duration="3140000" />
-      <workItem from="1637037050904" duration="997000" />
+      <workItem from="1637037050904" duration="3399000" />
+      <workItem from="1637066663245" duration="6746000" />
+      <workItem from="1637113473782" duration="2549000" />
+      <workItem from="1637119853528" duration="599000" />
+      <workItem from="1637121779200" duration="17245000" />
     </task>
     <servers />
   </component>
@@ -104,5 +106,16 @@
       </map>
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp</url>
+          <line>61</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

@@ -351,23 +351,12 @@ namespace dualarm_controller
 
             // 6.2 subscriber
             const auto joint_state_cb = utils::makeCallback<dualarm_controller::TaskDesiredState>([&](const auto& msg){
+
                 ControlIndex1 = msg.Index1;
                 ControlIndex2 = msg.Index2;
                 ControlSubIndex = msg.SubIndex;
-
                 JointState = ControlSubIndex;
-//                targetpos(0) = msg.dx[0].orientation.x*DEGtoRAD;
-//                targetpos(1) = msg.dx[0].orientation.y*DEGtoRAD;
-//                targetpos(2) = msg.dx[0].orientation.z*DEGtoRAD;
-//                targetpos(3) = msg.dx[0].position.x;
-//                targetpos(4) = msg.dx[0].position.y;
-//                targetpos(5) = msg.dx[0].position.z;
-                targetpos(6) = msg.dx[1].orientation.x*DEGtoRAD;
-                targetpos(7) = msg.dx[1].orientation.y*DEGtoRAD;
-                targetpos(8) = msg.dx[1].orientation.z*DEGtoRAD;
-//                targetpos(9) = msg.dx[1].position.x;
-//                targetpos(10) = msg.dx[1].position.y;
-//                targetpos(11) = msg.dx[1].position.z;
+
             });
 
 
@@ -387,10 +376,23 @@ namespace dualarm_controller
             q_R.y() = msg->pose.pose.orientation.y;
             q_R.z() = msg->pose.pose.orientation.z;
 
-
             targetpos(3) = msg->pose.pose.position.x;
-            targetpos(4) = msg->pose.pose.position.y;
+            targetpos(4)  = msg->pose.pose.position.y;
             targetpos(5) = msg->pose.pose.position.z;
+//
+            TargetPos_Linear_R(0) = msg->pose.pose.position.x;
+            TargetPos_Linear_R(1) = msg->pose.pose.position.y;
+            TargetPos_Linear_R(2)= msg->pose.pose.position.z;
+
+
+//            dxdot(0)=msg->twist.twist.angular.x;
+//            dxdot(1)=msg->twist.twist.angular.y;
+//            dxdot(2)=msg->twist.twist.angular.z;
+//            dxdot(3)=msg->twist.twist.linear.x;
+//            dxdot(4)=msg->twist.twist.linear.y;
+//            dxdot(5)=msg->twist.twist.linear.z;
+
+
 
         }
 
@@ -401,9 +403,20 @@ namespace dualarm_controller
             q_L.y() = msg->pose.pose.orientation.y;
             q_L.z() = msg->pose.pose.orientation.z;
 
-            targetpos[9] = msg->pose.pose.position.x;
-            targetpos[10] = msg->pose.pose.position.y;
-            targetpos[11] = msg->pose.pose.position.z;
+            targetpos(9)  = msg->pose.pose.position.x;
+            targetpos(10)  = msg->pose.pose.position.y;
+            targetpos(11) = msg->pose.pose.position.z;
+
+            TargetPos_Linear_L(0) = msg->pose.pose.position.x;
+            TargetPos_Linear_L(1) = msg->pose.pose.position.y;
+            TargetPos_Linear_L(2) = msg->pose.pose.position.z;
+
+//            dxdot(6)=msg->twist.twist.angular.x;
+//            dxdot(7)=msg->twist.twist.angular.y;
+//            dxdot(8)=msg->twist.twist.angular.z;
+//            dxdot(9)=msg->twist.twist.linear.x;
+//            dxdot(10)=msg->twist.twist.linear.y;
+//            dxdot(11)=msg->twist.twist.linear.z;
 
         }
 
@@ -541,9 +554,9 @@ namespace dualarm_controller
                     SingleMM[1] = cManipulator->pKin->GetManipulabilityMeasure(AJac.block(6,0,6,16));
                     MM = cManipulator->pKin->GetManipulabilityMeasure();
                 }
-                motion->TaskMotion2(dx,q_R,q_L, dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
+                motion->TaskMotion2(dx,q_R,q_L, TargetPos_Linear_R, TargetPos_Linear_L,dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
                 //Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque,ControlIndex2);
-                Control->TaskImpedanceController2(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, q_R,q_L,ControlIndex2);
+                Control->TaskImpedanceController2(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, q_R,q_L, TargetPos_Linear_R, TargetPos_Linear_L, ControlIndex2);
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
                 cManipulator->pKin->GetWDampedpInvLambda(wpInv_lambda);
             }
@@ -879,6 +892,9 @@ namespace dualarm_controller
         Cartesiand dx[2];
         Eigen::VectorXd dxdot;
         Eigen::VectorXd dxddot;
+        Eigen::Vector3d TargetPos_Linear_R, TargetPos_Linear_L;
+
+
         Eigen::Quaterniond q_R, q_L;
 
         // Input

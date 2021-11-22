@@ -893,89 +893,48 @@ uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddo
 }
 
 
-uint16_t Motion::TaskMotion2( Cartesiand *_dx, Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L,VectorXd &_dxdot, VectorXd &_dxddot,
+uint16_t Motion::TaskMotion2( Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L,
+                              Quaterniond &_vive_dR_R, Quaterniond &_vive_dR_L, Vector3d &_vive_dP_R, Vector3d &_vive_dP_L,
+                              VectorXd &_dtwist, VectorXd &_dxdot, VectorXd &_dxddot,
                               VectorXd _Target, const VectorXd &x, const VectorXd &qdot,
                               double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType )
-
 {
-MotionCommandTask = _MotionType;
-
-pManipulator->pKin->GetAnalyticJacobian(AJacobian);
-xdot.setZero(12);
-
-xdot.noalias() += AJacobian*qdot;
-
-auto A = 0.12;
-auto b1 = 0.64;
-auto b2 = -0.33;
-auto b3 = 0.45;
-auto f = 0.2;
-
-auto l_p1 = 0.58;
-auto l_p2 = 0.33;
-auto l_p3 = 0.42;
-
-if( MotionCommandTask == MOVE_TASK_CUSTOM )
-{
-    if( _StatusWord != MotionCommandTask )
-    {
-
-        int target_size = 6;
-        _x_tmp.setZero(target_size);
-        _xdot_tmp.setZero(target_size);
-
-        _x_tmp.head(3) = x.segment(3,3);
-        _x_tmp.tail(3) = x.segment(9,3);
-
-        _xdot_tmp.head(3) = xdot.segment(3,3);
-        _xdot_tmp.tail(3) = xdot.segment(9,3);
-
-        TaskPoly5th.SetPoly5th(_Time, _x_tmp, _xdot_tmp, TargetPos_Linear, TrajectoryTime, target_size);
-        TaskPoly5th.Poly5th(_Time, _dx_tmp, _dxdot_tmp, _dxddot_tmp);
-
-        NewTarget=0;
+        pManipulator->pKin->GetAnalyticJacobian(AJacobian);
+        xdot.setZero(12);
+        xdot.noalias() += AJacobian*qdot;
 
         _dxdot.setZero(12);
         _dxddot.setZero(12);
+        _dxdot = _dtwist;
 
-        _dx[0].p = TargetPos_Linear.head(3);
-        _dx[1].p = TargetPos_Linear.tail(3);
+        q_R.w() = _vive_dR_R.w();
+        q_R.x() = _vive_dR_R.x();
+        q_R.y() = _vive_dR_R.y();
+        q_R.z() = _vive_dR_R.z();
 
-        _dxdot.segment(3,3) = _dxdot_tmp.head(3);
-        _dxdot.segment(9,3) = _dxdot_tmp.tail(3);
-        _dxddot.segment(3,3) = _dxddot_tmp.head(3);
-        _dxddot.segment(9,3) = _dxddot_tmp.tail(3);
 
-        MotionProcess = MOVE_TASK_CUSTOM;
-    }
-    else
-    {
-        TargetPosTask = _Target;
-        TargetPosTask_p = TargetPosTask;
 
-        TargetPos_Linear.setZero(6);
-        TargetPos_Linear.head(3) = TargetPosTask.segment(3,3);
-        TargetPos_Linear.tail(3) = TargetPosTask.segment(9,3);
+        q_L.w() = _vive_dR_L.w();
+        q_L.x() = _vive_dR_L.x();
+        q_L.y() = _vive_dR_L.y();
+        q_L.z() = _vive_dR_L.z();
 
-        TrajectoryTime=5.0;
-        NewTarget=1;
-        _StatusWord = 0;
+        TargetPos_Linear_R(0) = _vive_dP_R(0);
+        TargetPos_Linear_R(1) = _vive_dP_R(1);
+        TargetPos_Linear_R(2) = _vive_dP_R(2);
+        TargetPos_Linear_L(0) = _vive_dP_L(0);
+        TargetPos_Linear_L(1) = _vive_dP_L(1);
+        TargetPos_Linear_L(2) = _vive_dP_L(2);
 
-        _dx[0].r = AngleAxisd(x(2),Vector3d::UnitZ())
-                   *AngleAxisd(x(1),Vector3d::UnitY())
-                   *AngleAxisd(x(0),Vector3d::UnitX());
-        _dx[0].p = x.segment(3,3);
-        _dx[1].r = AngleAxisd(x(8),Vector3d::UnitZ())
-                   *AngleAxisd(x(7),Vector3d::UnitY())
-                   *AngleAxisd(x(6),Vector3d::UnitX());
-        _dx[1].p = x.segment(9,3);
-        _dxdot.setZero();
-        _dxddot.setZero();
-    }
+        _q_R=q_R;
+        _q_L=q_L;
+        _TargetPos_Linear_R=TargetPos_Linear_R;
+        _TargetPos_Linear_L=TargetPos_Linear_L;
+
+
+        MotionCommandTask_p = MotionCommandTask;
+        return MotionProcess;
 }
 
-MotionCommandTask_p = MotionCommandTask;
-return MotionProcess;
-}
+}/* namespace hyuCtrl */
 
-} /* namespace hyuCtrl */

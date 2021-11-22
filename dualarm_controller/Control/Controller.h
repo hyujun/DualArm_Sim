@@ -88,8 +88,8 @@ public:
     void InertiaShaping( const VectorXd &_Mass, MatrixXd &_M_Shaped_inv );
 	void TaskImpedanceController( const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq, const int mode );
     void TaskImpedanceController2(const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx,
-                                               const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor,
-                                               VectorXd &_Toq, Quaterniond &_q_R,Quaterniond &_q_L,Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L,const int mode);
+                                               const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq,
+                                               Quaterniond &_q_R,Quaterniond &_q_L,Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L, VectorXd &_fritcionToq, const int mode);
 	void FrictionIdentification( const VectorXd &_q, const VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, const double &gt );
 	void FrictionCompensator( const VectorXd &_qdot, const VectorXd &_dqdot );
 	/**

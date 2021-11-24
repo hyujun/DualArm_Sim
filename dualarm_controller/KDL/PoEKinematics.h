@@ -106,6 +106,8 @@ namespace HYUMotionKinematics {
             _AnalyticJacobian = mAnalyticJacobian;
         }
 
+
+
         void GetAnalyticJacobianDot(const VectorXd &_qdot, MatrixXd &_AnalyticJacobianDot);
 
         void GetpinvJacobian( MatrixXd &_pinvJacobian );
@@ -194,6 +196,9 @@ namespace HYUMotionKinematics {
 
         void AnalyticJacobian();
 
+        void AnalyticJacobian2();
+
+
         void AnalyticJacobianDot( const VectorXd &_qdot );
 
         void ScaledTransJacobian();
@@ -231,6 +236,8 @@ namespace HYUMotionKinematics {
         MatrixXd mBodyJacobian;
         MatrixXd mBodyJacobianDot;
         MatrixXd mAnalyticJacobian;
+        MatrixXd mAnalyticJacobian2;
+
         MatrixXd mAnalyticJacobianDot;
         VectorXd ScaledFactor;
         MatrixXd mScaledTransJacobian;

@@ -64,7 +64,9 @@ public:
 	void SetImpedanceGain( const VectorXd &_Kp_Imp, const VectorXd &_Kd_Imp, const VectorXd &_Kp_Imp_Null, const VectorXd &_Kd_Imp_Null, const VectorXd &_des_m );
     void FrictionCompensator2( const VectorXd &_dqdot);
     void GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask);
-	/**
+    void GetControllerStates2(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask);
+
+    /**
 	 * @brief simple pd controller
 	 * @param[in] q current joint position
 	 * @param[in] q_dot current joint velocity
@@ -81,15 +83,20 @@ public:
 
 	void TaskError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );
     void TaskError2( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot ,Quaterniond _q_R,Quaterniond _q_L, Vector3d _TargetPos_Linear_R, Vector3d _TargetPos_Linear_L);
-	void TaskRelativeError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );
+    void TaskError3( const VectorXd &_dxdot2, const VectorXd &_qdot2, VectorXd &_error_x2, VectorXd &_error_xdot2 , Vector3d _TargetPos_Linear_R2, Vector3d _TargetPos_Linear_L2);
+
+    void TaskRelativeError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot );
 
 	void CLIKTaskController( const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_sensor, VectorXd &_Toq, const double &_dt, const int mode );
 
     void InertiaShaping( const VectorXd &_Mass, MatrixXd &_M_Shaped_inv );
 	void TaskImpedanceController( const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq, const int mode );
     void TaskImpedanceController2(const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx,
-                                               const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq,
-                                               Quaterniond &_q_R,Quaterniond &_q_L,Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L, VectorXd &_fritcionToq, const int mode);
+                                  const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq,
+                                  Quaterniond &_q_R,Quaterniond &_q_L,Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L, VectorXd &_fritcionToq, const int mode);
+    void TaskImpedanceController3(const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx,
+                                  const VectorXd &_dxdot,const VectorXd &_dxdot2, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq,
+                                               Quaterniond &_q_R,Quaterniond &_q_L,Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L,Vector3d &_Targetpos_Linear_R2, Vector3d &_Targetpos_Linear_L2, const int mode);
 	void FrictionIdentification( const VectorXd &_q, const VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, const double &gt );
 	void FrictionCompensator( const VectorXd &_qdot, const VectorXd &_dqdot );
 	/**
@@ -106,7 +113,7 @@ private:
 	Eigen::VectorXd Ki, KiTask;
 	Eigen::VectorXd K_Hinf, K_HinfTask;
 
-	Eigen::VectorXd KpImp, KdImp, KpImpNull, KdImpNull;
+	Eigen::VectorXd KpImp, KdImp, KpImpNull, KdImpNull, Kp_elbow, Kd_elbow;
 	Eigen::VectorXd mass_shaped;
 
 	Eigen::VectorXd dq, dqdot, dqddot;
@@ -120,7 +127,7 @@ private:
 
 	double alpha;
 
-	Eigen::VectorXd eTask, edotTask;
+	Eigen::VectorXd eTask, edotTask, eTask2, edotTask2;
 	Eigen::MatrixXd edotTmp;
 
 	Eigen::VectorXd GainWeightFactor;
@@ -131,7 +138,9 @@ private:
 	Eigen::MatrixXd WdampedpInvJacobian;
 	Eigen::MatrixXd DampedpInvJacobian;
 	Eigen::MatrixXd AnalyticJacobian;
-	Eigen::MatrixXd AnalyticJacobianDot;
+    Eigen::MatrixXd AnalyticJacobian2;
+
+    Eigen::MatrixXd AnalyticJacobianDot;
 	Eigen::MatrixXd RelativeJacobian;
 	Eigen::MatrixXd RelativeJacobianDot;
     VectorXd q0dot;

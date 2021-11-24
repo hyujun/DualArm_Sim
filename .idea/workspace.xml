@@ -15,6 +15,11 @@
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Motion.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Motion.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/PoEKinematics.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/PoEKinematics.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/SerialManipulator.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/SerialManipulator.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/SerialManipulator.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/SerialManipulator.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/TaskCurrentState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/TaskCurrentState.msg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/TaskDesiredState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/TaskDesiredState.msg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -27,6 +32,14 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
   </component>
   <component name="ProjectId" id="1xkOO0DLuqH8dbFbLZ3VMFKJIvC" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -91,7 +104,7 @@
       <workItem from="1637297010443" duration="1229000" />
       <workItem from="1637298355942" duration="17953000" />
       <workItem from="1637335202084" duration="18557000" />
-      <workItem from="1637547743024" duration="18173000" />
+      <workItem from="1637547743024" duration="80654000" />
     </task>
     <servers />
   </component>
@@ -120,28 +133,28 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp</url>
-          <line>530</line>
+          <line>613</line>
           <option name="timeStamp" value="4" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp</url>
-          <line>511</line>
+          <line>594</line>
           <option name="timeStamp" value="5" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp</url>
-          <line>346</line>
-          <option name="timeStamp" value="7" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp</url>
-          <line>680</line>
+          <line>750</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp</url>
-          <line>236</line>
+          <line>260</line>
           <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp</url>
+          <line>561</line>
+          <option name="timeStamp" value="10" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

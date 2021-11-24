@@ -893,44 +893,69 @@ uint16_t Motion::TaskMotion( Cartesiand *_dx, VectorXd &_dxdot, VectorXd &_dxddo
 }
 
 
-uint16_t Motion::TaskMotion2( Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L,
-                              Quaterniond &_vive_dR_R, Quaterniond &_vive_dR_L, Vector3d &_vive_dP_R, Vector3d &_vive_dP_L,
-                              VectorXd &_dtwist, VectorXd &_dxdot, VectorXd &_dxddot,
+uint16_t Motion::TaskMotion2( Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L, Vector3d &_TargetPos_Linear_R2, Vector3d &_TargetPos_Linear_L2,
+                              Quaterniond &_vive_dR_R, Quaterniond &_vive_dR_L, Vector3d &_vive_dP_R, Vector3d &_vive_dP_L, Vector3d &_vive_dP_R2, Vector3d &_vive_dP_L2,
+                              VectorXd &_dtwist, VectorXd &_dtwist2, VectorXd &_dxdot,VectorXd &_dxdot2, VectorXd &_dxddot,
                               VectorXd _Target, const VectorXd &x, const VectorXd &qdot,
                               double &_Time, unsigned char &_StatusWord, unsigned char &_MotionType )
 {
-        pManipulator->pKin->GetAnalyticJacobian(AJacobian);
-        xdot.setZero(12);
-        xdot.noalias() += AJacobian*qdot;
+//        pManipulator->pKin->GetAnalyticJacobian(AJacobian);
+//        pManipulator->pKin2->GetAnalyticJacobian(AJacobian2);
+//
+//        xdot.setZero(12);
+//        xdot.noalias() += AJacobian*qdot;
+//
+//        xdot2.setZero(12);
+//        xdot2.noalias() += AJacobian2*qdot;
 
         _dxdot.setZero(12);
+        _dxdot2.setZero(12);
         _dxddot.setZero(12);
-        _dxdot = _dtwist;
+        TargetPos_Linear_R2.setZero(3);
+        TargetPos_Linear_L2.setZero(3);
+
+
+    _dxdot = _dtwist;
+        _dxdot2 = _dtwist2;
+//        std::cout<<_dtwist2<<std::endl;
+
 
         q_R.w() = _vive_dR_R.w();
         q_R.x() = _vive_dR_R.x();
         q_R.y() = _vive_dR_R.y();
         q_R.z() = _vive_dR_R.z();
 
-
-
         q_L.w() = _vive_dR_L.w();
         q_L.x() = _vive_dR_L.x();
         q_L.y() = _vive_dR_L.y();
         q_L.z() = _vive_dR_L.z();
 
-        TargetPos_Linear_R(0) = _vive_dP_R(0);
-        TargetPos_Linear_R(1) = _vive_dP_R(1);
-        TargetPos_Linear_R(2) = _vive_dP_R(2);
-        TargetPos_Linear_L(0) = _vive_dP_L(0);
-        TargetPos_Linear_L(1) = _vive_dP_L(1);
-        TargetPos_Linear_L(2) = _vive_dP_L(2);
+        for (int i = 0; i < 3; i++)
+        {
+            TargetPos_Linear_R(i) = _vive_dP_R(i);
+            TargetPos_Linear_L(i) = _vive_dP_L(i);
+            TargetPos_Linear_R2(i) = _vive_dP_R2(i);
+            TargetPos_Linear_L2(i) = _vive_dP_L2(i);
+
+        }
+//
+//
+//            TargetPos_Linear_R2(1) = _vive_dP_R2(1);
+//            TargetPos_Linear_L2(1) = _vive_dP_L2(1);
+//            TargetPos_Linear_R2(2) = _vive_dP_R2(2);
+//            TargetPos_Linear_L2(2) = _vive_dP_L2(2);
+
+
 
         _q_R=q_R;
         _q_L=q_L;
         _TargetPos_Linear_R=TargetPos_Linear_R;
         _TargetPos_Linear_L=TargetPos_Linear_L;
 
+        _TargetPos_Linear_R2=TargetPos_Linear_R2;
+        _TargetPos_Linear_L2=TargetPos_Linear_L2;
+
+//    std::cout<<_TargetPos_Linear_R2<<std::endl;
 
         MotionCommandTask_p = MotionCommandTask;
         return MotionProcess;

@@ -285,7 +285,13 @@ namespace dualarm_controller
             ex_dot_.setZero(12);
 
             dtwist.setZero(12);
+            dtwist2.setZero(12);
+            ex2_.setZero(12);
+            ex2_dot_.setZero(12);
+
             dxdot.setZero(12);
+            dxdot2.setZero(12);
+
             dxddot.setZero(12);
             xdot_logging.setZero(12);
 
@@ -306,6 +312,8 @@ namespace dualarm_controller
             des_m.setZero(2);
             targetpos.setZero(12);
             xa.setZero(12);
+            xa2.setZero(12);
+
 
             wpInv_lambda[0].setZero(3);
             wpInv_lambda[1].setZero(3);
@@ -366,6 +374,8 @@ namespace dualarm_controller
             sub_ft_sensor_L = n.subscribe<geometry_msgs::WrenchStamped>("/ft_sensor_topic_L", 5, &Impedance_Control::UpdateFTsensorL, this);
             vive_pose_sub_R  = n.subscribe<nav_msgs::Odometry>( "/LHR_18744CF1_odom", 5, &Impedance_Control::Update_vive_pose_R, this);
             vive_pose_sub_L  = n.subscribe<nav_msgs::Odometry>( "/LHR_FC007723_odom", 5, &Impedance_Control::Update_vive_pose_L, this);
+            vive_pose_sub_R2  = n.subscribe<nav_msgs::Odometry>( "/LHR_539B1118_odom", 5, &Impedance_Control::Update_vive_pose_R2, this);
+            vive_pose_sub_L2  = n.subscribe<nav_msgs::Odometry>( "/LHR_078BFD2F_odom", 5, &Impedance_Control::Update_vive_pose_L2, this);
 
             return true;
         }
@@ -410,6 +420,36 @@ namespace dualarm_controller
             dtwist(10)=msg->twist.twist.linear.y;
             dtwist(11)=msg->twist.twist.linear.z;
 
+
+        }
+
+
+        void Update_vive_pose_R2(const nav_msgs::Odometry::ConstPtr &msg)
+        {
+
+            vive_dP_R2(0)=msg->pose.pose.position.x;
+            vive_dP_R2(1)=msg->pose.pose.position.y;
+            vive_dP_R2(2)=msg->pose.pose.position.z;
+
+
+            dtwist2(3)=msg->twist.twist.linear.x;
+            dtwist2(4)=msg->twist.twist.linear.y;
+            dtwist2(5)=msg->twist.twist.linear.z;
+
+        }
+
+        void Update_vive_pose_L2(const nav_msgs::Odometry::ConstPtr &msg)
+        {
+
+
+            vive_dP_L2(0)=msg->pose.pose.position.x;
+            vive_dP_L2(1)=msg->pose.pose.position.y;
+            vive_dP_L2(2)=msg->pose.pose.position.z;
+
+
+            dtwist2(9)=msg->twist.twist.linear.x;
+            dtwist2(10)=msg->twist.twist.linear.y;
+            dtwist2(11)=msg->twist.twist.linear.z;
 
         }
 
@@ -499,11 +539,19 @@ namespace dualarm_controller
             //----------------------
             cManipulator->pKin->PrepareJacobian(q_.data);
             cManipulator->pDyn->PrepareDynamics(q_.data, qdot_.data);
-
             cManipulator->pKin->GetForwardKinematics(ForwardPos, ForwardOri, NumChain);
             cManipulator->pKin->GetAngleAxis(ForwardAxis, ForwardAngle, NumChain);
             cManipulator->pKin->GetInverseConditionNumber(InverseConditionNumber);
             cManipulator->pKin->GetAnalyticJacobian(AJac);
+
+
+
+
+
+
+
+
+
 
             xdot_logging = AJac*qdot_.data;
 
@@ -548,14 +596,25 @@ namespace dualarm_controller
                 else
                 {
                     cManipulator->pKin->GetForwardKinematics(xa);
+                    cManipulator->pKin2->GetForwardKinematics(xa2);
+
                     SingleMM[0] = cManipulator->pKin->GetManipulabilityMeasure(AJac.block(0,0,6,16));
                     SingleMM[1] = cManipulator->pKin->GetManipulabilityMeasure(AJac.block(6,0,6,16));
                     MM = cManipulator->pKin->GetManipulabilityMeasure();
                 }
-                motion->TaskMotion2(q_R,q_L, TargetPos_Linear_R, TargetPos_Linear_L,vive_dR_R, vive_dR_L,vive_dP_R,vive_dP_L,dtwist, dxdot, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
+                motion->TaskMotion2(q_R,q_L, TargetPos_Linear_R, TargetPos_Linear_L, TargetPos_Linear_R2, TargetPos_Linear_L2,
+                                    vive_dR_R, vive_dR_L,vive_dP_R,vive_dP_L, vive_dP_R2,vive_dP_L2,
+                                    dtwist, dtwist2, dxdot,dxdot2, dxddot, targetpos, xa, qdot_.data, t, JointState, ControlSubIndex);
+//                std::cout<<TargetPos_Linear_R2<<std::endl;
+
                 //Control->TaskImpedanceController(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque,ControlIndex2);
-                Control->TaskImpedanceController2(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, q_R,q_L, TargetPos_Linear_R, TargetPos_Linear_L, frictiontorque,ControlIndex2);
+//                Control->TaskImpedanceController2(q_.data, qdot_.data, dx, dxdot, dxddot, ft_sensor, torque, q_R,q_L, TargetPos_Linear_R, TargetPos_Linear_L, frictiontorque,ControlIndex2);
+
+                Control->TaskImpedanceController3(q_.data, qdot_.data, dx, dxdot,dxdot2, dxddot, ft_sensor, torque, q_R,q_L, TargetPos_Linear_R, TargetPos_Linear_L, TargetPos_Linear_R2,TargetPos_Linear_L2,ControlIndex2);
+
                 Control->GetControllerStates(qd_.data, qd_dot_.data, ex_);
+                Control->GetControllerStates2(qd_.data, qd_dot_.data, ex2_);
+
                 cManipulator->pKin->GetWDampedpInvLambda(wpInv_lambda);
             }
             else if( ControlIndex1 == CTRLMODE_IDY_JOINT )
@@ -649,14 +708,22 @@ namespace dualarm_controller
                             state_pub_->msg_.dx[j].orientation.z = RTmp_R(0);
                             state_pub_->msg_.dx[j].position.x = TargetPos_Linear_R(0);
                             state_pub_->msg_.dx[j].position.y = TargetPos_Linear_R(1);
-                            state_pub_->msg_.dx[j].position.z = TargetPos_Linear_R(2);}
+                            state_pub_->msg_.dx[j].position.z = TargetPos_Linear_R(2);
+//                            state_pub_->msg_.dx2[j].position.x = TargetPos_Linear_R2(0);
+//                            state_pub_->msg_.dx2[j].position.y = TargetPos_Linear_R2(1);
+//                            state_pub_->msg_.dx2[j].position.z = TargetPos_Linear_R2(2);
+                            }
                         else{
                             state_pub_->msg_.dx[j].orientation.x = RTmp_L(2);
                             state_pub_->msg_.dx[j].orientation.y = RTmp_L(1);
                             state_pub_->msg_.dx[j].orientation.z = RTmp_L(0);
                             state_pub_->msg_.dx[j].position.x = TargetPos_Linear_L(0);
                             state_pub_->msg_.dx[j].position.y = TargetPos_Linear_L(1);
-                            state_pub_->msg_.dx[j].position.z = TargetPos_Linear_L(2);}
+                            state_pub_->msg_.dx[j].position.z = TargetPos_Linear_L(2);
+//                            state_pub_->msg_.dx2[j].position.x = TargetPos_Linear_R2(0);
+//                            state_pub_->msg_.dx2[j].position.y = TargetPos_Linear_R2(1);
+//                            state_pub_->msg_.dx2[j].position.z = TargetPos_Linear_R2(2);
+                            }
 
                         state_pub_->msg_.x[j].orientation.x = xa(6*j);
                         state_pub_->msg_.x[j].orientation.y = xa(6*j+1);
@@ -664,6 +731,9 @@ namespace dualarm_controller
                         state_pub_->msg_.x[j].position.x = xa(6*j+3);
                         state_pub_->msg_.x[j].position.y = xa(6*j+4);
                         state_pub_->msg_.x[j].position.z = xa(6*j+5);
+
+
+
 
                         state_pub_->msg_.ex[j].orientation.x = ex_(6*j);
                         state_pub_->msg_.ex[j].orientation.y = ex_(6*j+1);
@@ -737,6 +807,7 @@ namespace dualarm_controller
                            ForwardOri[j](0), ForwardOri[j](1), ForwardOri[j](2));
                     double a, b, g;
                     x_[j].M.GetEulerZYX(a, b, g);
+
                     printf("no.%d, DH: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
                            j, x_[j].p(0), x_[j].p(1),x_[j].p(2), g, b, a);
                     printf("no.%d, AngleAxis x: %0.2lf, y: %0.2lf, z: %0.2lf, Angle: %0.3lf\n\n",
@@ -749,6 +820,16 @@ namespace dualarm_controller
                        TargetPos_Linear_R(0), TargetPos_Linear_R(1), TargetPos_Linear_R(2), RTmp_R(2), RTmp_R(1), RTmp_R(0));
                 printf("Left Desired: x:%0.3lf, y:%0.3lf, z:%0.3lf, u:%0.2lf, v:%0.2lf, w:%0.2lf\n",
                        TargetPos_Linear_L(0), TargetPos_Linear_L(1), TargetPos_Linear_L(2), RTmp_L(2), RTmp_L(1), RTmp_L(0));
+
+                printf("Right Desired: x:%0.3lf, y:%0.3lf, z:%0.3lf, Left Desired: x:%0.2lf, y:%0.2lf, z:%0.2lf\n",
+                       TargetPos_Linear_R2(0), TargetPos_Linear_R2(1), TargetPos_Linear_R2(2), TargetPos_Linear_L2(0), TargetPos_Linear_L2(1), TargetPos_Linear_L2(2));
+                printf("elbow_act: x:%0.3lf, y:%0.3lf, z:%0.3lf\n",
+                       xa2(3),xa2(4),xa2(5));
+                printf("elbow_val: x:%0.3lf, y:%0.3lf, z:%0.3lf\n",
+                       dtwist2(3),dtwist2(4),dtwist2(5));
+
+
+
                 printf("Right e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n",
                        ex_(0)*RADtoDEG, ex_(1)*RADtoDEG, ex_(2)*RADtoDEG, ex_(3), ex_(4), ex_(5));
                 printf("Left e(u):%0.3lf, e(v):%0.3lf, e(w):%0.3lf, e(x):%0.3lf, e(y):%0.3lf, e(z):%0.3lf\n\n",
@@ -854,6 +935,7 @@ namespace dualarm_controller
         VectorXd C;
 
         Vector3d ForwardPos[2];
+        Vector3d ForwardPos2[2];
         Vector3d ForwardOri[2];
         int NumChain=2;
         Vector3d ForwardAxis[2];
@@ -882,7 +964,7 @@ namespace dualarm_controller
         KDL::JntArray frictiontorque_;
         VectorXd frictiontorque;
 
-        Eigen::VectorXd xa;
+        Eigen::VectorXd xa, xa2;
         Eigen::VectorXd xdot_logging;
         Eigen::VectorXd q0dot;
         Eigen::VectorXd torque;
@@ -898,14 +980,14 @@ namespace dualarm_controller
         KDL::Twist ex_temp_;
 
         // KDL::Twist xd_dot_, xd_ddot_;
-        Eigen::VectorXd ex_;
-        Eigen::VectorXd ex_dot_;
         Cartesiand dx[2];
-        Eigen::VectorXd dxdot;
+        Eigen::VectorXd ex_, ex2_;
+        Eigen::VectorXd ex_dot_,ex2_dot_;
+        Eigen::VectorXd dxdot, dxdot2;
         Eigen::VectorXd dxddot;
-        Eigen::VectorXd dtwist;
+        Eigen::VectorXd dtwist, dtwist2;
 
-        Eigen::Vector3d TargetPos_Linear_R, TargetPos_Linear_L, vive_dP_R, vive_dP_L;
+        Eigen::Vector3d TargetPos_Linear_R, TargetPos_Linear_L, vive_dP_R, vive_dP_L,TargetPos_Linear_R2, TargetPos_Linear_L2, vive_dP_R2, vive_dP_L2;
 
 
         Eigen::Quaterniond q_R, q_L, vive_dR_R, vive_dR_L;
@@ -927,8 +1009,8 @@ namespace dualarm_controller
         // subscriber
         ros::Subscriber sub_x_cmd_;
         ros::Subscriber sub_ft_sensor_R, sub_ft_sensor_L;
-        ros::Subscriber vive_pose_sub_R;
-        ros::Subscriber vive_pose_sub_L;
+        ros::Subscriber vive_pose_sub_R, vive_pose_sub_L;
+        ros::Subscriber vive_pose_sub_R2, vive_pose_sub_L2;
 
 
         std::shared_ptr<SerialManipulator> cManipulator;

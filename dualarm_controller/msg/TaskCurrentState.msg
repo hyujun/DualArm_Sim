@@ -9,6 +9,8 @@ float64 Kp_T
 float64 Kp_R
 geometry_msgs/Pose[] x
 geometry_msgs/Pose[] dx
+geometry_msgs/Pose[] dx2
+
 float64[] InverseConditionNum
 float64 MM
 float64 DAMM

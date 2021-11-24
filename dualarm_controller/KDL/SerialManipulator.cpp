@@ -11,7 +11,19 @@ SerialManipulator::SerialManipulator()
 
 	pKin = std::make_unique<HYUMotionKinematics::PoEKinematics>(mChainMat);
 	pDyn = std::make_unique<HYUMotionDynamics::Liedynamics>(mChainMat);
+
+
+
+    mChainMat2.resize(2,16);
+    mChainMat2 << 1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,
+                  1,1,0,0,0,0,0,0,0,1,1,1,1,1,0,0;
+
+    this->mDoF_Total2 = mChainMat2.cols();
+    this->mChain_Total2 = mChainMat2.rows();
+
+    pKin2 = std::make_unique<HYUMotionKinematics::PoEKinematics>(mChainMat2);
 }
+
 
 SerialManipulator::~SerialManipulator()
 {

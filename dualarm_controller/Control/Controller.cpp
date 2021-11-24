@@ -35,10 +35,13 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 	KdTask.resize(6*this->pManipulator->GetTotalChain());
 	KiTask.resize(6*this->pManipulator->GetTotalChain());
 
-	KpImp.setZero(6*this->pManipulator->GetTotalChain());
-	KdImp.setZero(6*this->pManipulator->GetTotalChain());
+
+    KpImp.setZero(6*this->pManipulator->GetTotalChain());
+    KdImp.setZero(6*this->pManipulator->GetTotalChain());
+    Kp_elbow.setZero(6*this->pManipulator->GetTotalChain());
+    Kd_elbow.setZero(6*this->pManipulator->GetTotalChain());
 	KpImpNull.setZero(m_Jnum);
-	KdImpNull.setZero(m_Jnum);-
+	KdImpNull.setZero(m_Jnum);
 
 	e.setZero(m_Jnum);
 	e_dev.setZero(m_Jnum);
@@ -46,7 +49,9 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
 	e_int_sat.setZero(m_Jnum);
 
     eTask.setZero(6*this->pManipulator->GetTotalChain());
-	edotTask.setZero(6*this->pManipulator->GetTotalChain());
+    eTask2.setZero(6*this->pManipulator->GetTotalChain());
+    edotTask.setZero(6*this->pManipulator->GetTotalChain2());
+    edotTask2.setZero(6*this->pManipulator->GetTotalChain2());
 
 	edotTmp.setZero(6*this->pManipulator->GetTotalChain(), 6*this->pManipulator->GetTotalChain());
 
@@ -65,6 +70,13 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
     KdImp.setConstant(12,0.2);
     KpImpNull.setConstant(16, 0.01);
     KdImpNull.setConstant(16,0.1);
+    Kp_elbow.setConstant(12,100);
+    Kp_elbow(4)=200;
+    Kp_elbow(10)=200;
+
+    Kd_elbow.setConstant(12,10);
+
+
 
 #else
     GainWeightFactor.setZero(m_Jnum);
@@ -83,6 +95,12 @@ Controller::Controller(std::shared_ptr<SerialManipulator> Manipulator)
     KdImp.setConstant(12,10.0);
     KpImpNull.setConstant(16,0.01);
     KdImpNull.setConstant(16,0.1);
+
+    Kp_elbow.setConstant(12,100);
+    Kp_elbow(4)=200;
+    Kp_elbow(10)=200;
+    Kd_elbow.setConstant(12,10);
+
 
 #endif
 }
@@ -160,6 +178,12 @@ void Controller::GetControllerStates(VectorXd &_dq, VectorXd &_dqdot, VectorXd &
     _dq = dq;
     _dqdot = dqdot;
     _ErrTask = eTask;
+}
+void Controller::GetControllerStates2(VectorXd &_dq, VectorXd &_dqdot, VectorXd &_ErrTask)
+{
+    _dq = dq;
+    _dqdot = dqdot;
+    _ErrTask = eTask2;
 }
 
 void Controller::PDController( const VectorXd &_q, const VectorXd &_qdot, const VectorXd &_dq, const VectorXd &_dqdot, VectorXd &_Toq)
@@ -437,6 +461,65 @@ void Controller::TaskError2( Cartesiand *_dx, const VectorXd &_dxdot, const Vect
         _error_xdot = _dxdot;
         _error_xdot.noalias() += -AnalyticJac*_qdot;
     }
+
+void Controller::TaskError3( const VectorXd &_dxdot2, const VectorXd &_qdot, VectorXd &_error_x2, VectorXd &_error_xdot2 , Vector3d _TargetPos_Linear_R2, Vector3d _TargetPos_Linear_L2)
+    {
+        _error_x2.setZero(6*2);
+        _error_xdot2.setZero(6*2);
+
+        int EndJoint[2] = {5, 12};
+        SE3 aSE3;
+        SO3 dSO3;
+        Vector3d eOrient;
+        double theta;
+
+
+        MatrixXd AnalyticJac2;
+        MatrixXd ZERO(6,2);
+        ZERO<< 0,0,0,0,0,0,0,0,0,0,0,0;
+        pManipulator->pKin->GetAnalyticJacobian(AnalyticJac2);
+        AnalyticJac2.block(0,7,6,2) = ZERO;
+        AnalyticJac2.block(6,14,6,2)= ZERO;
+
+
+
+
+
+        for(int i=0; i<2; i++)
+        {
+            aSE3 = pManipulator->pKin->GetForwardKinematicsSE3(EndJoint[i]);
+//            std::cout << aSE3 << std::endl;
+
+            if(i ==0)
+            {
+                _error_x2.segment(6 * i + 3, 3) = _TargetPos_Linear_R2 - aSE3.block(0, 3, 3, 1);
+
+
+            }
+            else
+            {
+                _error_x2.segment(6 * i + 3, 3) = _TargetPos_Linear_L2 - aSE3.block(0, 3, 3, 1);
+
+            }
+
+        }
+//    std::cout << _error_x2 << std::endl;
+
+
+
+
+
+//        std::cout << AnalyticJac2 << std::endl;
+//          std::cout << aSE3 << std::endl;
+
+        _error_xdot2 = _dxdot2;
+        _error_xdot2.noalias() += -AnalyticJac2*_qdot;
+//        std::cout << _error_xdot2 << std::endl;
+
+//        std::cout << AnalyticJac2*_qdot << std::endl;
+
+}
+
 void Controller::TaskRelativeError( Cartesiand *_dx, const VectorXd &_dxdot, const VectorXd &_qdot, VectorXd &_error_x, VectorXd &_error_xdot )
 {
     _error_x.setZero(6*2);
@@ -800,17 +883,140 @@ void Controller:: TaskImpedanceController(const VectorXd &_q, const VectorXd &_q
     }
 }
 
-
 void Controller:: TaskImpedanceController2(const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx,
-                                          const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq,
-                                          Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_Targetpos_Linear_R, Vector3d &_Targetpos_Linear_L, VectorXd &_frictionToq,
+                                               const VectorXd &_dxdot, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq,
+                                               Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_Targetpos_Linear_R, Vector3d &_Targetpos_Linear_L, VectorXd &_frictionToq,
+                                               const int mode)
+    {
+        MatrixXd pInvMat;
+        pManipulator->pDyn->MG_Mat_Joint(M, G);
+        pManipulator->pKin->GetAnalyticJacobian(AnalyticJacobian);
+//        pManipulator->pKin->GetAnalyticJacobian2(AnalyticJacobian2);
+        pManipulator->pKin->GetAnalyticJacobianDot(_qdot, AnalyticJacobianDot);
+
+        dqN.setZero(16);
+        dqdotN.setZero(16);
+
+        alpha = 7.5;
+
+        if(mode == 1) // Mx = Mx_desired
+        {
+            VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
+            VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
+            VectorXd u04 = VectorXd::Zero(AnalyticJacobian.cols());
+            VectorXd u05 = VectorXd::Zero(AnalyticJacobian2.rows());
+
+
+            u01 = _dxddot;
+            u01.noalias() += -AnalyticJacobianDot*_qdot;
+
+            TaskError2(_dx, _dxdot, _qdot, eTask, edotTask,_q_R,_q_L,_Targetpos_Linear_R,_Targetpos_Linear_L);
+
+            u02.noalias() += KdImp.cwiseProduct(edotTask);
+            u02.noalias() += KpImp.cwiseProduct(eTask);
+
+            pManipulator->pKin->Getq0dotWithMM(alpha, dqdotN);
+            u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
+
+            MatrixXd weight;
+            //weight.setIdentity(16,16);
+            weight = M;
+
+            VectorXd dx_tmp(12);
+            Quaterniond q_tmp;
+
+            q_tmp = _q_R;
+            dx_tmp.segment(0,3) = q_tmp.vec();
+            dx_tmp.segment(3,3) = _Targetpos_Linear_R;
+
+            q_tmp = _q_L;
+            dx_tmp.segment(6,3) = q_tmp.vec();
+            dx_tmp.segment(9,3) = _Targetpos_Linear_L;
+
+            pManipulator->pKin->GetWeightDampedpInvJacobian(dx_tmp, weight, AnalyticJacobian, pInvMat);
+
+            Matrix_temp = Eigen::MatrixXd::Identity(16,16);
+            Matrix_temp += -pInvMat*AnalyticJacobian;
+
+            _Toq = G;
+            _Toq.noalias() += M*(pInvMat*u01);
+            _Toq.noalias() += AnalyticJacobian.transpose()*u02;
+//        _Toq.noalias() += Matrix_temp*u04;
+            VectorXd jobDesired=VectorXd::Zero(16);
+            MatrixXd Kp_job=Eigen::MatrixXd::Identity(16,16);;
+            for(int i=0;i<16;i++)
+                Kp_job(i,i) = 10.0;
+            jobDesired(1) = -20.0*DEGtoRAD;
+            jobDesired(3) = -45.0*DEGtoRAD;
+            jobDesired(3+7) = -jobDesired(3);
+            jobDesired(6) = -90.00*DEGtoRAD;
+            jobDesired(6+7) = -jobDesired(6);
+
+            _Toq.noalias() += Kp_job*(jobDesired-_q);
+//        FrictionCompensator2(_qdot);
+
+            _frictionToq = FrictionTorque;
+            _Toq.noalias() += Matrix_temp*u04;
+//        _Toq.noalias() += FrictionTorque;
+
+        }
+
+        else
+        {
+            pManipulator->pKin->GetDampedpInvJacobian(pInvMat);
+
+            Matrix_temp = Eigen::MatrixXd::Identity(16,16);
+            Matrix_temp += -pInvMat*AnalyticJacobian;
+
+            VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
+            VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
+
+
+            u01 = _dxddot;
+            u01.noalias() += -AnalyticJacobianDot*_qdot;
+
+            TaskError(_dx, _dxdot, _qdot, eTask, edotTask);
+            u02.noalias() += KdImp.cwiseProduct(edotTask);
+            u02.noalias() += KpImp.cwiseProduct(eTask);
+
+            _Toq = G;
+            _Toq.noalias() += M*(pInvMat*u01);
+            _Toq.noalias() += AnalyticJacobian.transpose()*u02;
+        }
+    }
+void Controller:: TaskImpedanceController3(const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx,
+                                          const VectorXd &_dxdot,  const VectorXd &_dxdot2,const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq,
+                                          Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_Targetpos_Linear_R, Vector3d &_Targetpos_Linear_L, Vector3d &_Targetpos_Linear_R2, Vector3d &_Targetpos_Linear_L2,
                                           const int mode)
 {
     MatrixXd pInvMat;
     pManipulator->pDyn->MG_Mat_Joint(M, G);
+//        std::cout << _dxdot2 << std::endl;
+
     pManipulator->pKin->GetAnalyticJacobian(AnalyticJacobian);
-    pManipulator->pKin->GetAnalyticJacobian2(AnalyticJacobian2);
+    MatrixXd AnalyticJac2;
+    MatrixXd ZERO(6,2);
+    ZERO<< 0,0,0,0,0,0,0,0,0,0,0,0;
+    pManipulator->pKin->GetAnalyticJacobian(AnalyticJac2);
+//    std::cout << AnalyticJacobian2 << std::endl;
+    for(int i=0; i<2; i++)
+    {
+        if(i ==0)
+        {
+            AnalyticJac2.block(6*i,7,6,2) = ZERO;
+
+        }
+        else
+        {
+            AnalyticJac2.block(6*i,14,6,2)= ZERO;
+
+        }
+    }
+
+
+
     pManipulator->pKin->GetAnalyticJacobianDot(_qdot, AnalyticJacobianDot);
+
 
     dqN.setZero(16);
     dqdotN.setZero(16);
@@ -822,25 +1028,34 @@ void Controller:: TaskImpedanceController2(const VectorXd &_q, const VectorXd &_
         VectorXd u01 = VectorXd::Zero(AnalyticJacobian.rows());
         VectorXd u02 = VectorXd::Zero(AnalyticJacobian.rows());
         VectorXd u04 = VectorXd::Zero(AnalyticJacobian.cols());
-        VectorXd u05 = VectorXd::Zero(AnalyticJacobian2.rows());
+        VectorXd u05 = VectorXd::Zero(AnalyticJacobian.rows());
 
 
         u01 = _dxddot;
         u01.noalias() += -AnalyticJacobianDot*_qdot;
 
         TaskError2(_dx, _dxdot, _qdot, eTask, edotTask,_q_R,_q_L,_Targetpos_Linear_R,_Targetpos_Linear_L);
-
+        TaskError3(_dxdot2, _qdot, eTask2, edotTask2,_Targetpos_Linear_R2,_Targetpos_Linear_L2);
         u02.noalias() += KdImp.cwiseProduct(edotTask);
         u02.noalias() += KpImp.cwiseProduct(eTask);
 
         pManipulator->pKin->Getq0dotWithMM(alpha, dqdotN);
         u04.noalias() += KdImpNull.cwiseProduct(dqdotN - _qdot);
 
+        u02.noalias() += KdImp.cwiseProduct(edotTask);
+        u02.noalias() += KpImp.cwiseProduct(eTask);
+
+        u05.noalias() += Kd_elbow.cwiseProduct(edotTask2);
+        u05.noalias() += Kp_elbow.cwiseProduct(eTask2);
+
+//        std::cout << u05.segment(3,3) << std::endl;
+
         MatrixXd weight;
         //weight.setIdentity(16,16);
         weight = M;
 
         VectorXd dx_tmp(12);
+
         Quaterniond q_tmp;
 
         q_tmp = _q_R;
@@ -859,13 +1074,27 @@ void Controller:: TaskImpedanceController2(const VectorXd &_q, const VectorXd &_
         _Toq = G;
         _Toq.noalias() += M*(pInvMat*u01);
         _Toq.noalias() += AnalyticJacobian.transpose()*u02;
-//        _Toq.noalias() += Matrix_temp*u04;
+
+
+        _Toq.noalias() += AnalyticJac2.transpose()*u05;
+
+
+        std::cout <<AnalyticJac2.transpose()*u05 << std::endl;
+
+        _Toq.noalias() += Matrix_temp*u04;
         VectorXd jobDesired=VectorXd::Zero(16);
         MatrixXd Kp_job=Eigen::MatrixXd::Identity(16,16);;
+
         for(int i=0;i<16;i++)
             Kp_job(i,i) = 10.0;
         jobDesired(1) = -20.0*DEGtoRAD;
         jobDesired(3) = -45.0*DEGtoRAD;
+        jobDesired(4) = -40.0*DEGtoRAD;
+        jobDesired(4+7) = -jobDesired(4);
+
+        jobDesired(5) = 30.0*DEGtoRAD;
+        jobDesired(5+7) = -jobDesired(5);
+
         jobDesired(3+7) = -jobDesired(3);
         jobDesired(6) = -90.00*DEGtoRAD;
         jobDesired(6+7) = -jobDesired(6);
@@ -873,7 +1102,6 @@ void Controller:: TaskImpedanceController2(const VectorXd &_q, const VectorXd &_
         _Toq.noalias() += Kp_job*(jobDesired-_q);
 //        FrictionCompensator2(_qdot);
 
-        _frictionToq = FrictionTorque;
         _Toq.noalias() += Matrix_temp*u04;
 //        _Toq.noalias() += FrictionTorque;
 

@@ -31,10 +31,12 @@ class SerialManipulator
 public:
 
 	SerialManipulator();
-	virtual ~SerialManipulator();
+    virtual ~SerialManipulator();
 
     std::unique_ptr<HYUMotionDynamics::Liedynamics> pDyn;
     std::unique_ptr<HYUMotionKinematics::PoEKinematics> pKin;
+    std::unique_ptr<HYUMotionDynamics::Liedynamics> pDyn2;
+    std::unique_ptr<HYUMotionKinematics::PoEKinematics> pKin2;
 
     void StateMachine( const VectorXd _q, const VectorXd _qdot, VectorXd &_Target, unsigned char &_StateWord, unsigned char &_ControlWord );
 
@@ -70,6 +72,16 @@ public:
 		return mChainMat.rows();
 	}
 
+    int GetTotalDoF2(void)
+    {
+        return mChainMat2.cols();
+    }
+
+    int GetTotalChain2(void)
+    {
+        return mChainMat2.rows();
+    }
+
 private:
     Vector3d w[16]; 	/**< kinematic information container */
     Vector3d p[16]; 	/**< kinematic information container */
@@ -80,9 +92,13 @@ private:
     double mass[16];
 
     MatrixXi mChainMat;
+    MatrixXi mChainMat2;
 
     int mDoF_Total;
     int mChain_Total;
+
+    int mDoF_Total2;
+    int mChain_Total2;
 
     uint16_t mState_now=0;
     uint16_t mState_pre=0;

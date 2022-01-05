@@ -292,6 +292,7 @@ namespace HYUMotionDynamics{
                     _M(j,i) = _M(i,j);
             }
         }
+//        std::cout<<_M<<std::endl;
     }
 
     void Liedynamics::C_Matrix( MatrixXd &_C )
@@ -328,6 +329,7 @@ namespace HYUMotionDynamics{
         M_Matrix(M);
         _Mx.setZero(6*this->m_NumChain, 6*this->m_NumChain);
         _Mx.noalias() += _pInv.transpose()*M*_pInv;
+//        std::cout<<_Mx<<std::endl;
     }
 
     void Liedynamics::MG_Mat_Task(MatrixXd &_Mx, VectorXd &_Gx)

@@ -11,15 +11,13 @@
   <component name="ChangeListManager">
     <list default="true" id="38b7fd61-d2c7-4cb2-a538-42ee23789048" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DualArm/dualarm_control/config/impedance_control.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/DualArm/dualarm_control/config/impedance_control.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DualArm/dualarm_description/urdf/dual_arm_ft.xacro" beforeDir="false" afterPath="$PROJECT_DIR$/DualArm/dualarm_description/urdf/dual_arm_ft.xacro" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Controller.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Motion.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/Control/Motion.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/Control/Motion.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/PoEKinematics.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/PoEKinematics.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/SerialManipulator.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/SerialManipulator.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/SerialManipulator.h" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/SerialManipulator.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dualarm_controller/KDL/LieDynamics.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/KDL/LieDynamics.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/TaskCurrentState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/TaskCurrentState.msg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dualarm_controller/msg/TaskDesiredState.msg" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/msg/TaskDesiredState.msg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -41,6 +39,9 @@
       <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
     </file-type-list>
   </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
   <component name="ProjectId" id="1xkOO0DLuqH8dbFbLZ3VMFKJIvC" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
@@ -54,19 +55,12 @@
     <property name="WebServerToolWindowFactoryState" value="true" />
     <property name="cf.first.check.clang-format" value="false" />
     <property name="cidr.known.project.marker" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../RTControlDualArm" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="settings.editor.selected.configurable" value="CMakeSettings" />
-  </component>
-  <component name="RunManager">
-    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -104,7 +98,10 @@
       <workItem from="1637297010443" duration="1229000" />
       <workItem from="1637298355942" duration="17953000" />
       <workItem from="1637335202084" duration="18557000" />
-      <workItem from="1637547743024" duration="80654000" />
+      <workItem from="1637547743024" duration="96306000" />
+      <workItem from="1638179806063" duration="31128000" />
+      <workItem from="1638459052269" duration="8070000" />
+      <workItem from="1638637643874" duration="31999000" />
     </task>
     <servers />
   </component>
@@ -121,40 +118,39 @@
         </entry>
       </map>
     </option>
-    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp</url>
-          <line>61</line>
+          <line>63</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp</url>
-          <line>613</line>
+          <line>618</line>
           <option name="timeStamp" value="4" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp</url>
-          <line>594</line>
+          <line>599</line>
           <option name="timeStamp" value="5" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/src/impedance_control.cpp</url>
-          <line>750</line>
+          <line>795</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp</url>
-          <line>260</line>
-          <option name="timeStamp" value="9" />
+          <line>566</line>
+          <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/dualarm_controller/Control/Controller.cpp</url>
-          <line>561</line>
-          <option name="timeStamp" value="10" />
+          <line>703</line>
+          <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

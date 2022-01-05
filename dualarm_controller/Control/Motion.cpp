@@ -915,7 +915,7 @@ uint16_t Motion::TaskMotion2( Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_T
         TargetPos_Linear_L2.setZero(3);
 
 
-    _dxdot = _dtwist;
+        _dxdot = _dtwist;
         _dxdot2 = _dtwist2;
 //        std::cout<<_dtwist2<<std::endl;
 
@@ -934,14 +934,14 @@ uint16_t Motion::TaskMotion2( Quaterniond &_q_R, Quaterniond &_q_L, Vector3d &_T
         {
             TargetPos_Linear_R(i) = _vive_dP_R(i);
             TargetPos_Linear_L(i) = _vive_dP_L(i);
-            TargetPos_Linear_R2(i) = _vive_dP_R2(i);
-            TargetPos_Linear_L2(i) = _vive_dP_L2(i);
+//            TargetPos_Linear_R2(i) = _vive_dP_R2(i);
+//            TargetPos_Linear_L2(i) = _vive_dP_L2(i);
 
         }
 //
 //
-//            TargetPos_Linear_R2(1) = _vive_dP_R2(1);
-//            TargetPos_Linear_L2(1) = _vive_dP_L2(1);
+            TargetPos_Linear_R2(1) = _vive_dP_R2(1);
+            TargetPos_Linear_L2(1) = _vive_dP_L2(1);
 //            TargetPos_Linear_R2(2) = _vive_dP_R2(2);
 //            TargetPos_Linear_L2(2) = _vive_dP_L2(2);
 

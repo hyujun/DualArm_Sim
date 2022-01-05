@@ -96,7 +96,7 @@ public:
                                   Quaterniond &_q_R,Quaterniond &_q_L,Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L, VectorXd &_fritcionToq, const int mode);
     void TaskImpedanceController3(const VectorXd &_q, const VectorXd &_qdot, Cartesiand *_dx,
                                   const VectorXd &_dxdot,const VectorXd &_dxdot2, const VectorXd &_dxddot, const VectorXd &_sensor, VectorXd &_Toq,
-                                               Quaterniond &_q_R,Quaterniond &_q_L,Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L,Vector3d &_Targetpos_Linear_R2, Vector3d &_Targetpos_Linear_L2, const int mode);
+                                               Quaterniond &_q_R,Quaterniond &_q_L,Vector3d &_TargetPos_Linear_R, Vector3d &_TargetPos_Linear_L,Vector3d &_Targetpos_Linear_R2, Vector3d &_Targetpos_Linear_L2, const int mode, VectorXd emgsig, VectorXd &_Mx, VectorXd &_Kd_emg,VectorXd &_Kp_emg);
 	void FrictionIdentification( const VectorXd &_q, const VectorXd &_qdot, VectorXd &_dq, VectorXd &_dqdot, VectorXd &_dqddot, VectorXd &_Toq, const double &gt );
 	void FrictionCompensator( const VectorXd &_qdot, const VectorXd &_dqdot );
 	/**
@@ -125,6 +125,7 @@ private:
 	Eigen::VectorXd Vector_temp;
 	Eigen::MatrixXd Matrix_temp;
 
+
 	double alpha;
 
 	Eigen::VectorXd eTask, edotTask, eTask2, edotTask2;
@@ -149,7 +150,7 @@ private:
     MatrixXd dpInvRelJacobian;
     MatrixXd AJacwithRel;
 
-	Eigen::MatrixXd M, Mx;
+	Eigen::MatrixXd M, Mx, _Mx;
 	Eigen::VectorXd G;
 
 	int m_Jnum;

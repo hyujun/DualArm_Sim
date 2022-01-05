@@ -7,6 +7,12 @@ float64[] dqdot
 float64[] torque
 float64 Kp_T
 float64 Kp_R
+float64 emgsigg
+
+float64[] Kp_emgg
+float64[] Kd_emgg
+float64[] Mx_diag
+
 geometry_msgs/Pose[] x
 geometry_msgs/Pose[] dx
 geometry_msgs/Pose[] dx2
